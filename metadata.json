@@ -1,0 +1,7 @@
+{
+  "name": "MotoVibe - Premium Motosiklet Aksesuarları",
+  "description": "En kaliteli motosiklet kaskı, montu ve ekipmanlarını keşfedin. Yapay zeka destekli alışveriş asistanı ile size en uygun ürünleri bulun.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

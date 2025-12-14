@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: motovibe-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node backend/server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: MINIO_ENDPOINT
+        sync: false
+      - key: MINIO_ACCESS_KEY
+        sync: false
+      - key: MINIO_SECRET_KEY
+        sync: false
+      - key: MINIO_BUCKET_NAME
+        value: motovibe-assets
