@@ -27,13 +27,33 @@
             user-select: none;
         }
 
+        header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            position: relative;
+        }
+
         h1 {
             color: var(--text);
             text-align: center;
             font-size: 2rem;
-            margin-top: 20px;
-            margin-bottom: 10px;
+            margin: 0;
             text-shadow: 2px 2px 0px white;
+        }
+
+        .level-indicator {
+            position: absolute;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
         }
 
         .game-container {
@@ -42,22 +62,24 @@
             align-items: center;
             justify-content: space-around;
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
             flex-grow: 1;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
         }
 
         .drop-zones {
             display: flex;
-            justify-content: space-around;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
             width: 100%;
-            margin-bottom: 50px;
+            margin-bottom: 20px;
         }
 
         .drop-zone {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             border: 4px dashed #ccc;
             border-radius: 50%;
             display: flex;
@@ -84,7 +106,7 @@
         /* Shadow/Silhouette text */
         .drop-zone::after {
             content: attr(data-icon);
-            font-size: 50px;
+            font-size: 40px;
             color: #000;
             opacity: 0.2; /* Silhouette effect */
             filter: blur(0px); /* Sharp silhouette */
@@ -97,15 +119,17 @@
 
         .draggables {
             display: flex;
-            justify-content: space-around;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
             width: 100%;
-            height: 100px; /* Space for items */
+            min-height: 100px; /* Space for items */
         }
 
         .draggable {
-            width: 80px;
-            height: 80px;
-            font-size: 60px;
+            width: 70px;
+            height: 70px;
+            font-size: 50px;
             cursor: grab;
             display: flex;
             justify-content: center;
@@ -114,11 +138,15 @@
             z-index: 10;
             /* Touch support */
             touch-action: none;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 0 #ddd;
         }
 
         .draggable:active {
             cursor: grabbing;
             transform: scale(1.2);
+            box-shadow: 0 8px 10px rgba(0,0,0,0.2);
         }
 
         .draggable.matched {
@@ -128,7 +156,7 @@
 
         /* The item inside the drop zone after matching */
         .matched-item {
-            font-size: 60px;
+            font-size: 50px;
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -139,13 +167,15 @@
 
         .controls {
             margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
         }
 
         .btn {
             background-color: var(--accent);
             color: white;
             border: none;
-            padding: 15px 30px;
+            padding: 12px 24px;
             font-size: 1.2rem;
             border-radius: 50px;
             cursor: pointer;
@@ -154,9 +184,13 @@
             transition: transform 0.2s, background-color 0.2s;
         }
 
+        .btn.secondary {
+            background-color: #A0C4FF;
+        }
+
         .btn:active {
             transform: scale(0.95);
-            background-color: #ff5252;
+            filter: brightness(0.9);
         }
 
         /* Confetti Canvas */
@@ -177,7 +211,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -198,6 +232,7 @@
             color: var(--secondary);
             margin-bottom: 20px;
             animation: bounce 1s infinite;
+            text-align: center;
         }
 
         @keyframes bounce {
@@ -207,11 +242,11 @@
 
         @media (min-width: 768px) {
             .drop-zone, .draggable {
-                width: 120px;
-                height: 120px;
+                width: 100px;
+                height: 100px;
             }
             .drop-zone::after, .draggable, .matched-item {
-                font-size: 80px;
+                font-size: 70px;
             }
         }
     </style>
@@ -220,7 +255,10 @@
 
     <canvas id="confetti"></canvas>
 
-    <h1>🐶 Hayvanları Eşleştir 🐱</h1>
+    <header>
+        <h1>🐶 Hayvanları Eşleştir 🐱</h1>
+        <div class="level-indicator">Seviye: <span id="level-display">1</span></div>
+    </header>
 
     <div class="game-container">
         <div class="drop-zones" id="drop-zones">
@@ -233,12 +271,14 @@
     </div>
 
     <div class="controls">
-        <button class="btn" onclick="initGame()">Yeniden Başlat 🔄</button>
+        <button class="btn secondary" onclick="restartLevel()">Tekrar 🔄</button>
     </div>
 
     <div class="success-overlay" id="success-overlay">
-        <h2>Aferin! 🎉</h2>
-        <button class="btn" onclick="initGame()">Tekrar Oyna</button>
+        <h2 id="win-title">Aferin! 🎉</h2>
+        <div id="win-controls">
+            <!-- Buttons injected here -->
+        </div>
     </div>
 
     <script>
@@ -261,14 +301,33 @@
             { id: 'monkey', emoji: '🐵' },
             { id: 'chicken', emoji: '🐔' },
             { id: 'penguin', emoji: '🐧' },
-            { id: 'bird', emoji: '🐦' }
+            { id: 'bird', emoji: '🐦' },
+            { id: 'duck', emoji: '🦆' },
+            { id: 'owl', emoji: '🦉' },
+            { id: 'horse', emoji: '🐴' },
+            { id: 'unicorn', emoji: '🦄' },
+            { id: 'bee', emoji: '🐝' },
+            { id: 'butterfly', emoji: '🦋' }
         ];
 
+        // Level Configuration
+        const levels = [
+            { level: 1, count: 2 },
+            { level: 2, count: 3 },
+            { level: 3, count: 4 },
+            { level: 4, count: 5 },
+            { level: 5, count: 6 },
+            { level: 6, count: 8 },
+            { level: 7, count: 10 },
+            { level: 8, count: 12 } // Max Challenge
+        ];
+
+        let currentLevelIndex = 0;
         let currentItems = [];
         let matches = 0;
-        const totalToMatch = 3;
+        let totalToMatch = 0;
 
-        // Sound Effects (using AudioContext for generated beeps to avoid external files)
+        // Sound Effects
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playSound(type) {
@@ -298,7 +357,7 @@
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.4);
             } else if (type === 'win') {
-                // Simple chord
+                // Happy chord
                 [400, 500, 600, 800].forEach((freq, i) => {
                     const o = audioCtx.createOscillator();
                     const g = audioCtx.createGain();
@@ -309,11 +368,37 @@
                     o.start(audioCtx.currentTime + i * 0.1);
                     o.stop(audioCtx.currentTime + i * 0.1 + 0.5);
                 });
+            } else if (type === 'gameover') {
+                 // Final Win Fanfare
+                 [523, 659, 783, 1046, 783, 1046].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'square';
+                    o.frequency.value = freq;
+                    g.gain.value = 0.05;
+                    o.start(audioCtx.currentTime + i * 0.15);
+                    o.stop(audioCtx.currentTime + i * 0.15 + 0.3);
+                });
             }
         }
 
-        // Init Game
-        function initGame() {
+        // Init Game / Level
+        function initGame(levelIndex = 0) {
+            currentLevelIndex = levelIndex;
+
+            // Bounds check
+            if (currentLevelIndex >= levels.length) {
+                currentLevelIndex = 0; // Loop back or handle finish
+            }
+
+            const levelConfig = levels[currentLevelIndex];
+            totalToMatch = levelConfig.count;
+            matches = 0;
+
+            document.getElementById('level-display').innerText = levelConfig.level;
+
             const dropZonesContainer = document.getElementById('drop-zones');
             const draggablesContainer = document.getElementById('draggables');
             const overlay = document.getElementById('success-overlay');
@@ -323,9 +408,8 @@
             overlay.classList.remove('visible');
             stopConfetti();
 
-            matches = 0;
-
-            // Pick 3 random items
+            // Pick random items for this level
+            // We shuffle all items, then slice
             const shuffledAll = [...allItems].sort(() => 0.5 - Math.random());
             currentItems = shuffledAll.slice(0, totalToMatch);
 
@@ -354,30 +438,30 @@
             });
         }
 
+        function restartLevel() {
+            initGame(currentLevelIndex);
+        }
+
+        function nextLevel() {
+            initGame(currentLevelIndex + 1);
+        }
+
         // Drag Logic
         let activeDragEl = null;
         let startX = 0, startY = 0;
-        let originalX = 0, originalY = 0;
 
         function addDragLogic(el) {
-            // Mouse
             el.addEventListener('mousedown', handleStart);
-
-            // Touch
             el.addEventListener('touchstart', handleStart, { passive: false });
         }
 
         function handleStart(e) {
-            e.preventDefault(); // Prevent text selection or scrolling
-
-            // Resume audio ctx if needed
+            e.preventDefault();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
             playSound('pickup');
 
             activeDragEl = e.target;
 
-            // Get start position
             if (e.type === 'touchstart') {
                 const touch = e.touches[0];
                 startX = touch.clientX;
@@ -387,13 +471,9 @@
                 startY = e.clientY;
             }
 
-            // Bring to front
             activeDragEl.style.zIndex = 1000;
-            activeDragEl.style.position = 'relative'; // ensure we can move it
-            originalX = 0; // relative translation starts at 0
-            originalY = 0;
+            activeDragEl.style.position = 'relative';
 
-            // Listen for move/end on document
             document.addEventListener('mousemove', handleMove);
             document.addEventListener('mouseup', handleEnd);
             document.addEventListener('touchmove', handleMove, { passive: false });
@@ -422,14 +502,10 @@
         function handleEnd(e) {
             if (!activeDragEl) return;
 
-            // Check drop
-            // We need to see if the center of the draggable is inside a drop zone
             const rect = activeDragEl.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
 
-            // Hide element momentarily to see what's under it (optional, but elementFromPoint usually catches top layer)
-            // But we can just iterate zones and check coordinates
             const zones = document.querySelectorAll('.drop-zone');
             let dropped = false;
 
@@ -441,9 +517,7 @@
                     centerY >= zRect.top &&
                     centerY <= zRect.bottom
                 ) {
-                    // Check ID match
                     if (zone.dataset.id === activeDragEl.dataset.id && !zone.classList.contains('correct')) {
-                        // Success!
                         handleMatch(zone, activeDragEl);
                         dropped = true;
                     }
@@ -451,11 +525,8 @@
             });
 
             if (!dropped) {
-                // Return to start
                 activeDragEl.style.transition = 'transform 0.3s ease';
                 activeDragEl.style.transform = 'translate(0, 0)';
-
-                // Clear transition after it settles
                 setTimeout(() => {
                     if (activeDragEl) activeDragEl.style.transition = '';
                 }, 300);
@@ -474,30 +545,44 @@
             playSound('success');
 
             zone.classList.add('correct');
-            // Add a permanent item inside the zone
             const matchedItem = document.createElement('div');
             matchedItem.textContent = draggable.textContent;
             matchedItem.classList.add('matched-item');
-            zone.innerHTML = ''; // Remove any shadow text via CSS or existing content
+            zone.innerHTML = '';
             zone.appendChild(matchedItem);
 
-            // Hide draggable
             draggable.classList.add('matched');
             draggable.style.display = 'none';
 
             matches++;
             if (matches === totalToMatch) {
-                setTimeout(handleWin, 500);
+                setTimeout(handleLevelComplete, 500);
             }
         }
 
-        function handleWin() {
-            playSound('win');
+        function handleLevelComplete() {
             startConfetti();
-            document.getElementById('success-overlay').classList.add('visible');
+            const overlay = document.getElementById('success-overlay');
+            const title = document.getElementById('win-title');
+            const controls = document.getElementById('win-controls');
+
+            controls.innerHTML = '';
+            overlay.classList.add('visible');
+
+            const isLastLevel = currentLevelIndex >= levels.length - 1;
+
+            if (isLastLevel) {
+                playSound('gameover');
+                title.innerText = "Tebrikler! Oyunu Bitirdin! 🏆";
+                controls.innerHTML = `<button class="btn" onclick="initGame(0)">Baştan Oyna 🔄</button>`;
+            } else {
+                playSound('win');
+                title.innerText = "Harika! Seviye Geçildi! 🌟";
+                controls.innerHTML = `<button class="btn" onclick="nextLevel()">Sonraki Seviye ➡️</button>`;
+            }
         }
 
-        // --- Confetti Effect (Simple Canvas) ---
+        // --- Confetti Effect ---
         let confettiCtx;
         let confettiCanvas;
         let particles = [];
@@ -510,14 +595,14 @@
             confettiCanvas.height = window.innerHeight;
 
             particles = [];
-            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', 'orange', 'purple'];
 
-            for (let i = 0; i < 150; i++) {
+            for (let i = 0; i < 200; i++) {
                 particles.push({
                     x: Math.random() * confettiCanvas.width,
                     y: Math.random() * confettiCanvas.height - confettiCanvas.height,
                     vx: Math.random() * 4 - 2,
-                    vy: Math.random() * 5 + 2,
+                    vy: Math.random() * 5 + 3,
                     color: colors[Math.floor(Math.random() * colors.length)],
                     size: Math.random() * 10 + 5,
                     rotation: Math.random() * 360,
@@ -564,8 +649,8 @@
             }
         });
 
-        // Start
-        initGame();
+        // Start at Level 1
+        initGame(0);
 
     </script>
 </body>
