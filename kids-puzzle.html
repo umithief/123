@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Çocuklar İçin Hayvan Bulmacası</title>
+    <style>
+        :root {
+            --primary: #FFB347; /* Pastel Orange */
+            --secondary: #77DD77; /* Pastel Green */
+            --accent: #FF6961; /* Pastel Red */
+            --bg: #FEFDCA; /* Cream */
+            --text: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: none; /* Prevent scrolling while dragging */
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            color: var(--text);
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0px white;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 600px;
+            flex-grow: 1;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .drop-zones {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 50px;
+        }
+
+        .drop-zone {
+            width: 80px;
+            height: 80px;
+            border: 4px dashed #ccc;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .drop-zone.hover {
+            border-color: var(--secondary);
+            background-color: rgba(119, 221, 119, 0.2);
+            transform: scale(1.1);
+        }
+
+        .drop-zone.correct {
+            border-style: solid;
+            border-color: var(--secondary);
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        /* Shadow/Silhouette text */
+        .drop-zone::after {
+            content: attr(data-icon);
+            font-size: 50px;
+            color: #000;
+            opacity: 0.2; /* Silhouette effect */
+            filter: blur(0px); /* Sharp silhouette */
+        }
+
+        .drop-zone.correct::after {
+            opacity: 1; /* Reveal full color if we wanted, but we drop the item on top */
+            content: ''; /* Clear the silhouette text so the dropped item shows nicely */
+        }
+
+        .draggables {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            height: 100px; /* Space for items */
+        }
+
+        .draggable {
+            width: 80px;
+            height: 80px;
+            font-size: 60px;
+            cursor: grab;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            z-index: 10;
+            /* Touch support */
+            touch-action: none;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(1.2);
+        }
+
+        .draggable.matched {
+            visibility: hidden; /* Hide original, clone is in drop zone */
+            pointer-events: none;
+        }
+
+        /* The item inside the drop zone after matching */
+        .matched-item {
+            font-size: 60px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background-color: #ff5252;
+        }
+
+        /* Confetti Canvas */
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Success Message Overlay */
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .success-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .success-overlay h2 {
+            font-size: 3rem;
+            color: var(--secondary);
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @media (min-width: 768px) {
+            .drop-zone, .draggable {
+                width: 120px;
+                height: 120px;
+            }
+            .drop-zone::after, .draggable, .matched-item {
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti"></canvas>
+
+    <h1>🐶 Hayvanları Eşleştir 🐱</h1>
+
+    <div class="game-container">
+        <div class="drop-zones" id="drop-zones">
+            <!-- Drop Zones will be generated here -->
+        </div>
+
+        <div class="draggables" id="draggables">
+            <!-- Draggables will be generated here -->
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="initGame()">Yeniden Başlat 🔄</button>
+    </div>
+
+    <div class="success-overlay" id="success-overlay">
+        <h2>Aferin! 🎉</h2>
+        <button class="btn" onclick="initGame()">Tekrar Oyna</button>
+    </div>
+
+    <script>
+        // Game Data
+        const allItems = [
+            { id: 'dog', emoji: '🐶' },
+            { id: 'cat', emoji: '🐱' },
+            { id: 'mouse', emoji: '🐭' },
+            { id: 'hamster', emoji: '🐹' },
+            { id: 'rabbit', emoji: '🐰' },
+            { id: 'fox', emoji: '🦊' },
+            { id: 'bear', emoji: '🐻' },
+            { id: 'panda', emoji: '🐼' },
+            { id: 'koala', emoji: '🐨' },
+            { id: 'tiger', emoji: '🐯' },
+            { id: 'lion', emoji: '🦁' },
+            { id: 'cow', emoji: '🐮' },
+            { id: 'pig', emoji: '🐷' },
+            { id: 'frog', emoji: '🐸' },
+            { id: 'monkey', emoji: '🐵' },
+            { id: 'chicken', emoji: '🐔' },
+            { id: 'penguin', emoji: '🐧' },
+            { id: 'bird', emoji: '🐦' }
+        ];
+
+        let currentItems = [];
+        let matches = 0;
+        const totalToMatch = 3;
+
+        // Sound Effects (using AudioContext for generated beeps to avoid external files)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'pickup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'success') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(1000, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'win') {
+                // Simple chord
+                [400, 500, 600, 800].forEach((freq, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = freq;
+                    g.gain.value = 0.1;
+                    o.start(audioCtx.currentTime + i * 0.1);
+                    o.stop(audioCtx.currentTime + i * 0.1 + 0.5);
+                });
+            }
+        }
+
+        // Init Game
+        function initGame() {
+            const dropZonesContainer = document.getElementById('drop-zones');
+            const draggablesContainer = document.getElementById('draggables');
+            const overlay = document.getElementById('success-overlay');
+
+            dropZonesContainer.innerHTML = '';
+            draggablesContainer.innerHTML = '';
+            overlay.classList.remove('visible');
+            stopConfetti();
+
+            matches = 0;
+
+            // Pick 3 random items
+            const shuffledAll = [...allItems].sort(() => 0.5 - Math.random());
+            currentItems = shuffledAll.slice(0, totalToMatch);
+
+            // Create Drop Zones (Silhouettes)
+            currentItems.forEach(item => {
+                const zone = document.createElement('div');
+                zone.classList.add('drop-zone');
+                zone.dataset.id = item.id;
+                zone.dataset.icon = item.emoji; // For shadow
+                dropZonesContainer.appendChild(zone);
+            });
+
+            // Create Draggables (Shuffled)
+            const shuffledDraggables = [...currentItems].sort(() => 0.5 - Math.random());
+            shuffledDraggables.forEach(item => {
+                const el = document.createElement('div');
+                el.classList.add('draggable');
+                el.textContent = item.emoji;
+                el.dataset.id = item.id;
+                el.id = `drag-${item.id}`;
+
+                // Add Drag Events
+                addDragLogic(el);
+
+                draggablesContainer.appendChild(el);
+            });
+        }
+
+        // Drag Logic
+        let activeDragEl = null;
+        let startX = 0, startY = 0;
+        let originalX = 0, originalY = 0;
+
+        function addDragLogic(el) {
+            // Mouse
+            el.addEventListener('mousedown', handleStart);
+
+            // Touch
+            el.addEventListener('touchstart', handleStart, { passive: false });
+        }
+
+        function handleStart(e) {
+            e.preventDefault(); // Prevent text selection or scrolling
+
+            // Resume audio ctx if needed
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            playSound('pickup');
+
+            activeDragEl = e.target;
+
+            // Get start position
+            if (e.type === 'touchstart') {
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+
+            // Bring to front
+            activeDragEl.style.zIndex = 1000;
+            activeDragEl.style.position = 'relative'; // ensure we can move it
+            originalX = 0; // relative translation starts at 0
+            originalY = 0;
+
+            // Listen for move/end on document
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchmove', handleMove, { passive: false });
+            document.addEventListener('touchend', handleEnd);
+        }
+
+        function handleMove(e) {
+            if (!activeDragEl) return;
+            e.preventDefault();
+
+            let clientX, clientY;
+            if (e.type === 'touchmove') {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            activeDragEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.2)`;
+        }
+
+        function handleEnd(e) {
+            if (!activeDragEl) return;
+
+            // Check drop
+            // We need to see if the center of the draggable is inside a drop zone
+            const rect = activeDragEl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Hide element momentarily to see what's under it (optional, but elementFromPoint usually catches top layer)
+            // But we can just iterate zones and check coordinates
+            const zones = document.querySelectorAll('.drop-zone');
+            let dropped = false;
+
+            zones.forEach(zone => {
+                const zRect = zone.getBoundingClientRect();
+                if (
+                    centerX >= zRect.left &&
+                    centerX <= zRect.right &&
+                    centerY >= zRect.top &&
+                    centerY <= zRect.bottom
+                ) {
+                    // Check ID match
+                    if (zone.dataset.id === activeDragEl.dataset.id && !zone.classList.contains('correct')) {
+                        // Success!
+                        handleMatch(zone, activeDragEl);
+                        dropped = true;
+                    }
+                }
+            });
+
+            if (!dropped) {
+                // Return to start
+                activeDragEl.style.transition = 'transform 0.3s ease';
+                activeDragEl.style.transform = 'translate(0, 0)';
+
+                // Clear transition after it settles
+                setTimeout(() => {
+                    if (activeDragEl) activeDragEl.style.transition = '';
+                }, 300);
+            }
+
+            activeDragEl.style.zIndex = '';
+            activeDragEl = null;
+
+            document.removeEventListener('mousemove', handleMove);
+            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchmove', handleMove);
+            document.removeEventListener('touchend', handleEnd);
+        }
+
+        function handleMatch(zone, draggable) {
+            playSound('success');
+
+            zone.classList.add('correct');
+            // Add a permanent item inside the zone
+            const matchedItem = document.createElement('div');
+            matchedItem.textContent = draggable.textContent;
+            matchedItem.classList.add('matched-item');
+            zone.innerHTML = ''; // Remove any shadow text via CSS or existing content
+            zone.appendChild(matchedItem);
+
+            // Hide draggable
+            draggable.classList.add('matched');
+            draggable.style.display = 'none';
+
+            matches++;
+            if (matches === totalToMatch) {
+                setTimeout(handleWin, 500);
+            }
+        }
+
+        function handleWin() {
+            playSound('win');
+            startConfetti();
+            document.getElementById('success-overlay').classList.add('visible');
+        }
+
+        // --- Confetti Effect (Simple Canvas) ---
+        let confettiCtx;
+        let confettiCanvas;
+        let particles = [];
+        let animationId;
+
+        function startConfetti() {
+            confettiCanvas = document.getElementById('confetti');
+            confettiCtx = confettiCanvas.getContext('2d');
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+
+            particles = [];
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    vx: Math.random() * 4 - 2,
+                    vy: Math.random() * 5 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 10 + 5,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+            particles.forEach(p => {
+                p.y += p.vy;
+                p.x += p.vx;
+                p.rotation += p.rotationSpeed;
+
+                if (p.y > confettiCanvas.height) {
+                    p.y = -20;
+                    p.x = Math.random() * confettiCanvas.width;
+                }
+
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.rotation * Math.PI / 180);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                confettiCtx.restore();
+            });
+
+            animationId = requestAnimationFrame(animateConfetti);
+        }
+
+        function stopConfetti() {
+            if (animationId) cancelAnimationFrame(animationId);
+            if (confettiCtx) confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+
+        window.addEventListener('resize', () => {
+            if (confettiCanvas) {
+                confettiCanvas.width = window.innerWidth;
+                confettiCanvas.height = window.innerHeight;
+            }
+        });
+
+        // Start
+        initGame();
+
+    </script>
+</body>
+</html>
