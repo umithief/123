@@ -1,4 +1,16 @@
-AURA Studio Atelier 1.20.0 — Android
+AURA Studio Atelier 1.21.0 — Android
+
+## 1.21.0 — 10 yeni altyazı animasyonu
+
+Metin → Altyazılar → Görünüm → **Animasyonlar** galerisinde 42 seçenek vardır. Yeni animasyonlar önizlemeye ve MP4 çıktısına işlenir, hız ve hareket gücü ayarlarına uyar; hareket azaltma tercihinde sabit gösterilir.
+
+Giriş: **Maske yükselişi** (satırlar kendi perdesinin altından sırayla yükselir), **Işıltı** (vurgu renginde parlak haleden netleşir), **Hız çizgisi** (eğik ve hızlı gelir, dikleşir), **Harf yağmuru** (harfler tüm satır boyunca tek tek düşer).
+Kelime: **Fosforlu kalem** (söylenen kelimenin arkasını vurgu rengiyle boyar, boyanan kısım koyu mürekkep olur), **Neon** (söylenmemiş kelimeler sönük tüp, söylenince titreyip yanar), **Odak büyüt** (söylenen kelime büyür, diğerleri soluklaşır), **Kelime netleş** (her kelime söylenirken bulanıklıktan netleşir), **Kalp atışı** (söylenen kelime çift vuruşla atar).
+Döngü: **Renk akışı** (vurgu rengi satır boyunca sürekli akar).
+
+### 1.21.0 doğrulaması
+
+TypeScript, lint, 58 AURA birim testi, web ve Android derlemeleri geçti. 10 animasyon 5 zaman noktasında kare kare çizilip incelendi (giriş, kelime vurgusu, çıkış); çalışma hatası yok. Uygulamada Animasyonlar galerisinde 42 seçenek ve yeni animasyonların seçimi doğrulandı. Fiziksel cihaz testi yapılmadı.
 
 ## 1.20.0 — İmza koleksiyonu: 10 yeni premium spektrum
 

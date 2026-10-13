@@ -197,6 +197,8 @@ export function CaptionMotionPanel({
             "focus",
             "flip",
             "wipe",
+            "marker",
+            "gradient",
           ].includes(options.animation) && (
             <label className="flex min-h-11 items-center gap-3 text-xs text-ink">
               {ui("Hareket gücü")}

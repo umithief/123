@@ -594,6 +594,25 @@ Altını çiz|Underline
 Kelime çevir|Word flip
 Harf aralığı|Letter spacing
 Işık geçişi|Light sweep
+Maske yükselişi|Mask rise
+Işıltı|Glow in
+Hız çizgisi|Speed lines
+Harf yağmuru|Letter cascade
+Fosforlu kalem|Highlighter
+Odak büyüt|Focus zoom
+Kelime netleş|Word focus
+Kalp atışı|Heartbeat
+Renk akışı|Color flow
+Satırlar perdeden sırayla yükselir|Lines rise from behind a curtain
+Parlak bir haleden netleşir|Settles out of a bright halo
+Eğik ve hızlı giriş, sonra dikleşir|Fast slanted entrance that straightens
+Harfler tek tek yukarıdan düşer|Letters fall in one by one
+Söylenen kelimenin altını boyar|Highlights the sung word
+Kelime neon tüp gibi titreyip yanar|Words flicker on like neon tubes
+Söylenen kelime büyür, diğerleri soluk|The sung word grows, the rest dims
+Her kelime söylenirken netleşir|Each word sharpens as it is sung
+Söylenen kelime çift vuruşla atar|The sung word beats like a heart
+Vurgu rengi yazıda sürekli akar|The accent color flows through the text
 Oswald · Uzun başlık|Oswald · Tall headline
 Caveat · El yazısı|Caveat · Handwritten
 Anton · Güçlü vurgu|Anton · Bold statement

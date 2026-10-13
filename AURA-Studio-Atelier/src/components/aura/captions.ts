@@ -61,6 +61,16 @@ export const CAPTION_ANIMATIONS = [
   { id: "tracking", label: "Harf aralığı", description: "Harfler birleşerek yerleşir" },
   { id: "shimmer", label: "Işık geçişi", description: "Yazının üzerinden ışık akar" },
   { id: "stamp", label: "Damga", description: "Kelimeyi baskı gibi vurgular" },
+  { id: "mask-rise", label: "Maske yükselişi", description: "Satırlar perdeden sırayla yükselir" },
+  { id: "glow-in", label: "Işıltı", description: "Parlak bir haleden netleşir" },
+  { id: "skew", label: "Hız çizgisi", description: "Eğik ve hızlı giriş, sonra dikleşir" },
+  { id: "cascade", label: "Harf yağmuru", description: "Harfler tek tek yukarıdan düşer" },
+  { id: "marker", label: "Fosforlu kalem", description: "Söylenen kelimenin altını boyar" },
+  { id: "neon", label: "Neon", description: "Kelime neon tüp gibi titreyip yanar" },
+  { id: "spot-zoom", label: "Odak büyüt", description: "Söylenen kelime büyür, diğerleri soluk" },
+  { id: "word-blur", label: "Kelime netleş", description: "Her kelime söylenirken netleşir" },
+  { id: "heartbeat", label: "Kalp atışı", description: "Söylenen kelime çift vuruşla atar" },
+  { id: "gradient", label: "Renk akışı", description: "Vurgu rengi yazıda sürekli akar" },
 ] as const;
 export const CAPTION_FONTS = {
   sans: { label: "Modern", family: '\"Outfit\", sans-serif' },
@@ -82,7 +92,7 @@ export async function loadCaptionFont(font: CaptionFont, weight = 600, italic = 
   );
 }
 export function captionAnimationGroup(id: CaptionAnimation): "Giriş" | "Kelime" | "Döngü" {
-  if (["wave", "pulse", "float", "shimmer"].includes(id)) return "Döngü";
+  if (["wave", "pulse", "float", "shimmer", "gradient"].includes(id)) return "Döngü";
   if (
     [
       "typewriter",
@@ -97,6 +107,11 @@ export function captionAnimationGroup(id: CaptionAnimation): "Giriş" | "Kelime"
       "orbit",
       "word-flip",
       "stamp",
+      "marker",
+      "neon",
+      "spot-zoom",
+      "word-blur",
+      "heartbeat",
     ].includes(id)
   )
     return "Kelime";

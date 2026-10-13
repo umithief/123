@@ -134,6 +134,16 @@ export function paintCaptions(
       Math.sin((at - cue.start) * options.speed * 2.4) * size * 0.1 * options.intensity,
     );
   if (animation === "blur") ctx.filter = `blur(${(1 - ease) * size * 0.25 * options.intensity}px)`;
+  if (animation === "skew") {
+    // Speed lines: arrives slanted from the left, then stands upright.
+    const k = (1 - ease) * options.intensity;
+    ctx.translate(-k * size * 1.6, 0);
+    ctx.transform(1, 0, -k * 0.55, 1, 0, 0);
+  }
+  if (animation === "glow-in") {
+    const scale = 1 + (1 - ease) * 0.06 * options.intensity;
+    ctx.scale(scale, scale);
+  }
   ctx.translate(-width / 2, -center);
   if (animation === "wipe") {
     ctx.beginPath();
@@ -145,11 +155,37 @@ export function paintCaptions(
     ctx.rect((width * (1 - ease)) / 2, 0, width * ease, height);
     ctx.clip();
   }
+  let characterCursor = 0;
   for (let index = 0; index < shown.length; index++) {
     const line = shown[index],
       total = line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1);
     let x = (width - total) / 2;
-    const y = center + (index - (shown.length - 1) / 2) * lineHeight;
+    const y0 = center + (index - (shown.length - 1) / 2) * lineHeight;
+    let y = y0;
+    ctx.save();
+    if (animation === "mask-rise") {
+      // Each line rises from behind its own curtain, one after another.
+      const lineEnter = Math.max(
+        0,
+        Math.min(
+          1,
+          (at - cue.start - (index * 0.09) / options.speed) / Math.max(0.01, duration * 1.4),
+        ),
+      );
+      ctx.beginPath();
+      ctx.rect(0, y0 - lineHeight * 0.62, width, lineHeight * 1.24);
+      ctx.clip();
+      y = y0 + Math.pow(1 - lineEnter, 3) * lineHeight * 1.05 * Math.max(0.4, options.intensity);
+    }
+    let flow: CanvasGradient | null = null;
+    if (animation === "gradient") {
+      const phase = ((((at - cue.start) * options.speed * 0.35) % 1) + 1) % 1,
+        start = x - total + phase * total * 2;
+      flow = ctx.createLinearGradient(start, 0, start + total, 0);
+      flow.addColorStop(0, options.textColor);
+      flow.addColorStop(0.5, accent);
+      flow.addColorStop(1, options.textColor);
+    }
     const background =
       options.background === "auto"
         ? options.style === "classic"
@@ -263,6 +299,47 @@ export function paintCaptions(
         ctx.scale(1 + pulse * 0.12 * options.intensity, 1 + pulse * 0.12 * options.intensity);
         ctx.translate(-x - word.width / 2, -y);
       }
+      if (animation === "spot-zoom") {
+        // The spoken word grows; the rest of the line steps back.
+        if (active) {
+          const grow = 1 + 0.13 * options.intensity * (1 - Math.pow(1 - wordEnter, 3));
+          ctx.translate(x + word.width / 2, y);
+          ctx.scale(grow, grow);
+          ctx.translate(-x - word.width / 2, -y);
+        } else ctx.globalAlpha *= at < word.start ? 0.45 : 0.7;
+      }
+      if (animation === "heartbeat" && active) {
+        const beat = ((at - word.start) * options.speed) % 0.9,
+          lub = Math.exp(-((beat - 0.05) ** 2) / 0.003),
+          dub = Math.exp(-((beat - 0.25) ** 2) / 0.003) * 0.65,
+          scale = 1 + (lub + dub) * 0.11 * options.intensity;
+        ctx.translate(x + word.width / 2, y);
+        ctx.scale(scale, scale);
+        ctx.translate(-x - word.width / 2, -y);
+      }
+      if (animation === "word-blur") {
+        ctx.globalAlpha *= wordEnter;
+        if (wordEnter < 1)
+          ctx.filter = `blur(${(1 - wordEnter) * size * 0.3 * options.intensity}px)`;
+      }
+      if (animation === "marker" && at >= word.start) {
+        // Highlighter stroke behind the word, drawn as it is sung.
+        const fill = 1 - Math.pow(1 - progress, 2),
+          ink = active ? 0.92 : 0.38;
+        ctx.save();
+        ctx.fillStyle = accent;
+        ctx.globalAlpha *= ink;
+        ctx.beginPath();
+        ctx.roundRect(
+          x - size * 0.1,
+          y - size * 0.3,
+          (word.width + size * 0.2) * fill,
+          size * 0.66,
+          size * 0.12,
+        );
+        ctx.fill();
+        ctx.restore();
+      }
       if (animation === "spotlight" && active) {
         ctx.fillStyle = "rgba(8,8,12,0.88)";
         ctx.strokeStyle = accent;
@@ -282,6 +359,27 @@ export function paintCaptions(
         ctx.shadowBlur = size * 0.18;
         ctx.shadowOffsetY = size * 0.08;
       }
+      if (animation === "glow-in") {
+        ctx.shadowColor = accent;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = size * (options.glow * 0.8 + (1 - ease) * 1.6 * options.intensity);
+      }
+      if (animation === "neon") {
+        // Unlit tube until sung, a short flicker, then a steady glow.
+        const lit = at - word.start;
+        const flicker =
+          lit < 0
+            ? 0.14
+            : lit < 0.32 / options.speed
+              ? [1, 0.25, 1, 0.5, 1, 0.8][Math.floor(lit * options.speed * 18) % 6]
+              : 1;
+        ctx.globalAlpha *= flicker;
+        if (lit >= 0) {
+          ctx.shadowColor = accent;
+          ctx.shadowOffsetY = 0;
+          ctx.shadowBlur = size * (0.35 + 0.45 * options.intensity) * flicker;
+        }
+      }
       if (animation === "glitch" && active) {
         const split =
           (0.5 + 0.5 * Math.sin((at - word.start) * options.speed * 20)) *
@@ -296,11 +394,37 @@ export function paintCaptions(
       ctx.lineJoin = "round";
       ctx.fillStyle =
         active &&
-        (options.style === "karaoke" || animation === "bounce" || animation === "spotlight") &&
+        ((options.style === "karaoke" && animation !== "marker") ||
+          animation === "bounce" ||
+          animation === "spotlight" ||
+          animation === "spot-zoom" ||
+          animation === "heartbeat") &&
         animation !== "sweep"
           ? accent
           : options.textColor;
-      if (animation === "tracking") {
+      if (flow) ctx.fillStyle = flow;
+      if (animation === "cascade") {
+        // Letters fall into place one after another across the whole cue.
+        const step = Math.min(0.035 / options.speed, ((cue.end - cue.start) * 0.45) / 60);
+        let cursor = x;
+        for (const character of Array.from(text)) {
+          const fall = Math.max(
+            0,
+            Math.min(1, (at - cue.start - characterCursor * step) / Math.max(0.01, duration)),
+          );
+          characterCursor += 1;
+          const glyph = ctx.measureText(character).width;
+          if (fall > 0) {
+            ctx.save();
+            ctx.globalAlpha *= fall;
+            const dy = -Math.pow(1 - fall, 2) * size * 0.9 * options.intensity;
+            if (options.outline > 0) ctx.strokeText(character, cursor, y + dy);
+            ctx.fillText(character, cursor, y + dy);
+            ctx.restore();
+          }
+          cursor += glyph;
+        }
+      } else if (animation === "tracking") {
         const characters = Array.from(text);
         const extra =
           Math.min(size * 0.12, size / Math.max(1, characters.length)) *
@@ -333,6 +457,19 @@ export function paintCaptions(
         ctx.fillStyle = accent;
         ctx.fillRect(x, y + size * 0.58, word.width * progress, Math.max(2, size * 0.09));
       }
+      if (animation === "marker" && active) {
+        // Dark ink where the highlighter has already passed, like a real marker.
+        const fill = 1 - Math.pow(1 - progress, 2);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x - size * 0.1, y - size, (word.width + size * 0.2) * fill, size * 2);
+        ctx.clip();
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillStyle = "#17130d";
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
       if (animation === "sweep" && progress > 0) {
         ctx.beginPath();
         ctx.rect(x - 1, y - size, (word.width + 2) * progress, size * 2);
@@ -343,6 +480,7 @@ export function paintCaptions(
       ctx.restore();
       x += word.width + space;
     }
+    ctx.restore();
   }
   ctx.restore();
 }
