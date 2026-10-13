@@ -500,6 +500,17 @@ Titreşim|Shake
 Süre|Duration
 Şiddet|Intensity
 Tutulma|Eclipse
+İpek Yelpaze|Silk Fan
+Pırlanta|Brilliant Cut
+Turbiyon|Tourbillon
+Ay Evreleri|Moon Phases
+Mermer|Marble
+Org Boruları|Pipe Organ
+Şampanya Kadehi|Champagne Flute
+Altın Oran|Golden Ratio
+Kaleydoskop|Kaleidoscope
+Arp|Harp
+Yeni|New
 Frekans Vadisi|Frequency Valley
 Sıvı Metal|Liquid Metal
 Faz Çiçeği|Phase Flower

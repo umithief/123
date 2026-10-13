@@ -93,8 +93,8 @@ const ACTIONS = [
     group: "design",
     tr: "Spektrum & sahneler",
     en: "Visualizers & scenes",
-    detail: "Müzikle hareket eden 32 görünüm",
-    english: "32 visuals that move with your music",
+    detail: "Müzikle hareket eden 42 görünüm",
+    english: "42 visuals that move with your music",
     icon: AudioLines,
   },
   {
@@ -394,7 +394,7 @@ export function AtelierHome({
           <ModePreview mode="deco" theme={themeById("champagne")} />
           <div>
             <span>ART DECO</span>
-            <span>01 / 32</span>
+            <span>01 / 42</span>
           </div>
         </div>
       </section>

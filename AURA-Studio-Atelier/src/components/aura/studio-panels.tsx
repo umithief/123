@@ -23,6 +23,7 @@ import {
 import {
   MODES,
   isLuxuryMode,
+  isSignatureSpectrum,
   THEMES,
   TITLE_PLACES,
   TITLE_STYLES,
@@ -126,7 +127,10 @@ export function VisualPanel({
   const [searching, setSearching] = useState(false);
   const matches = MODES.filter(
     (m) =>
-      (filter === "all" || m.kind === filter || (filter === "luxury" && isLuxuryMode(m.id))) &&
+      (filter === "all" ||
+        m.kind === filter ||
+        (filter === "luxury" && isLuxuryMode(m.id)) ||
+        (filter === "signature" && isSignatureSpectrum(m.id))) &&
       searchText(m.label).includes(searchText(query)),
   );
   const theme = themeById(themeId);
@@ -170,6 +174,7 @@ export function VisualPanel({
               >
                 {[
                   { id: "all", label: "Tümü" },
+                  { id: "signature", label: "Yeni" },
                   { id: "luxury", label: "Lüks" },
                   { id: "spectrum", label: "Spektrum" },
                   { id: "scene", label: "Sahne" },

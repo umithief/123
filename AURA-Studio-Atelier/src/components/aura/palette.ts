@@ -95,7 +95,32 @@ export const PREMIUM_SPECTRA = [
 ] as const;
 export const isPremiumSpectrum = (id: string) => PREMIUM_SPECTRA.some((mode) => mode === id);
 
+/** The Signature collection (signature-spectra.ts). */
+export const SIGNATURE_SPECTRA = [
+  "fan",
+  "brilliant",
+  "tourbillon",
+  "moons",
+  "marble",
+  "organ",
+  "flute",
+  "golden",
+  "kaleidoscope",
+  "harp",
+] as const;
+export const isSignatureSpectrum = (id: string) => SIGNATURE_SPECTRA.some((mode) => mode === id);
+
 export const MODES = [
+  { id: "fan", label: "İpek Yelpaze", kind: "spectrum" },
+  { id: "brilliant", label: "Pırlanta", kind: "spectrum" },
+  { id: "tourbillon", label: "Turbiyon", kind: "spectrum" },
+  { id: "moons", label: "Ay Evreleri", kind: "spectrum" },
+  { id: "marble", label: "Mermer", kind: "spectrum" },
+  { id: "organ", label: "Org Boruları", kind: "spectrum" },
+  { id: "flute", label: "Şampanya Kadehi", kind: "spectrum" },
+  { id: "golden", label: "Altın Oran", kind: "spectrum" },
+  { id: "kaleidoscope", label: "Kaleydoskop", kind: "spectrum" },
+  { id: "harp", label: "Arp", kind: "spectrum" },
   { id: "eclipse", label: "Tutulma", kind: "spectrum" },
   { id: "valley", label: "Frekans Vadisi", kind: "spectrum" },
   { id: "liquid-metal", label: "Sıvı Metal", kind: "spectrum" },
@@ -132,6 +157,7 @@ export const MODES = [
 
 export type ModeId = (typeof MODES)[number]["id"];
 export const LUXURY_MODES: readonly ModeId[] = [
+  ...SIGNATURE_SPECTRA,
   ...PREMIUM_SPECTRA,
   "vinyl",
   "jewels",

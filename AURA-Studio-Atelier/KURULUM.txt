@@ -1,4 +1,25 @@
-AURA Studio Atelier 1.19.0 — Android
+AURA Studio Atelier 1.20.0 — Android
+
+## 1.20.0 — İmza koleksiyonu: 10 yeni premium spektrum
+
+Sahne → Spektrum & sahneler → **Yeni** filtresinde (Lüks ve Tümü içinde de) 10 yeni görselleştirme vardır. Hepsi 96 frekans bandını, tepe değerlerini, dalga formunu, bas/orta/tiz seviyelerini, vuruş zarfını, vuruş sayısını ve algılanan tempoyu kullanır; önizleme, galeri küçük resmi ve MP4 aynı çizimi üretir. 8 renk paletinin hepsiyle ve 16:9, 9:16, 1:1, 4:5 oranlarında çalışır.
+
+1. **İpek Yelpaze** — kıvrımlı ipek yelpaze; her kıvrımın dantel kenarı kendi bandıyla yükselir (bas ortada, tiz kenarlarda), vuruşta yelpaze hafifçe açılır.
+2. **Pırlanta** — üstten görünen pırlanta kesimi; masa yüzeyi bas, yıldız/uçurtma yüzeyleri orta, kuşak yüzeyleri tiz ile parlar; tiz tepelerinde ışık parıltıları.
+3. **Turbiyon** — saat kadranı: 96 çentik spektrumu gösterir, guilloşe halkalar orta seslerle dalgalanır, saniye ibresi her vuruşta bir çentik ilerler, kafes algılanan tempoda döner.
+4. **Ay Evreleri** — yay üzerinde 7 ay (dikeyde 5); her ayın dolunaya yakınlığı kendi ses bölgesinin gücüdür.
+5. **Mermer** — yumuşak mermer damarları kendi bölgeleriyle salınır; altın damar basla kalınlaşır.
+6. **Org Boruları** — simetrik org cephesi; her boru kendi bandıyla uzar ve ağzından ışık yayar.
+7. **Şampanya Kadehi** — kabarcık sütunları bantlarına göre hızlanır; yüzey basla dalgalanır, vuruşta köpük sıçrar.
+8. **Altın Oran** — altın açılı 300 tohum; merkez bas, dış halka tiz; vuruşlar halka dalgaları yayar.
+9. **Kaleydoskop** — 12 aynalı kol canlı dalga formundan, yapraklar spektrumdan çizilir.
+10. **Arp** — uzun bas telleri sütunda, kısa tiz teller boyunda; her tel kendi bandıyla duran dalga olarak titreşir.
+
+Telefonda akıcılık için gölge, kare başına ek tuval veya piksel okuma kullanılmaz (Chromium'da 640×360 karede çizim süresi ~1–2 ms). Hareket azaltma tercihinde dönme/titreşim durur.
+
+### 1.20.0 doğrulaması
+
+TypeScript, lint, 58 AURA birim testi, web ve Android derlemeleri geçti. 10 spektrum sentetik müzik sinyaliyle (vuruş, melodi, hi-hat) 16:9 ve 9:16 oranlarında, 4 farklı paletle ve galeri küçük resmi olarak çizilip görsel olarak incelendi; çalışma hatası yok. Uygulamada Yeni filtresi, 10 kart, seçim ve oynatma doğrulandı. Fiziksel cihaz testi yapılmadı.
 
 ## 1.19.0 — telefonda araç alanı ve kaymayan galeriler
 
