@@ -1,0 +1,65 @@
+AURA Studio Atelier 1.16.1 — Android
+
+## 1.16.0 — sahne geçişleri ve zaman çizelgesi
+
+Zaman çizelgesini açıp iki ana klip arasındaki ok simgesine dokunun. Otomatik ayrılmış sahneler de aynı geçiş sistemini kullanır. Çapraz çözülme, siyah/beyaz geçiş, iki silme, iki itme, zoom, bulanık çözülme, dairesel açılma ve ışık çakması olmak üzere 11 efekt ve **Yok** seçeneği bulunur. Galeriler ve kategoriler yatay kaydırılır; arama ve sahne aralığı seçimi vardır. Süre 0,1–2 saniye arasında seçilir; iki komşu klibin hız uygulanmış sürelerinin yarısını aşmaz. **Geçişi önizle**, **Tüm aralıklara uygula** ve **Tüm geçişleri kaldır** kullanılabilir. Düzenlemeler geri alınabilir ve medya dahil proje yedeğiyle geri yüklenir.
+
+Her video klibinde üç küçük görüntü, dalga biçimi ve süre bilgisi gösterilir. Geçiş alanları taralı bantla işaretlenir; seçili klibin kenarlarından kırpma korunur. Yakınlaştırma, bölme, çoğaltma ve oynatma başlığına gitme kontrolleri bulunur. Telefonda araç çubuğu yatay kaydırılır ve çizelge varsayılan olarak kapalı kalır.
+
+Geçiş, sahne sınırından başlayarak önceki ana klibin son görüntüsünü yeni klibin hareketli görüntüsüne dönüştürür. Önceki klip geçiş boyunca sabit son kareyle temsil edilir; iki videonun eşzamanlı hareketli üst üste bindirilmesi değildir. Kaynak çözümleme ayrı video öğesinde yapılır. Ses ve toplam kurgu süresi değiştirilmez; sesler arasında çapraz solma eklenmez. Ek video katmanlarının önceki görüntüsü ayrı ayrı dondurulmaz. Geçiş sırasında klibin giriş hareketine göre sahne geçişi önceliklidir. Önizleme ve MP4 aynı çizim sistemini kullanır. Hareket azaltma tercihi önizlemede geçişi atlar; dışa aktarım efekti korur.
+
+
+
+### 1.16.0 doğrulaması
+
+TypeScript, web ve Android derlemeleri geçti. Geçiş sınırı/süre/kayıt ve bölme kuralları birim testlerinde kontrol edildi. 11 efektin başlangıç/bitiş kareleri, saydam olmayan çıktısı ve farklı ışık çakması doğrulandı. 390 ve 1280 pikselde geliştirme ve APK varlıkları üzerinden geçiş seçimi, süre, tüm aralıklara uygulama, kaldırma, geri al/yinele, arama, küçük görüntüler ve medya dahil yedek geri yükleme geçti. APK arayüzü 320 pikselde de taşmadan çalıştı. Üretim masaüstü/mobil kontrolleri geçti; 320×600 ve 390×844 dikey önizleme oranı 9:16, alt gezinme yüksekliği 45 piksel. MP4 H.264 720×1280, ses Opus; geçiş karelerinde iki gerçek sahnenin kademeli renk birleşimi doğrulandı. 6 saniyelik kurgu çıktısında mevcut gerçek zamanlı kayıt başlangıç/son payıyla 6,3 saniye kaydedildi; ses/video süre farkı 0 saniye. 61 APK varlığı derlemeyle byte düzeyinde eşit, ZIP CRC ve önceki sürümle aynı imza doğrulandı. Fiziksel Android telefon testi yapılmadı.
+
+## 1.15.1 — mobil yerleşim ve önizleme
+
+Alt gezinme düğmeleri 44 piksel dokunma alanıyla ekranın altına yerleşir; gereksiz üst/alt dolgu kaldırıldı. Android sistem/klavye kenar payı kök görünümde bir kez uygulanır; WebView ve alt menü aynı payı tekrar eklemez. Ayar paneli içeriğe göre boyutlanır, en fazla ekranın %34'ünü kullanır. Telefonda zaman çizelgesi başlangıçta kapalıdır; zaman çizelgesi başlığıyla açılır/kapanır. Dikey önizleme çevresindeki geniş koyu zemin kaldırıldı; tuvalin doğru en/boy oranı korunur. Masaüstündeki zaman çizelgesi davranışı korunur.
+
+## 1.15.1 — otomatik sahne ayırma
+
+Ana kaynak olarak video yükleyin. **Kurgu → Kes & sahnelere ayır → Otomatik sahne ayırma** panelini açın. Hassasiyet (düşük/dengeli/yüksek) ve en kısa sahne süresini (0,25–3 saniye) seçip **Sahneleri bul** düğmesine dokunun. Bulunan sınırlar yatay küçük önizlemelerle listelenir. Oynat simgesi ilgili noktayı önizler; işaretini kaldırdığınız kesimler uygulanmaz. **Kesimi uygula** seçilen tüm noktaları bir işlemde zaman çizelgesine ekler. Geri al/yinele kullanılabilir.
+
+Analiz cihazda yapılır; internet, AI veya bir sunucuya dosya gönderme gerektirmez. Ana videonun bölgesel renk/ışık değişimleri incelenir. Ani kesimler ve belirgin yumuşak geçişler bulunur; tek örnekli flaşlar elenir. Hızlı kamera hareketi, benzer görüntü veya karmaşık geçişler yanlış/eksik kesim yaratabilir. Sonuçları önizleyin ve gerekirse hassasiyeti değiştirin. Sistem kareye kesin hizalama garantisi vermez: kısa videolarda örnekleme aralığı yaklaşık 0,125 saniyedir; uzun videolarda 12.000 örnek sınırına göre artar.
+
+En fazla 60 dakikalık, tarayıcı/WebView tarafından çözülebilen ana video analiz edilir. Ek medya katmanları kendi içlerinde otomatik bölünmez. Zaman çizelgesinin 60 klip sınırı aşılacaksa hiçbir kesim uygulanmaz; daha az nokta seçin veya en kısa sahne süresini artırın. Kırpılmış alanların dışındaki ve mevcut klip sınırlarındaki noktalar eklenmez. Tekrarlanan/sırası değiştirilmiş kaynak bölümleri kendi zamanlarına doğru eşlenir. Süre, hız, ses, ilk giriş/son çıkış hareketleri ve altyazı zamanları korunur. Bölmeler medya dahil proje ZIP'inde saklanır ve MP4 çıktısına yansır. İptal, kaynak/ayar değişimi veya panelin kapatılması analiz kaynaklarını serbest bırakır.
+
+APK dosyasını Android cihazda açın. Android isterse dosyayı açtığınız uygulama
+ için "Bu kaynaktan yüklemeye izin ver" seçeneğini etkinleştirin.
+Önceki AURA Studio paketleriyle aynı imza kullanılır; kaldırmadan güncellenebilir.
+Android 8.0+ ve güncel Android System WebView (Chromium 120+) gerekir.
+
+YENİ ÇALIŞMA DÜZENİ
+Başlangıçta amacınızı seçin: Müzik videosu, Video düzenle veya Altyazı ekle.
+Bir dosya seçince ilgili düzenleyici açılır. Açık bir proje varsa bu seçimler
+mevcut proje üzerinde ilgili işlemi açar.
+
+Dört sabit alan:
+- Sahne: 32 spektrum/sahne, kapak/başlık, renk ve efektler.
+- Kurgu: fotoğraf/video, kesme/hız, 34 video animasyonu.
+- Ses: ekolayzır/ritim, ek sesler ve seslendirme.
+- Metin: yazı/şekiller ve altyazılar.
+
+Telefonda dört alan altta görünür; ilgili araçları seçerek ayrıntıya geçin.
+Tamam veya geri oku alanın araçlarına döner. Masaüstünde araçlar soldadır.
+Projeyi kaydet simgesi medya dahil ZIP oluşturur. Dışa aktar, MP4/WAV/PNG ve
+video boyutlarını açar. Proje dosyaları otomatik olarak oturumlar arasında
+saklanmaz; çalışmanızı kaydedin. Proje aç ile ZIP dosyasından devam edin.
+
+Başlangıç oku çalışmayı koruyarak ana ekrana döner; Devam et ile dönün.
+Açık proje kartındaki +, yeni proje başlatır. Mevcut çalışmayı kapatmadan
+önce bilgilendirme gösterilir. Yeni oturum önceki klip/katman/medyayı taşımaz.
+TR/EN düğmesi başlangıçta ve masaüstünde dil seçer; tercih cihazda hatırlanır.
+Ana arayüz ve düzenleme kontrolleri Türkçe/İngilizce sunulur; kullanıcı metni,
+şarkı sözleri, dosyalar ve kayıtlı proje değerleri çevrilmez.
+Bazı ayrıntılı teknik hata mesajları ve hazır stil adları Türkçe kalabilir.
+
+İmza ve dosya bütünlüğü kontrol edilmiştir. Kayıt gerçek zamanlıdır; uygulamayı
+önde tutun. Video üst sınırı 3 dakika. Otomatik altyazı ilk model indirmesinde
+internet kullanır. Tanıma doğruluğu vokalin anlaşılabilirliğine bağlıdır.
+
+Paket yerel kurulum için test anahtarıyla imzalanır; Play yayını değildir.
+Fiziksel Android cihazda kurulum/dosya sağlayıcısı/performans testi yapılmadı.
+Ayrıntılar: KURGU-NOTES.md ve ANDROID-NOTES.md. Bütünlük: SHA256.txt.

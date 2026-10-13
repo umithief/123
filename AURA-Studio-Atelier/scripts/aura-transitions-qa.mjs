@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { chromium } from 'playwright';
+import { useRuntimeAssetFetch } from './browser-runtime.mjs';
+import { unpackProject } from '../src/components/aura/project-archive.ts';
+const url=process.argv[2]||'http://127.0.0.1:8080/',tag=url.includes('8082')?'android':url.includes('8081')?'built':'dev';
+const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
+try{for(const width of (process.env.QA_WIDTHS||'390,1280').split(',').map(Number)){
+ const p=await browser.newPage({viewport:{width,height:844},hasTouch:width<700,acceptDownloads:true});await useRuntimeAssetFetch(p);p.setDefaultTimeout(30000);
+ const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.goto(url);await p.locator('.aura-studio[data-ready="true"]').waitFor();
+ await p.getByLabel('Kurgu yedek dosyası',{exact:true}).setInputFiles('/workspace/screenshots/scenes-android-390-redo.aura.zip');
+ await p.waitForFunction(()=>document.querySelector('.aura-studio')?.dataset.tool==='none'&&document.querySelectorAll('.timeline-clip').length===3);
+ if(await p.locator('.timeline-toggle').getAttribute('aria-expanded')==='false')await p.locator('.timeline-toggle').click();
+ await p.waitForFunction(()=>document.querySelectorAll('.clip-filmstrip img').length===9&&[...document.querySelectorAll('.clip-filmstrip img')].every(i=>i.complete&&i.naturalWidth));
+ assert.equal(await p.locator('.timeline-transition').count(),2);
+ await p.getByRole('button',{name:'Sahne geçişi 1 → 2',exact:true}).click();const d=p.getByRole('dialog');await d.waitFor();
+ await d.getByRole('button',{name:'Çapraz çözülme',exact:true}).click();await d.getByLabel('Sahne geçiş süresi',{exact:true}).selectOption('.8'.replace(/^\./,'0.'));
+ await d.getByRole('button',{name:'Tüm aralıklara uygula',exact:true}).click();
+ assert.equal(await p.locator('.timeline-transition.has-transition').count(),2);
+ await d.getByLabel('Geçiş ara',{exact:true}).fill('Dairesel');assert.equal(await d.locator('.transition-gallery button').count(),1);
+ await d.getByLabel('Geçiş ara',{exact:true}).fill('');
+ await d.getByRole('button',{name:'2 → 3',exact:true}).click();assert.equal(await d.getByLabel('Sahne geçiş süresi',{exact:true}).inputValue(),'0.8');
+ await d.getByRole('button',{name:'Tüm geçişleri kaldır',exact:true}).click();assert.equal(await p.locator('.has-transition').count(),0);
+ await d.getByRole('button',{name:'Tamam',exact:true}).click();await p.getByRole('button',{name:'Son düzenlemeyi geri al',exact:true}).click();assert.equal(await p.locator('.has-transition').count(),2);
+ await p.getByRole('button',{name:'Son düzenlemeyi geri al',exact:true}).click();assert.equal(await p.locator('.has-transition').count(),1);
+ await p.getByRole('button',{name:'Son düzenlemeyi yinele',exact:true}).click();assert.equal(await p.locator('.has-transition').count(),2);
+ const save=async suffix=>{const dl=p.waitForEvent('download');await p.getByRole('button',{name:'Projeyi kaydet',exact:true}).click();const path=`/workspace/screenshots/transitions-${tag}-${width}-${suffix}.aura.zip`;await(await dl).saveAs(path);const archive=await unpackProject(new Blob([readFileSync(path)]));return {path,data:JSON.parse(await archive.get('project.json').text())};};
+ const {path,data}=await save('all');assert.deepEqual(data.editor.clips.slice(1).map(c=>c.transition),[{id:'dissolve',duration:.8},{id:'dissolve',duration:.8}]);assert.equal(data.editor.clips.reduce((n,c)=>n+(c.out-c.in)/c.rate,0),6);
+ await p.getByLabel('Kurgu yedek dosyası',{exact:true}).setInputFiles(path);await p.waitForFunction(()=>document.querySelectorAll('.has-transition').length===2&&document.querySelector('.aura-studio')?.dataset.tool==='none');
+ if(await p.locator('.timeline-toggle').getAttribute('aria-expanded')==='false')await p.locator('.timeline-toggle').click();
+ await p.getByRole('button',{name:'Sahne geçişi 1 → 2',exact:true}).click();await d.getByRole('button',{name:'Geçişi önizle',exact:true}).waitFor();
+ await p.waitForFunction(()=>!document.querySelector('.transition-actions button')?.disabled);
+ assert.equal(await d.evaluate(n=>n.scrollWidth>n.clientWidth),false);
+ await p.screenshot({path:`/workspace/screenshots/transitions-${tag}-${width}-gallery.png`});
+ await d.getByRole('button',{name:'Geçişi önizle',exact:true}).click();await d.waitFor({state:'hidden'});await p.waitForTimeout(2000);
+ assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ await p.screenshot({path:`/workspace/screenshots/transitions-${tag}-${width}-timeline.png`});
+ if(process.env.QA_EXPORT==='1'&&width===390){await p.getByRole('button',{name:'Dışa aktar',exact:true}).click();const dl=p.waitForEvent('download',{timeout:60000});await p.getByRole('button',{name:'Videoyu hazırla',exact:true}).click();await(await dl).saveAs(`/workspace/screenshots/transitions-${tag}.mp4`);}
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({tag,width,filmstrips:true,boundaries:2,undoRedo:true,restore:true,duration:6,errors}));await p.close();
+}}finally{await browser.close();}
