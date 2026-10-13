@@ -46,7 +46,12 @@ async function saveAndroidBlob(bridge: AndroidDownloads, blob: Blob, name: strin
   }
 }
 
-type AndroidShell = AndroidDownloads & { keepAwake?: (on: boolean) => void };
+type AndroidShell = AndroidDownloads & {
+  keepAwake?: (on: boolean) => void;
+  takeIncoming?: () => string;
+  releaseIncoming?: (id: string) => void;
+  setLanguage?: (language: string) => void;
+};
 function androidShell() {
   return (window as Window & { AuraAndroid?: AndroidShell }).AuraAndroid;
 }
@@ -58,6 +63,39 @@ export function keepScreenAwake(on: boolean) {
   } catch {
     // Older APK shells keep the screen on for the whole session.
   }
+}
+
+/** Native dialogs (export choices, back confirmations) follow the studio language. */
+export function setShellLanguage(language: string) {
+  try {
+    androidShell()?.setLanguage?.(language);
+  } catch {
+    // Older shells only speak Turkish.
+  }
+}
+
+/** Files another Android app shared with or opened in AURA Studio. */
+export async function takeIncomingFiles(): Promise<File[]> {
+  const shell = androidShell();
+  if (!shell?.takeIncoming) return [];
+  let list: Array<{ id: string; name: string; type: string }>;
+  try {
+    list = JSON.parse(shell.takeIncoming());
+  } catch {
+    return [];
+  }
+  const files: File[] = [];
+  for (const item of list) {
+    try {
+      const response = await fetch(`/__incoming/${encodeURIComponent(item.id)}`);
+      if (!response.ok) throw new Error("Paylaşılan dosya okunamadı.");
+      const blob = await response.blob();
+      files.push(new File([blob], item.name, { type: item.type || blob.type }));
+    } finally {
+      shell.releaseIncoming?.(item.id);
+    }
+  }
+  return files;
 }
 
 export function downloadBlob(blob: Blob, name: string) {

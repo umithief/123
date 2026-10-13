@@ -1,4 +1,18 @@
-AURA Studio Atelier 1.17.0 — Android
+AURA Studio Atelier 1.18.0 — Android
+
+## 1.18.0 — Android kullanım kolaylığı
+
+**Paylaş → AURA Studio / Birlikte aç.** Galeri, dosya yöneticisi veya mesajlaşma uygulamasında bir videoyu, müziği ya da AURA proje ZIP'ini paylaş menüsünden **AURA Studio ile düzenle** seçeneğine gönderin. Uygulama açıksa aynı pencere kullanılır. Video, Kurgu → Kes & sahnelere ayır aracıyla; müzik, sahne galerisiyle açılır; ZIP proje olarak geri yüklenir. Açık bir proje varken dosya gelirse önce sorulur ve yeni dosya temiz bir projede açılır. Dosya kopyalanmaz, doğrudan paylaşan uygulamadan okunur.
+
+**Dışa aktarma sonrası seçim.** Hazırlanan dosya için **Galeriye kaydet** (videolar Filmler/AURA Studio, kapaklar Resimler/AURA Studio, WAV Müzik/AURA Studio; Android 10+ ve depolama izni gerektirmez), **Paylaş…** (Instagram, TikTok, WhatsApp vb.) veya **Klasöre kaydet…** seçilir. Paylaşılan dosya bir gün boyunca okunabilir kalır, sonra temizlenir.
+
+**Dil.** Android pencereleri (dışa aktarma seçimi, geri tuşu onayı, kayıt mesajları) uygulamada seçilen TR/EN dilini kullanır.
+
+**Hata mesajı.** Açılamayan videolarda artık "ses dosyası" yerine videoya özel açıklama gösterilir (MP4 H.264 veya WebM önerilir; bazı HEVC/H.265 kayıtları desteklenmeyebilir).
+
+### 1.18.0 doğrulaması
+
+TypeScript, web ve Android derlemeleri geçti; Java kaynakları API 34 ile derlendi. APK web varlıklarıyla Playwright/Chromium'da taklit edilen Android köprüsü üzerinden: açılışta paylaşılan videonun Kurgu aracıyla açılması, açık proje varken onay penceresi (Vazgeç/Aç), yeni dosyanın geri alma geçmişi taşımayan temiz projede açılması, dil bilgisinin Android'e iletilmesi ve desteklenmeyen video mesajı doğrulandı; 1.17.0 otomatik kayıt testleri yeniden geçti. Manifestte paylaşım/açma filtreleri, singleTask ve dosya sağlayıcı kontrol edildi; 61 APK varlığı derlemeyle aynı, imza doğrulandı. Android'e özgü kısımlar (paylaşım menüsü, Galeriye kaydet, Paylaş penceresi) fiziksel cihazda veya emülatörde test edilmedi.
 
 ## 1.17.0 — otomatik kayıt, geri tuşu ve kararlılık
 

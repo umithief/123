@@ -299,7 +299,9 @@ export class AudioEngine {
         this.events.onError(
           audio.error?.code === MediaError.MEDIA_ERR_NETWORK
             ? "Dosyaya erişilemedi. Parçayı cihazınıza indirip yeniden seçin."
-            : "Bu ses dosyası açılamadı. MP3, M4A veya WAV biçiminde başka bir parça deneyin.",
+            : /^video\//.test(file.type) || /\.(mp4|m4v|mov|webm|mkv|3gp)$/i.test(file.name)
+              ? "Bu video açılamadı. MP4 (H.264) veya WebM biçiminde bir video deneyin; bazı telefonların HEVC/H.265 kayıtları desteklenmeyebilir."
+              : "Bu ses dosyası açılamadı. MP3, M4A veya WAV biçiminde başka bir parça deneyin.",
         );
       }
     } finally {

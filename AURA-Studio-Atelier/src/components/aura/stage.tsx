@@ -53,7 +53,15 @@ import {
   type Resolution,
   type StudioSnapshot,
 } from "./studio";
-import { readSetting, writeSetting, downloadBlob, keepScreenAwake } from "./storage";
+import * as Dialog from "@radix-ui/react-dialog";
+import {
+  readSetting,
+  writeSetting,
+  downloadBlob,
+  keepScreenAwake,
+  setShellLanguage,
+  takeIncomingFiles,
+} from "./storage";
 import { AudioEngine, type SourceKind } from "./engine";
 import {
   MODES,
@@ -120,6 +128,10 @@ const STUDIO_TABS = [
   { id: "project", label: "Proje", icon: FolderOpen },
 ] as const;
 type StudioTab = (typeof STUDIO_TABS)[number]["id"];
+// A file shared into AURA while a project is open starts a fresh editor
+// session; it is handed over to the new session here.
+let carriedFile: File | null = null;
+
 export function AuraStage() {
   const [session, setSession] = useState(0);
   return <StudioEditor key={session} onNewProject={() => setSession((value) => value + 1)} />;
@@ -1285,6 +1297,65 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     keepScreenAwake(keepAwake);
   }, [keepAwake]);
   useEffect(() => () => keepScreenAwake(false), []);
+  useEffect(() => setShellLanguage(language), [language]);
+
+  // Android "Share" / "Open with": media starts a project, a project ZIP opens.
+  const [incomingFile, setIncomingFile] = useState<File | null>(null);
+  const isProjectFile = (file: File) => /\.zip$/i.test(file.name) || file.type.includes("zip");
+  function openIncoming(file: File, confirmed = false) {
+    if (recStatusRef.current !== "idle" || archiveBusy) {
+      setError(
+        en
+          ? "Wait for the current export to finish, then share the file again."
+          : "Dışa aktarma bitince dosyayı yeniden paylaş.",
+      );
+      return;
+    }
+    if (source !== "idle" && !confirmed) {
+      setIncomingFile(file);
+      return;
+    }
+    if (isProjectFile(file)) {
+      void openEditingProject(file);
+      return;
+    }
+    if (source !== "idle") {
+      autosaveNowRef.current();
+      carriedFile = file;
+      void startNewProject();
+      return;
+    }
+    pendingIntent.current =
+      file.type.startsWith("video/") || /\.(mp4|m4v|mov|webm|mkv|3gp)$/i.test(file.name)
+        ? "video"
+        : "music";
+    void loadPrimary(file);
+  }
+  const incomingRef = useRef(openIncoming);
+  incomingRef.current = openIncoming;
+  useEffect(() => {
+    if (!ready) return;
+    const pull = () =>
+      void takeIncomingFiles()
+        .then((files) => {
+          if (files[0]) incomingRef.current(files[0]);
+        })
+        .catch(() =>
+          setError(
+            en
+              ? "The shared file could not be read. Save it to the phone and open it here."
+              : "Paylaşılan dosya okunamadı. Dosyayı telefona kaydedip buradan seç.",
+          ),
+        );
+    if (carriedFile) {
+      const file = carriedFile;
+      carriedFile = null;
+      incomingRef.current(file, true);
+    }
+    pull();
+    window.addEventListener("aura-incoming", pull);
+    return () => window.removeEventListener("aura-incoming", pull);
+  }, [ready, en]);
   function changeFormat(next: VideoFormat) {
     if (recStatusRef.current !== "idle") return;
     setFormat(next);
@@ -1314,6 +1385,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     captions.changeOptions(next.captions);
     changeFormat(next.format);
     changeResolution(next.resolution);
+  }
+  async function startNewProject() {
+    if (archiveBusy) return;
+    // The closing project stays recoverable from the home screen.
+    autosaveNowRef.current();
+    setArchiveBusy(true);
+    removeCover();
+    await coverWriteRef.current.catch(() => {});
+    resetStudio();
+    onNewProject();
   }
   function resetStudio() {
     applySnapshot(parseSnapshot(JSON.stringify({ version: 1, mode: "ring", theme: "kor" })));
@@ -1745,16 +1826,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           language={language}
           busy={loading || archiveBusy}
           current={source !== "idle" ? fileName || (en ? "Sound study" : "Ses çalışması") : null}
-          onNewProject={async () => {
-            if (archiveBusy) return;
-            // The closing project stays recoverable from the home screen.
-            autosaveNowRef.current();
-            setArchiveBusy(true);
-            removeCover();
-            await coverWriteRef.current.catch(() => {});
-            resetStudio();
-            onNewProject();
-          }}
+          onNewProject={() => void startNewProject()}
           onResume={() => setHomeView(false)}
           recovery={source === "idle" ? autosaved : null}
           onRecover={() => void restoreAutosavedProject()}
@@ -2496,6 +2568,42 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           if (file) void uploadCover(file);
         }}
       />
+      <Dialog.Root open={!!incomingFile} onOpenChange={(open) => !open && setIncomingFile(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="atelier-dialog-overlay" />
+          <Dialog.Content className="atelier-dialog">
+            <Dialog.Title>
+              {en ? "Open the shared file?" : "Paylaşılan dosya açılsın mı?"}
+            </Dialog.Title>
+            <Dialog.Description>
+              {incomingFile &&
+                (isProjectFile(incomingFile)
+                  ? en
+                    ? `${incomingFile.name} replaces the open project. Save a project file first if you want to keep it.`
+                    : `${incomingFile.name} açık projenin yerine açılacak. Korumak istiyorsan önce proje dosyası olarak kaydet.`
+                  : en
+                    ? `A new project starts with ${incomingFile.name}. Save a project file first if you want to keep the open one.`
+                    : `${incomingFile.name} ile yeni proje başlayacak. Açık projeyi korumak istiyorsan önce proje dosyası olarak kaydet.`)}
+            </Dialog.Description>
+            <div>
+              <button type="button" onClick={() => setIncomingFile(null)}>
+                {en ? "Cancel" : "Vazgeç"}
+              </button>
+              <button
+                type="button"
+                className="studio-primary"
+                onClick={() => {
+                  const file = incomingFile;
+                  setIncomingFile(null);
+                  if (file) openIncoming(file, true);
+                }}
+              >
+                {en ? "Open" : "Aç"}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
       <input
         ref={fileRef}
         aria-label={ui("Müzik dosyası")}

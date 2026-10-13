@@ -4,6 +4,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -11,8 +14,11 @@ import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.view.View;
 import android.view.WindowInsets;
@@ -23,7 +29,9 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONTokener;
 
 /**
@@ -43,6 +51,15 @@ public final class MainActivity extends Activity {
     private final ExecutorService files = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private int backRequest;
+    /** Files other apps shared with or opened in AURA, served once to the page. */
+    private final Map<String, Incoming> incoming = new LinkedHashMap<>();
+    private volatile String language = "tr";
+
+    private static final class Incoming {
+        final Uri uri; final String name, mime;
+        boolean taken;
+        Incoming(Uri uri, String name, String mime) { this.uri = uri; this.name = name; this.mime = mime; }
+    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -68,6 +85,7 @@ public final class MainActivity extends Activity {
         File exportCache = new File(getCacheDir(), "exports");
         File[] orphaned = exportCache.listFiles();
         if (orphaned != null) for (File file : orphaned) file.delete();
+        cleanShared();
         web.setBackgroundColor(Color.rgb(245, 244, 239));
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -183,6 +201,70 @@ public final class MainActivity extends Activity {
             return;
         }
         web.loadUrl("https://" + HOST + "/android/index.html");
+        // A recreated activity must not import the same shared file again.
+        if (state == null) receive(getIntent());
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        receive(intent);
+    }
+    private boolean en() { return "en".equals(language); }
+
+    /** Share/Open with: the page fetches the file from /__incoming/<id>, nothing is copied. */
+    private void receive(Intent intent) {
+        if (intent == null || web == null) return;
+        Uri uri = null;
+        if (Intent.ACTION_SEND.equals(intent.getAction())) {
+            Object stream = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (stream instanceof Uri) uri = (Uri) stream;
+            else if (intent.getClipData() != null && intent.getClipData().getItemCount() > 0) uri = intent.getClipData().getItemAt(0).getUri();
+        } else if (Intent.ACTION_VIEW.equals(intent.getAction())) uri = intent.getData();
+        setIntent(new Intent(Intent.ACTION_MAIN));
+        if (uri == null || !"content".equals(uri.getScheme())) return;
+        String name = null;
+        try (android.database.Cursor cursor = getContentResolver().query(uri, new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) name = cursor.getString(0);
+        } catch (Exception ignored) {}
+        String mime = null;
+        try { mime = getContentResolver().getType(uri); } catch (Exception ignored) {}
+        if (mime == null) mime = intent.getType();
+        if (mime == null || !mime.matches("[a-zA-Z0-9.+-]+/[a-zA-Z0-9.+-]+")) mime = "application/octet-stream";
+        if (name == null || name.trim().isEmpty()) name = uri.getLastPathSegment();
+        if (name == null || name.trim().isEmpty()) name = "aura-dosya";
+        name = name.replaceAll("[\\\\/\\x00-\\x1f]", "_");
+        if (name.length() > 100) name = name.substring(name.length() - 100);
+        synchronized (incoming) {
+            // Only the latest shared file is kept; older unread ones are dropped.
+            incoming.clear();
+            incoming.put(UUID.randomUUID().toString(), new Incoming(uri, name, mime));
+        }
+        web.evaluateJavascript("window.dispatchEvent(new Event('aura-incoming'))", null);
+    }
+    private WebResourceResponse incomingResponse(String id) {
+        Incoming item;
+        synchronized (incoming) { item = incoming.get(id); }
+        if (item == null) return missing();
+        try {
+            InputStream input = getContentResolver().openInputStream(item.uri);
+            if (input == null) return missing();
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Cache-Control", "no-store");
+            headers.put("X-Content-Type-Options", "nosniff");
+            return new WebResourceResponse(item.mime, null, 200, "OK", headers, input);
+        } catch (Exception error) { return missing(); }
+    }
+    private void cleanShared() {
+        // Shared exports stay readable for the receiving app for a day.
+        File[] old = ExportProvider.sharedDir(getCacheDir()).listFiles();
+        if (old == null) return;
+        long limit = System.currentTimeMillis() - 24L * 60 * 60 * 1000;
+        for (File dir : old) {
+            if (dir.lastModified() > limit) continue;
+            File[] inner = dir.listFiles();
+            if (inner != null) for (File file : inner) file.delete();
+            dir.delete();
+        }
     }
 
     private static boolean local(Uri uri) { return "https".equals(uri.getScheme()) && HOST.equals(uri.getHost()); }
@@ -191,6 +273,7 @@ public final class MainActivity extends Activity {
         String path = uri.getPath();
         if (path == null || path.contains("..") || path.contains("\\")) return missing();
         if (path.equals("/")) path = "/android/index.html";
+        if (path.startsWith("/__incoming/")) return incomingResponse(path.substring("/__incoming/".length()));
         String extension = path.substring(path.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
         String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         if (extension.equals("js") || extension.equals("mjs")) mime = "text/javascript";
@@ -372,19 +455,132 @@ public final class MainActivity extends Activity {
         @JavascriptInterface public synchronized void abortDownload(String id) {
             Export item = pending.remove(id); if (item != null) item.delete();
         }
+        @JavascriptInterface public String takeIncoming() {
+            JSONArray list = new JSONArray();
+            synchronized (incoming) {
+                for (Map.Entry<String, Incoming> entry : incoming.entrySet()) {
+                    if (entry.getValue().taken) continue;
+                    entry.getValue().taken = true;
+                    try { list.put(new JSONObject().put("id", entry.getKey()).put("name", entry.getValue().name).put("type", entry.getValue().mime)); }
+                    catch (JSONException ignored) {}
+                }
+            }
+            return list.toString();
+        }
+        @JavascriptInterface public void releaseIncoming(String id) {
+            synchronized (incoming) { incoming.remove(id); }
+        }
+        @JavascriptInterface public void setLanguage(String value) { language = "en".equals(value) ? "en" : "tr"; }
         @JavascriptInterface public void keepAwake(final boolean on) {
             runOnUiThread(new Runnable() {
                 @Override public void run() { if (root != null) root.setKeepScreenOn(on); }
             });
         }
+        /** Each finished export asks where it goes: gallery, another app, or a chosen folder. */
         private synchronized void next() {
             if (active != null || queue.isEmpty() || isFinishing()) return;
-            active = queue.remove();
+            final Export item = active = queue.remove();
+            final boolean en = en();
+            final String collection = galleryFolder(item.mime);
+            final List<String> labels = new ArrayList<>();
+            final List<Runnable> actions = new ArrayList<>();
+            if (collection != null) {
+                boolean music = item.mime.startsWith("audio/");
+                labels.add(en ? (music ? "Save to Music" : "Save to gallery") : (music ? "Müzik klasörüne kaydet" : "Galeriye kaydet"));
+                actions.add(new Runnable() { @Override public void run() { saveToGallery(item, collection); } });
+            }
+            labels.add(en ? "Share…" : "Paylaş…");
+            actions.add(new Runnable() { @Override public void run() { share(item); } });
+            labels.add(en ? "Save to a folder…" : "Klasöre kaydet…");
+            actions.add(new Runnable() { @Override public void run() { chooseFolder(item); } });
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle(item.name)
+                .setItems(labels.toArray(new String[0]), new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface dialog, int which) { actions.get(which).run(); }
+                })
+                .setNegativeButton(en ? "Cancel" : "Vazgeç", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface dialog, int which) { dialog.cancel(); }
+                })
+                .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override public void onCancel(DialogInterface dialog) { finishActive(item); }
+                })
+                .show();
+        }
+        private synchronized void finishActive(Export item) {
+            if (active == item) { item.delete(); active = null; }
+            next();
+        }
+        private synchronized void chooseFolder(Export item) {
             Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-            save.addCategory(Intent.CATEGORY_OPENABLE); save.setType(active.mime);
-            save.putExtra(Intent.EXTRA_TITLE, active.name);
+            save.addCategory(Intent.CATEGORY_OPENABLE); save.setType(item.mime);
+            save.putExtra(Intent.EXTRA_TITLE, item.name);
             try { startActivityForResult(save, SAVE_FILE); }
-            catch (ActivityNotFoundException error) { active.delete(); active = null; exportError("Kaydetme penceresi bulunamadı."); next(); }
+            catch (ActivityNotFoundException error) { finishActive(item); exportError(en() ? "No save window is available." : "Kaydetme penceresi bulunamadı."); }
+        }
+        /** MediaStore folders need no storage permission on Android 10+. */
+        private String galleryFolder(String mime) {
+            if (Build.VERSION.SDK_INT < 29) return null;
+            if (mime.startsWith("video/")) return Environment.DIRECTORY_MOVIES + "/AURA Studio";
+            if (mime.startsWith("image/")) return Environment.DIRECTORY_PICTURES + "/AURA Studio";
+            if (mime.startsWith("audio/")) return Environment.DIRECTORY_MUSIC + "/AURA Studio";
+            return null;
+        }
+        private synchronized void saveToGallery(final Export item, final String folder) {
+            active = null;
+            final boolean en = en();
+            files.execute(new Runnable() {
+                @Override public void run() {
+                    Uri target = null;
+                    try {
+                        Uri collection = item.mime.startsWith("video/") ? MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                            : item.mime.startsWith("image/") ? MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                            : MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.MediaColumns.DISPLAY_NAME, item.name);
+                        values.put(MediaStore.MediaColumns.MIME_TYPE, item.mime);
+                        values.put(MediaStore.MediaColumns.RELATIVE_PATH, folder);
+                        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                        target = getContentResolver().insert(collection, values);
+                        if (target == null) throw new IOException("No gallery entry");
+                        try (InputStream input = new FileInputStream(item.file); OutputStream output = getContentResolver().openOutputStream(target, "w")) {
+                            if (output == null) throw new IOException("No output");
+                            byte[] buffer = new byte[64 * 1024]; int read;
+                            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+                        }
+                        values.clear();
+                        values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                        getContentResolver().update(target, values, null, null);
+                        show(en ? item.name + " saved to " + folder + "." : item.name + " kaydedildi: " + folder.replace("Movies", "Filmler").replace("Pictures", "Resimler").replace("Music", "Müzik"));
+                    } catch (Exception error) {
+                        if (target != null) try { getContentResolver().delete(target, null, null); } catch (Exception ignored) {}
+                        exportError(en ? "Could not save to the gallery. Try Save to a folder." : "Galeriye kaydedilemedi. Klasöre kaydet seçeneğini deneyin.");
+                    } finally { item.delete(); }
+                }
+            });
+            next();
+        }
+        private synchronized void share(Export item) {
+            active = null;
+            boolean en = en();
+            try {
+                File dir = new File(ExportProvider.sharedDir(getCacheDir()), item.id);
+                if (!dir.mkdirs() && !dir.isDirectory()) throw new IOException("No share folder");
+                String name = item.name.replace('/', '_');
+                File shared = new File(dir, name);
+                item.close();
+                if (!item.file.renameTo(shared)) throw new IOException("Move failed");
+                Uri uri = ExportProvider.uriFor(item.id, name);
+                Intent send = new Intent(Intent.ACTION_SEND);
+                send.setType(item.mime);
+                send.putExtra(Intent.EXTRA_STREAM, uri);
+                send.setClipData(ClipData.newRawUri(name, uri));
+                send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(Intent.createChooser(send, en ? "Share " + name : name + " paylaş"));
+            } catch (Exception error) {
+                item.delete();
+                exportError(en ? "Could not open sharing. Try Save to a folder." : "Paylaşım açılamadı. Klasöre kaydet seçeneğini deneyin.");
+            }
+            next();
         }
         private synchronized void saved(final Uri uri) {
             final Export item = active; active = null;
