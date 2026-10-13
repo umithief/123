@@ -648,6 +648,27 @@ Sol|Left
 Sağ|Right
 Stüdyo|Studio
 Sinema|Cinema
+Türler|Genres
+Pop Yıldızı|Pop Star
+Rap Sahnesi|Rap Stage
+Rock Gücü|Rock Power
+Arabesk Gecesi|Arabesque Night
+Lo-fi Oda|Lo-fi Room
+EDM Neon|EDM Neon
+R&B Kadife|R&B Velvet
+Caz Kulübü|Jazz Club
+Klasik Salon|Concert Hall
+Türkü Sözü|Folk Lyric
+Pop · söylenen kelime öne çıkar|Pop · the sung word steps forward
+Rap · Anton ve vuruşla atan kelime|Rap · Anton with words that hit the beat
+Rock · Oswald ve sert titreşim|Rock · Oswald with a hard shake
+Arabesk & fantezi · sıcak ışıltı|Arabesque · a warm glow
+Lo-fi · sakin, netleşen kelimeler|Lo-fi · calm words coming into focus
+Elektronik · neon tüp gibi yanar|Electronic · lights up like neon
+R&B & soul · akan mor tonlar|R&B & soul · flowing violet tones
+Caz · perdeden yükselen satırlar|Jazz · lines rising from the curtain
+Klasik & orkestra · zarif harf aralığı|Classical · graceful letter spacing
+Türkü & halk · el yazısı ve kalem|Folk · handwriting and highlighter
 Merkez|Center
 Arka plan|Background
 Çember|Circle

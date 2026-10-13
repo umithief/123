@@ -108,8 +108,8 @@ test("appearance imports sanitize fonts, colors and drawing bounds", () => {
   assert.equal(options.background, "auto");
 });
 test("all templates round-trip, reset previous appearance and preserve timing", () => {
-  assert.equal(CAPTION_TEMPLATES.length, 26);
-  assert.equal(new Set(CAPTION_TEMPLATES.map((p) => p.id)).size, 26);
+  assert.equal(CAPTION_TEMPLATES.length, 36);
+  assert.equal(new Set(CAPTION_TEMPLATES.map((p) => p.id)).size, 36);
   let current = { ...DEFAULT_CAPTIONS, offset: 1.5, enabled: false, place: "top" };
   for (const preset of CAPTION_TEMPLATES) {
     current = { ...current, ...preset.options };

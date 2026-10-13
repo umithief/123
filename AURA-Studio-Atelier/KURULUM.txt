@@ -1,4 +1,14 @@
-AURA Studio Atelier 1.21.0 — Android
+AURA Studio Atelier 1.22.0 — Android
+
+## 1.22.0 — müzik türlerine özel 10 altyazı şablonu
+
+Metin → Altyazılar → Görünüm → Şablonlar → **Türler** kategorisinde 10 yeni şablon vardır. Her biri yazı tipi, renk, kontur, arka plan, ışıma ve animasyonu türün söyleyiş biçimine göre birleştirir; tek dokunuşla uygulanır, zamanlama ve konum korunur, "Görünümü geri al" ile önceki görünüme dönülür.
+
+**Pop Yıldızı** (Montserrat, pembe, odak büyüt) · **Rap Sahnesi** (Anton büyük harf, sarı, kalp atışı) · **Rock Gücü** (Oswald büyük harf, kırmızı, titreşim) · **Arabesk Gecesi** (Playfair italik, sıcak ışıltı) · **Lo-fi Oda** (Monospace, mor kutu, kelime netleş) · **EDM Neon** (Space Grotesk, camgöbeği neon) · **R&B Kadife** (Playfair italik, mor renk akışı) · **Caz Kulübü** (Cormorant italik, altın, maske yükselişi) · **Klasik Salon** (Cormorant, fildişi, harf aralığı) · **Türkü Sözü** (Caveat el yazısı, turuncu fosforlu kalem).
+
+### 1.22.0 doğrulaması
+
+TypeScript, 58 AURA birim testi (36 şablonun kayıt/geri yükleme ve benzersiz eşleşmesi dahil), web ve Android derlemeleri geçti. Şablonlar gerçek yazı tipleriyle çizilip incelendi; uygulamada Türler kategorisi, 10 şablon ve uygulanmaları doğrulandı. Fiziksel cihaz testi yapılmadı.
 
 ## 1.21.0 — 10 yeni altyazı animasyonu
 

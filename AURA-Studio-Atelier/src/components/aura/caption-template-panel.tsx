@@ -101,7 +101,7 @@ export function CaptionTemplateGallery({
           aria-label={ui("Şablon kategorisi")}
           value={category}
         >
-          {["Tümü", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
+          {["Tümü", "Türler", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
             <button
               type="button"
               key={name}

@@ -3,7 +3,7 @@ import { DEFAULT_CAPTIONS, type CaptionOptions } from "./captions.ts";
 export type CaptionTemplate = {
   id: string;
   name: string;
-  category: "Sosyal" | "Müzik" | "Sinema" | "Sade";
+  category: "Türler" | "Sosyal" | "Müzik" | "Sinema" | "Sade";
   description: string;
   options: Partial<CaptionOptions>;
 };
@@ -19,6 +19,119 @@ function template(
 }
 
 export const CAPTION_TEMPLATES: CaptionTemplate[] = [
+  // Genre collection: type, colour and motion matched to how each style is sung.
+  template("genre-pop", "Pop Yıldızı", "Türler", "Pop · söylenen kelime öne çıkar", {
+    font: "montserrat",
+    weight: 700,
+    animation: "spot-zoom",
+    textColor: "#ffffff",
+    highlightColor: "#ff6fb1",
+    outline: 4,
+    size: 34,
+  }),
+  template("genre-rap", "Rap Sahnesi", "Türler", "Rap · Anton ve vuruşla atan kelime", {
+    font: "anton",
+    weight: 600,
+    animation: "heartbeat",
+    uppercase: true,
+    textColor: "#ffffff",
+    highlightColor: "#ffe14d",
+    outline: 6,
+    size: 38,
+    speed: 1.2,
+  }),
+  template("genre-rock", "Rock Gücü", "Türler", "Rock · Oswald ve sert titreşim", {
+    font: "oswald",
+    weight: 700,
+    animation: "shake",
+    uppercase: true,
+    textColor: "#f5f1ea",
+    highlightColor: "#ff3b30",
+    outline: 5,
+    size: 36,
+    intensity: 0.9,
+  }),
+  template("genre-arabesk", "Arabesk Gecesi", "Türler", "Arabesk & fantezi · sıcak ışıltı", {
+    font: "playfair",
+    weight: 600,
+    italic: true,
+    animation: "glow-in",
+    style: "minimal",
+    textColor: "#f6e7c8",
+    highlightColor: "#ff9f5a",
+    outline: 1,
+    glow: 0.5,
+    size: 32,
+  }),
+  template("genre-lofi", "Lo-fi Oda", "Türler", "Lo-fi · sakin, netleşen kelimeler", {
+    font: "mono",
+    weight: 500,
+    animation: "word-blur",
+    style: "minimal",
+    textColor: "#e9e3f5",
+    highlightColor: "#b9a3ff",
+    background: "box",
+    backgroundColor: "#1f1b2b",
+    outline: 0,
+    size: 26,
+    intensity: 0.5,
+  }),
+  template("genre-edm", "EDM Neon", "Türler", "Elektronik · neon tüp gibi yanar", {
+    font: "space",
+    weight: 700,
+    animation: "neon",
+    uppercase: true,
+    textColor: "#eaffff",
+    highlightColor: "#2ff3ff",
+    outline: 2,
+    outlineColor: "#04161c",
+    size: 34,
+  }),
+  template("genre-rnb", "R&B Kadife", "Türler", "R&B & soul · akan mor tonlar", {
+    font: "playfair",
+    weight: 500,
+    italic: true,
+    animation: "gradient",
+    style: "minimal",
+    textColor: "#fff1f5",
+    highlightColor: "#c77dff",
+    outline: 1,
+    shadow: true,
+    size: 32,
+  }),
+  template("genre-jazz", "Caz Kulübü", "Türler", "Caz · perdeden yükselen satırlar", {
+    font: "serif",
+    weight: 600,
+    italic: true,
+    animation: "mask-rise",
+    style: "minimal",
+    textColor: "#f3dfb5",
+    highlightColor: "#e7b55c",
+    outline: 0,
+    shadow: true,
+    size: 34,
+  }),
+  template("genre-classical", "Klasik Salon", "Türler", "Klasik & orkestra · zarif harf aralığı", {
+    font: "serif",
+    weight: 500,
+    animation: "tracking",
+    style: "minimal",
+    textColor: "#f8f3e7",
+    highlightColor: "#d9c38a",
+    outline: 0,
+    shadow: true,
+    size: 30,
+    intensity: 0.6,
+  }),
+  template("genre-turku", "Türkü Sözü", "Türler", "Türkü & halk · el yazısı ve kalem", {
+    font: "caveat",
+    weight: 700,
+    animation: "marker",
+    textColor: "#fff6e6",
+    highlightColor: "#f2a541",
+    outline: 2,
+    size: 40,
+  }),
   template("studio-bold", "Studio Bold", "Sosyal", "Montserrat · elastik başlık", {
     font: "montserrat",
     weight: 700,
