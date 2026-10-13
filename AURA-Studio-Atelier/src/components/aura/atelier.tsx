@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Film,
   FolderOpen,
+  History,
   Image,
   Layers,
   Mic,
@@ -308,6 +309,9 @@ export function AtelierHome({
   current,
   onResume,
   onNewProject,
+  recovery,
+  onRecover,
+  onDiscardRecovery,
   onStart,
   onOpen,
   onDemo,
@@ -319,6 +323,9 @@ export function AtelierHome({
   current: string | null;
   onResume: () => void;
   onNewProject: () => void;
+  recovery: { name: string; savedAt: number } | null;
+  onRecover: () => void;
+  onDiscardRecovery: () => void;
   onStart: (intent: ProjectIntent) => void;
   onOpen: () => void;
   onDemo: () => void;
@@ -327,6 +334,7 @@ export function AtelierHome({
 }) {
   const en = language === "en";
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const tasks = [
     {
       id: "music",
@@ -400,8 +408,8 @@ export function AtelierHome({
             <strong>{current}</strong>
             <span>
               {en
-                ? "Save a project file to keep your work after closing."
-                : "Kapatmadan önce çalışmanı proje dosyası olarak kaydet."}
+                ? "Edits are kept on this device. Save a project file to share or back up."
+                : "Düzenlemeler bu cihazda saklanır. Paylaşmak veya yedeklemek için proje dosyası kaydet."}
             </span>
           </div>
           <Dialog.Root open={newProjectOpen} onOpenChange={setNewProjectOpen}>
@@ -448,6 +456,67 @@ export function AtelierHome({
           </Dialog.Root>
           <button type="button" disabled={busy} onClick={onResume}>
             {en ? "Continue" : "Devam et"}
+            <ArrowRight size={18} />
+          </button>
+        </section>
+      )}
+      {!current && recovery && (
+        <section className="home-current home-recovery">
+          <span className="current-symbol">
+            <History size={23} />
+          </span>
+          <div>
+            <small>{en ? "LAST SESSION" : "SON OTURUM"}</small>
+            <strong>{recovery.name || (en ? "Untitled project" : "Adsız proje")}</strong>
+            <span>
+              {en ? "Kept on this device" : "Bu cihazda saklandı"}
+              {recovery.savedAt > 0 &&
+                ` · ${new Intl.DateTimeFormat(en ? "en-GB" : "tr-TR", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(recovery.savedAt)}`}
+            </span>
+          </div>
+          <Dialog.Root open={discardOpen} onOpenChange={setDiscardOpen}>
+            <Dialog.Trigger asChild>
+              <button
+                type="button"
+                disabled={busy}
+                className="new-project-button"
+                aria-label={en ? "Discard last session" : "Son oturumu sil"}
+              >
+                <X size={18} />
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="atelier-dialog-overlay" />
+              <Dialog.Content className="atelier-dialog">
+                <Dialog.Title>{en ? "Discard last session?" : "Son oturum silinsin mi?"}</Dialog.Title>
+                <Dialog.Description>
+                  {en
+                    ? "The automatically kept copy on this device will be deleted. Project files you saved are not affected."
+                    : "Bu cihazda otomatik saklanan kopya silinecek. Kaydettiğin proje dosyaları etkilenmez."}
+                </Dialog.Description>
+                <div>
+                  <button type="button" onClick={() => setDiscardOpen(false)}>
+                    {en ? "Keep" : "Sakla"}
+                  </button>
+                  <button
+                    type="button"
+                    className="studio-primary"
+                    onClick={() => {
+                      setDiscardOpen(false);
+                      onDiscardRecovery();
+                    }}
+                  >
+                    {en ? "Delete" : "Sil"}
+                  </button>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+          <button type="button" disabled={busy} onClick={onRecover}>
+            {en ? "Restore" : "Geri yükle"}
             <ArrowRight size={18} />
           </button>
         </section>

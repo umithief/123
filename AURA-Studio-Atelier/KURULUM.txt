@@ -1,4 +1,22 @@
-AURA Studio Atelier 1.16.1 — Android
+AURA Studio Atelier 1.17.0 — Android
+
+## 1.17.0 — otomatik kayıt, geri tuşu ve kararlılık
+
+**Son oturum (otomatik kayıt).** Bir dosyayla çalışırken yaptığın düzenlemeler birkaç saniye içinde bu cihazda (IndexedDB) saklanır; uygulama arka plana alındığında da hemen kaydedilir. Uygulama kapanırsa, Android görüntüleme motorunu durdurursa veya sayfa yeniden yüklenirse Başlangıç ekranında **Son oturum** kartı çıkar: **Geri yükle** kurguyu, medyayı, altyazıları, kapağı ve sahne ayarlarını proje dosyasıyla aynı doğrulanmış yoldan geri açar. × düğmesi onay sorduktan sonra saklanan kopyayı siler. Medya dosyaları bir kez yazılır; sonraki kayıtlar yalnızca küçük proje bilgisini günceller. Yeni projeye geçerken kapanan proje kurtarılabilir kalır. Proje ZIP'i paylaşım ve yedek için hâlâ önerilir.
+
+**Android geri tuşu.** Geri tuşu önce açık pencereyi, tam ekranı veya sunum modunu kapatır, sonra açık aracı kapatır, sonra Başlangıç ekranına döner. Başlangıçta kaydedilmemiş bir proje varsa çıkmadan önce sorar; dışa aktarma sürerken çıkış uyarı verir; otomatik kayıt yazılırken çıkışı kısa bir süre bekletir. Sayfa yanıt vermezse 1,5 saniye sonra normal geri davranışı çalışır.
+
+**Pil.** Ekran artık sürekli açık tutulmaz; yalnızca oynatma, kayıt/dışa aktarma, dosya hazırlama veya altyazı analizi sırasında açık kalır.
+
+**Kararlılık.** Katlanabilir telefonlar, çoklu pencere, ekran yoğunluğu, dil, klavye ve yazı boyutu değişimlerinde uygulama yeniden başlatılmaz; açık proje kaybolmaz. Ekran çentiği alanı da kenar payına dahil edildi.
+
+**Güvenlik ve çevrimdışı çalışma.** Android paketi artık açılışta uzak bir betik (grok.com extensions.js) yüklemez; APK yalnızca kendi dosyalarını çalıştırır. Gereksiz paylaşım kartı etiketleri kaldırıldı, tarayıcı tema rengi uygulamanın fildişi rengine eşitlendi. AURA yedeği olmayan bir ZIP açıldığında anlaşılır hata gösterilir.
+
+### 1.17.0 doğrulaması
+
+TypeScript ve web/Android derlemeleri geçti; mevcut birim testlerinin sonuçları değişmedi (yalnız platform iskeleti testlerindeki önceden var olan 12 hata). APK web varlıklarıyla Playwright/Chromium'da 390 piksel dokunmatik görünümde: dosya yükleme, sahne değişiminin otomatik kaydı, medyanın tek kez saklanması, yeniden yüklemede Son oturum kartı, geri yükleme sonrası dosya adı ve seçili sahne, silme onayı ve kalıcı silme, geri tuşu sırası (araç → başlangıç → çıkış, açık pencereyi kapatma) ve ekranı açık tutma çağrıları doğrulandı. 320×600 ve 1280×800 boyutlarında yatay taşma yok; TR/EN metinleri kontrol edildi. 61 APK varlığı derlemeyle byte düzeyinde aynı, ZIP CRC ve v2/v3 imza doğrulandı. Fiziksel Android cihaz/emülatör testi yapılmadı.
+
+**İmza notu:** Bu paket yeni bir test anahtarıyla imzalandı (önceki anahtar kaynak arşivinde yoktu). Telefonda eski AURA Studio kuruluysa bu sürümü kurmadan önce eskisini kaldırın.
 
 ## 1.16.0 — sahne geçişleri ve zaman çizelgesi
 

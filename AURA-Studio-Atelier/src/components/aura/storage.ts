@@ -46,8 +46,22 @@ async function saveAndroidBlob(bridge: AndroidDownloads, blob: Blob, name: strin
   }
 }
 
+type AndroidShell = AndroidDownloads & { keepAwake?: (on: boolean) => void };
+function androidShell() {
+  return (window as Window & { AuraAndroid?: AndroidShell }).AuraAndroid;
+}
+
+/** Keeps the phone screen on only while playback, export or analysis runs. */
+export function keepScreenAwake(on: boolean) {
+  try {
+    androidShell()?.keepAwake?.(on);
+  } catch {
+    // Older APK shells keep the screen on for the whole session.
+  }
+}
+
 export function downloadBlob(blob: Blob, name: string) {
-  const bridge = (window as Window & { AuraAndroid?: AndroidDownloads }).AuraAndroid;
+  const bridge = androidShell();
   if (bridge) {
     void saveAndroidBlob(bridge, blob, name);
     return;

@@ -11,6 +11,8 @@ import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.view.View;
 import android.view.WindowInsets;
@@ -21,8 +23,13 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.json.JSONException;
+import org.json.JSONTokener;
 
-/** Offline-first WebView shell. No storage permission: imports/exports use Android's picker. */
+/**
+ * Offline-first WebView shell. No storage permission: imports/exports use Android's picker.
+ * Written without lambdas so the class files also dex with the Debian `dx` tool chain.
+ */
 public final class MainActivity extends Activity {
     private static final String HOST = "appassets.androidplatform.net";
     private static final int PICK_FILE = 10, SAVE_FILE = 11, MICROPHONE = 12;
@@ -34,21 +41,26 @@ public final class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback fullscreenCallback;
     private final Downloads downloads = new Downloads();
     private final ExecutorService files = Executors.newSingleThreadExecutor();
+    private final Handler main = new Handler(Looper.getMainLooper());
+    private int backRequest;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().setStatusBarColor(Color.rgb(245, 244, 239));
         getWindow().setNavigationBarColor(Color.rgb(245, 244, 239));
         root = new FrameLayout(this);
-        root.setKeepScreenOn(true);
+        // The studio asks for the screen to stay on only while it plays, exports or analyses.
+        root.setKeepScreenOn(false);
         root.setBackgroundColor(Color.rgb(245, 244, 239));
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
-            root.setOnApplyWindowInsetsListener((view, insets) -> {
-                Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-                // The root owns system/IME spacing; do not apply it again inside WebView.
-                return WindowInsets.CONSUMED;
+            root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
+                    Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime() | WindowInsets.Type.displayCutout());
+                    view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                    // The root owns system/IME spacing; do not apply it again inside WebView.
+                    return WindowInsets.CONSUMED;
+                }
             });
         }
         web = new WebView(this);
@@ -76,9 +88,13 @@ public final class MainActivity extends Activity {
                 web = null;
                 new AlertDialog.Builder(MainActivity.this)
                     .setTitle("AURA Studio yeniden açılmalı")
-                    .setMessage("Görüntüleme motoru durdu. Uygulamayı yeniden açabilirsiniz. Sorun sürerse Android System WebView güncellemesini kontrol edin.")
-                    .setPositiveButton("Yeniden aç", (dialog, which) -> recreate())
-                    .setNegativeButton("Kapat", (dialog, which) -> finish())
+                    .setMessage("Görüntüleme motoru durdu. Uygulamayı yeniden açın; son düzenlemeniz Başlangıç ekranındaki Son oturum kartından geri yüklenebilir. Sorun sürerse Android System WebView güncellemesini kontrol edin.")
+                    .setPositiveButton("Yeniden aç", new android.content.DialogInterface.OnClickListener() {
+                        @Override public void onClick(android.content.DialogInterface dialog, int which) { recreate(); }
+                    })
+                    .setNegativeButton("Kapat", new android.content.DialogInterface.OnClickListener() {
+                        @Override public void onClick(android.content.DialogInterface dialog, int which) { finish(); }
+                    })
                     .setCancelable(false).show();
                 return true;
             }
@@ -117,17 +133,19 @@ public final class MainActivity extends Activity {
                 catch (ActivityNotFoundException error) { callback.onReceiveValue(null); fileCallback = null; show("Dosya seçici bulunamadı."); }
                 return true;
             }
-            @Override public void onPermissionRequest(PermissionRequest request) {
-                runOnUiThread(() -> {
-                    if (!local(request.getOrigin()) || !Arrays.asList(request.getResources()).contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
-                        request.deny(); return;
-                    }
-                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        request.grant(new String[] { PermissionRequest.RESOURCE_AUDIO_CAPTURE });
-                    } else {
-                        if (microphoneRequest != null) microphoneRequest.deny();
-                        microphoneRequest = request;
-                        requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, MICROPHONE);
+            @Override public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(new Runnable() {
+                    @Override public void run() {
+                        if (!local(request.getOrigin()) || !Arrays.asList(request.getResources()).contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                            request.deny(); return;
+                        }
+                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            request.grant(new String[] { PermissionRequest.RESOURCE_AUDIO_CAPTURE });
+                        } else {
+                            if (microphoneRequest != null) microphoneRequest.deny();
+                            microphoneRequest = request;
+                            requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, MICROPHONE);
+                        }
                     }
                 });
             }
@@ -145,15 +163,22 @@ public final class MainActivity extends Activity {
         setContentView(root);
         java.util.regex.Matcher version = java.util.regex.Pattern.compile("Chrome/(\\d+)").matcher(settings.getUserAgentString());
         if (version.find() && Integer.parseInt(version.group(1)) < 120) {
-            android.content.pm.PackageInfo provider = WebView.getCurrentWebViewPackage();
+            final android.content.pm.PackageInfo provider = WebView.getCurrentWebViewPackage();
             new AlertDialog.Builder(this)
                 .setTitle("Görüntüleme bileşeni güncellenmeli")
                 .setMessage("AURA Studio için bu telefondaki Android System WebView bileşenini güncelleyin, ardından uygulamayı yeniden açın.")
-                .setPositiveButton("Uygulama ayarları", (dialog, which) -> {
-                    if (provider != null) startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + provider.packageName)));
-                    finish();
+                .setPositiveButton("Uygulama ayarları", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (provider != null) {
+                            try { startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + provider.packageName))); }
+                            catch (ActivityNotFoundException ignored) {}
+                        }
+                        finish();
+                    }
                 })
-                .setNegativeButton("Kapat", (dialog, which) -> finish())
+                .setNegativeButton("Kapat", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { finish(); }
+                })
                 .setCancelable(false).show();
             return;
         }
@@ -189,10 +214,18 @@ public final class MainActivity extends Activity {
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
         catch (ActivityNotFoundException error) { show("Bağlantıyı açacak uygulama bulunamadı."); }
     }
-    private void show(String message) { runOnUiThread(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show()); }
-    private void exportError(String message) {
+    private void show(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override public void run() { Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show(); }
+        });
+    }
+    private void exportError(final String message) {
         show(message);
-        runOnUiThread(() -> { if (web != null) web.evaluateJavascript("window.dispatchEvent(new CustomEvent('aura-export-error',{detail:" + org.json.JSONObject.quote(message) + "}))", null); });
+        runOnUiThread(new Runnable() {
+            @Override public void run() {
+                if (web != null) web.evaluateJavascript("window.dispatchEvent(new CustomEvent('aura-export-error',{detail:" + org.json.JSONObject.quote(message) + "}))", null);
+            }
+        });
     }
     private void leaveFullscreen() {
         if (fullscreenView == null) return;
@@ -200,10 +233,62 @@ public final class MainActivity extends Activity {
         if (fullscreenCallback != null) fullscreenCallback.onCustomViewHidden();
         fullscreenCallback = null;
     }
+    /** Back closes the studio's open panel first; leaving with unsaved or exporting work asks first. */
     @Override public void onBackPressed() {
+        if (fullscreenView != null) { leaveFullscreen(); return; }
+        if (web == null) { super.onBackPressed(); return; }
+        final int request = ++backRequest;
+        // A page that does not answer (still loading, hung) must not trap the user.
+        main.postDelayed(new Runnable() {
+            @Override public void run() { if (request == backRequest) { backRequest++; leave(); } }
+        }, 1500);
+        web.evaluateJavascript("typeof window.auraBack==='function'?window.auraBack():null", new ValueCallback<String>() {
+            @Override public void onReceiveValue(String value) {
+                if (request != backRequest) return;
+                backRequest++;
+                handleBack(value);
+            }
+        });
+    }
+    private void handleBack(String value) {
+        String result = "";
+        try {
+            Object parsed = new JSONTokener(value == null ? "null" : value).nextValue();
+            if (parsed instanceof String) result = (String) parsed;
+        } catch (JSONException ignored) {}
+        String[] parts = result.split("\\|");
+        boolean en = parts.length > 1 && "en".equals(parts[1]);
+        switch (parts[0]) {
+            case "handled": return;
+            case "saving":
+                show(en ? "Saving your work… Press back again in a moment." : "Çalışman kaydediliyor… Birazdan geri tuşuna tekrar bas.");
+                return;
+            case "busy":
+                confirmLeave(en ? "Export in progress" : "Dışa aktarma sürüyor",
+                    en ? "Recording needs AURA Studio on screen. Leaving now may stop or damage the export." : "Kayıt için AURA Studio ekranda kalmalı. Şimdi çıkarsan dışa aktarma durabilir veya bozulabilir.", en);
+                return;
+            case "unsaved":
+                confirmLeave(en ? "Leave AURA Studio?" : "AURA Studio'dan çıkılsın mı?",
+                    en ? "You have not saved a project file. Your latest edit is kept on this device and can be restored from Last session on the home screen." : "Proje dosyası kaydetmedin. Son düzenlemen bu cihazda saklandı; Başlangıç ekranındaki Son oturum kartından geri yükleyebilirsin.", en);
+                return;
+            default:
+                if (web != null && web.canGoBack()) web.goBack(); else leave();
+        }
+    }
+    private void confirmLeave(String title, String message, boolean en) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(en ? "Stay" : "Kal", null)
+            .setNegativeButton(en ? "Leave" : "Çık", new android.content.DialogInterface.OnClickListener() {
+                @Override public void onClick(android.content.DialogInterface dialog, int which) { leave(); }
+            })
+            .show();
+    }
+    private void leave() {
         if (fullscreenView != null) leaveFullscreen();
-        else if (web != null && web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        super.onBackPressed();
     }
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
@@ -228,6 +313,7 @@ public final class MainActivity extends Activity {
         if (code == SAVE_FILE) downloads.saved(result == RESULT_OK && data != null ? data.getData() : null);
     }
     @Override protected void onDestroy() {
+        main.removeCallbacksAndMessages(null);
         if (fileCallback != null) fileCallback.onReceiveValue(null);
         if (microphoneRequest != null) microphoneRequest.deny();
         downloads.clear(); files.shutdown();
@@ -279,10 +365,17 @@ public final class MainActivity extends Activity {
             if (item == null) return false;
             item.close();
             if (item.written != item.expected) { item.delete(); return false; }
-            queue.add(item); runOnUiThread(this::next); return true;
+            queue.add(item);
+            runOnUiThread(new Runnable() { @Override public void run() { next(); } });
+            return true;
         }
         @JavascriptInterface public synchronized void abortDownload(String id) {
             Export item = pending.remove(id); if (item != null) item.delete();
+        }
+        @JavascriptInterface public void keepAwake(final boolean on) {
+            runOnUiThread(new Runnable() {
+                @Override public void run() { if (root != null) root.setKeepScreenOn(on); }
+            });
         }
         private synchronized void next() {
             if (active != null || queue.isEmpty() || isFinishing()) return;
@@ -293,18 +386,20 @@ public final class MainActivity extends Activity {
             try { startActivityForResult(save, SAVE_FILE); }
             catch (ActivityNotFoundException error) { active.delete(); active = null; exportError("Kaydetme penceresi bulunamadı."); next(); }
         }
-        private synchronized void saved(Uri uri) {
-            Export item = active; active = null;
+        private synchronized void saved(final Uri uri) {
+            final Export item = active; active = null;
             if (item != null) {
                 if (uri == null) item.delete();
-                else files.execute(() -> {
-                    try (InputStream input = new FileInputStream(item.file); OutputStream output = getContentResolver().openOutputStream(uri, "wt")) {
-                        if (output == null) throw new IOException("No output");
-                        byte[] buffer = new byte[64 * 1024]; int read;
-                        while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
-                        show(item.name + " kaydedildi.");
-                    } catch (Exception error) { exportError("Dosya kaydedilemedi. Başka bir klasör seçerek yeniden deneyin."); }
-                    finally { item.delete(); }
+                else files.execute(new Runnable() {
+                    @Override public void run() {
+                        try (InputStream input = new FileInputStream(item.file); OutputStream output = getContentResolver().openOutputStream(uri, "wt")) {
+                            if (output == null) throw new IOException("No output");
+                            byte[] buffer = new byte[64 * 1024]; int read;
+                            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+                            show(item.name + " kaydedildi.");
+                        } catch (Exception error) { exportError("Dosya kaydedilemedi. Başka bir klasör seçerek yeniden deneyin."); }
+                        finally { item.delete(); }
+                    }
                 });
             }
             next();

@@ -18,6 +18,18 @@ export default defineConfig({
     generateBundle() {
       this.emitFile({ type: "asset", fileName: "__grok/manifest.webmanifest", source: renderWebManifest("appassets.androidplatform.net") });
     },
+  }, {
+    // The APK runs offline from bundled assets with a native bridge: never pull
+    // remote scripts into it, and drop web share-card metadata it cannot use.
+    name: "aura:android-offline-html",
+    transformIndexHtml: {
+      order: "post",
+      handler: (html: string) =>
+        html
+          .replace(/<script\b[^>]*\bsrc="https?:\/\/[^"]*"[^>]*><\/script>/gi, "")
+          .replace(/<meta (?:name|property)="(?:twitter|og|x):[^"]*"[^>]*>/gi, "")
+          .replace('<meta name="theme-color" content="#07080c" />', '<meta name="theme-color" content="#f5f4ef" />'),
+    },
   }, tailwindcss(), react()],
   worker: { format: "es" },
   build: {

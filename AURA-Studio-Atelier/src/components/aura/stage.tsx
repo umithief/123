@@ -53,7 +53,7 @@ import {
   type Resolution,
   type StudioSnapshot,
 } from "./studio";
-import { readSetting, writeSetting, downloadBlob } from "./storage";
+import { readSetting, writeSetting, downloadBlob, keepScreenAwake } from "./storage";
 import { AudioEngine, type SourceKind } from "./engine";
 import {
   MODES,
@@ -101,6 +101,14 @@ import { projectDuration, parseEditorProject, frameAt, type EditorProject } from
 import { clipDuration } from "./editor";
 import { sceneTransitionDuration } from "./scene-transitions";
 import { packProject, unpackProject } from "./project-archive";
+import {
+  clearAutosave,
+  readAutosave,
+  readAutosaveInfo,
+  sameStoredBlob,
+  writeAutosave,
+  type AutosaveInfo,
+} from "./autosave";
 import { exportSrt, importSrt, restoreCaptionOptions, loadCaptionFont } from "./captions";
 import { EasyExportPanel, ExportProgress } from "./easy-export";
 
@@ -1153,6 +1161,130 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     resolution,
   };
   const locked = recStatus !== "idle";
+
+  // The latest edit is kept on this device, so a closed app, a stopped
+  // WebView or a reload can be resumed from the home screen.
+  const [autosaved, setAutosaved] = useState<AutosaveInfo | null>(null);
+  useEffect(() => {
+    if (source === "idle") void readAutosaveInfo().then(setAutosaved);
+  }, [source]);
+  const autosaveRef = useRef({
+    file: null as File | null,
+    timer: 0,
+    dirty: false,
+    writing: 0,
+    failed: false,
+    queue: Promise.resolve(),
+  });
+  const autosaveNowRef = useRef(() => {});
+  autosaveNowRef.current = () => {
+    const state = autosaveRef.current;
+    window.clearTimeout(state.timer);
+    state.timer = 0;
+    if (!state.dirty || state.failed || source !== "file" || !captions.file) return;
+    // Recording and archive work own the media; try again when they finish.
+    if (recStatusRef.current !== "idle" || archiveBusy) {
+      state.timer = window.setTimeout(() => autosaveNowRef.current(), 3000);
+      return;
+    }
+    let entries: Array<{ name: string; blob: Blob }>;
+    try {
+      entries = collectProjectEntries().entries;
+    } catch {
+      return;
+    }
+    state.dirty = false;
+    state.writing += 1;
+    const name = fileName || captions.file.name;
+    state.queue = state.queue
+      .then(() => writeAutosave(name, entries))
+      .catch((err) => {
+        state.dirty = true;
+        // A full device is not retried on every edit.
+        if (err instanceof DOMException && err.name === "QuotaExceededError") state.failed = true;
+      })
+      .finally(() => {
+        state.writing -= 1;
+      });
+  };
+  const snapshotKey = JSON.stringify(snapshot);
+  useEffect(() => {
+    const state = autosaveRef.current;
+    if (source !== "file" || !captions.file) return;
+    // A freshly opened file has nothing to recover yet.
+    if (state.file !== captions.file) {
+      state.file = captions.file;
+      return;
+    }
+    state.dirty = true;
+    window.clearTimeout(state.timer);
+    state.timer = window.setTimeout(() => autosaveNowRef.current(), 2500);
+  }, [source, captions.file, editor.project, captions.cues, snapshotKey, coverBlob]);
+  useEffect(() => {
+    const state = autosaveRef.current;
+    const flush = () => {
+      if (document.visibilityState === "hidden") autosaveNowRef.current();
+    };
+    const leave = () => autosaveNowRef.current();
+    document.addEventListener("visibilitychange", flush);
+    window.addEventListener("pagehide", leave);
+    return () => {
+      document.removeEventListener("visibilitychange", flush);
+      window.removeEventListener("pagehide", leave);
+      window.clearTimeout(state.timer);
+    };
+  }, []);
+  async function discardAutosave() {
+    setAutosaved(null);
+    await clearAutosave().catch(() => {});
+  }
+
+  // Android back button: close the innermost layer first and never leave
+  // with an edit that is still being written to the device.
+  const backRef = useRef<() => string>(() => "exit");
+  backRef.current = () => {
+    const open = document.querySelector(
+      '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]',
+    );
+    if (open) {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      return "handled";
+    }
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+      return "handled";
+    }
+    if (!hud) {
+      setHud(true);
+      return "handled";
+    }
+    if (recStatusRef.current !== "idle") return "busy";
+    if (easy && activeTool) {
+      closeTool();
+      return "handled";
+    }
+    if (!homeView) {
+      engineRef.current?.pause();
+      setHomeView(true);
+      return "handled";
+    }
+    const state = autosaveRef.current;
+    if (state.dirty) autosaveNowRef.current();
+    if (state.writing > 0) return "saving";
+    return unsavedWork ? "unsaved" : "exit";
+  };
+  useEffect(() => {
+    const target = window as Window & { auraBack?: () => string };
+    target.auraBack = () => `${backRef.current()}|${en ? "en" : "tr"}`;
+    return () => {
+      delete target.auraBack;
+    };
+  }, [en]);
+  const keepAwake = playing || recStatus !== "idle" || loading || captions.status !== "idle";
+  useEffect(() => {
+    keepScreenAwake(keepAwake);
+  }, [keepAwake]);
+  useEffect(() => () => keepScreenAwake(false), []);
   function changeFormat(next: VideoFormat) {
     if (recStatusRef.current !== "idle") return;
     setFormat(next);
@@ -1186,61 +1318,68 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   function resetStudio() {
     applySnapshot(parseSnapshot(JSON.stringify({ version: 1, mode: "ring", theme: "kor" })));
   }
+  // Shared by the project file and the on-device autosave so both restore
+  // through the same validated path.
+  function collectProjectEntries() {
+    const source = captions.file;
+    if (!source) throw new Error("Kaydedilecek kaynak dosya yok.");
+    const project = editor.project,
+      cues = captions.cues;
+    // Only media the current edit uses: deleted clips and replaced frames
+    // stay loaded for undo but do not belong in the backup.
+    const usedMedia = new Set<string>([
+      ...project.media.map((m) => m.asset),
+      ...project.layers.flatMap((l) => (l.asset ? [l.asset] : [])),
+    ]);
+    const usedSounds = new Set(project.sounds.map((s) => s.asset));
+    const sourceIds = new Set(project.media.filter((m) => m.sourceVideo).map((m) => m.asset));
+    const mediaAssets = [...editor.assets].filter(([id]) => usedMedia.has(id));
+    const soundAssets = [...editor.soundAssets].filter(([id]) => usedSounds.has(id));
+    const metadata = {
+      version: 1,
+      source: { name: source.name, type: source.type, duration },
+      settings: snapshot,
+      editor: project,
+      srt: exportSrt(cues),
+      wordCues: cues,
+      // The primary video is already stored as "source"; reference it
+      // instead of writing the same file into the archive twice.
+      assets: mediaAssets.map(([id, a]) => ({
+        id,
+        name: a.file.name,
+        type: a.file.type,
+        ...(sourceIds.has(id) ? { source: true } : {}),
+      })),
+      sounds: soundAssets.map(([id, a]) => ({
+        id,
+        name: a.file.name,
+        type: a.file.type,
+      })),
+      cover: !!coverBlob,
+    };
+    const metadataBlob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
+    if (metadataBlob.size > 600000)
+      throw new Error("Kurgu bilgileri çok büyük; katman veya altyazı sayısını azaltın.");
+    const entries = [
+      {
+        name: "project.json",
+        blob: metadataBlob,
+      },
+      { name: "source", blob: source },
+      ...mediaAssets
+        .filter(([id]) => !sourceIds.has(id))
+        .map(([id, a]) => ({ name: `asset-${id}`, blob: a.file })),
+      ...soundAssets.map(([id, a]) => ({ name: `asset-${id}`, blob: a.file })),
+      ...(coverBlob ? [{ name: "asset-cover", blob: coverBlob }] : []),
+    ];
+    return { entries, project, cues };
+  }
   async function saveEditingProject() {
     if (!captions.file || archiveBusy) return;
     setArchiveBusy(true);
     setError(null);
     try {
-      const source = captions.file;
-      const project = editor.project,
-        cues = captions.cues;
-      // Only media the current edit uses: deleted clips and replaced frames
-      // stay loaded for undo but do not belong in the backup.
-      const usedMedia = new Set<string>([
-        ...project.media.map((m) => m.asset),
-        ...project.layers.flatMap((l) => (l.asset ? [l.asset] : [])),
-      ]);
-      const usedSounds = new Set(project.sounds.map((s) => s.asset));
-      const sourceIds = new Set(project.media.filter((m) => m.sourceVideo).map((m) => m.asset));
-      const mediaAssets = [...editor.assets].filter(([id]) => usedMedia.has(id));
-      const soundAssets = [...editor.soundAssets].filter(([id]) => usedSounds.has(id));
-      const metadata = {
-        version: 1,
-        source: { name: source.name, type: source.type, duration },
-        settings: snapshot,
-        editor: project,
-        srt: exportSrt(cues),
-        wordCues: cues,
-        // The primary video is already stored as "source"; reference it
-        // instead of writing the same file into the archive twice.
-        assets: mediaAssets.map(([id, a]) => ({
-          id,
-          name: a.file.name,
-          type: a.file.type,
-          ...(sourceIds.has(id) ? { source: true } : {}),
-        })),
-        sounds: soundAssets.map(([id, a]) => ({
-          id,
-          name: a.file.name,
-          type: a.file.type,
-        })),
-        cover: !!coverBlob,
-      };
-      const metadataBlob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
-      if (metadataBlob.size > 600000)
-        throw new Error("Kurgu bilgileri çok büyük; katman veya altyazı sayısını azaltın.");
-      const entries = [
-        {
-          name: "project.json",
-          blob: metadataBlob,
-        },
-        { name: "source", blob: source },
-        ...mediaAssets
-          .filter(([id]) => !sourceIds.has(id))
-          .map(([id, a]) => ({ name: `asset-${id}`, blob: a.file })),
-        ...soundAssets.map(([id, a]) => ({ name: `asset-${id}`, blob: a.file })),
-        ...(coverBlob ? [{ name: "asset-cover", blob: coverBlob }] : []),
-      ];
+      const { entries, project, cues } = collectProjectEntries();
       downloadBlob(await packProject(entries), "aura-kurgu.aura.zip");
       savedWorkRef.current = { project, cues };
     } catch (err) {
@@ -1250,13 +1389,20 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
   }
   async function openEditingProject(file: File) {
+    await restoreProject(() => unpackProject(file));
+  }
+  async function restoreAutosavedProject() {
+    await restoreProject(readAutosave);
+  }
+  async function restoreProject(load: () => Promise<Map<string, Blob>>) {
     if (archiveBusy || recStatusRef.current !== "idle") return;
     setArchiveBusy(true);
     setError(null);
     engineRef.current?.pause();
     try {
-      const entries = await unpackProject(file),
-        metadataBlob = entries.get("project.json")!;
+      const entries = await load(),
+        metadataBlob = entries.get("project.json");
+      if (!metadataBlob) throw new Error("Bu dosya bir AURA kurgu yedeği değil.");
       if (metadataBlob.size > 600000) throw new Error("Kurgu bilgileri çok büyük.");
       const data = JSON.parse(await metadataBlob.text());
       if (
@@ -1313,9 +1459,12 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         const blob = entries.get(asset.source === true ? "source" : `asset-${asset.id}`);
         if (!blob) throw new Error("Yedekte medya dosyası eksik.");
         await editor.addAsset(
-          new File([blob], String(asset.name).slice(0, 100), {
-            type: String(asset.type).slice(0, 100),
-          }),
+          sameStoredBlob(
+            blob,
+            new File([blob], String(asset.name).slice(0, 100), {
+              type: String(asset.type).slice(0, 100),
+            }),
+          ),
           false,
           asset.id,
         );
@@ -1328,9 +1477,12 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           const blob = entries.get(`asset-${asset.id}`);
           if (!blob) throw new Error("Yedekte ses dosyası eksik.");
           await editor.addSound(
-            new File([blob], String(asset.name).slice(0, 100), {
-              type: String(asset.type).slice(0, 100),
-            }),
+            sameStoredBlob(
+              blob,
+              new File([blob], String(asset.name).slice(0, 100), {
+                type: String(asset.type).slice(0, 100),
+              }),
+            ),
             asset.id,
           );
         }
@@ -1348,9 +1500,14 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         cues: nextCues,
         options: restoreCaptionOptions(JSON.stringify(data.settings.captions)),
       };
-      const source = new File([entries.get("source")!], String(data.source.name).slice(0, 100), {
-        type: String(data.source.type).slice(0, 100),
-      });
+      const stored = entries.get("source");
+      if (!stored) throw new Error("Yedekte kaynak dosya eksik.");
+      const source = sameStoredBlob(
+        stored,
+        new File([stored], String(data.source.name).slice(0, 100), {
+          type: String(data.source.type).slice(0, 100),
+        }),
+      );
       await engineRef.current?.useFile(source);
       if (easy) engineRef.current?.pause();
       setHomeView(false);
@@ -1590,6 +1747,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           current={source !== "idle" ? fileName || (en ? "Sound study" : "Ses çalışması") : null}
           onNewProject={async () => {
             if (archiveBusy) return;
+            // The closing project stays recoverable from the home screen.
+            autosaveNowRef.current();
             setArchiveBusy(true);
             removeCover();
             await coverWriteRef.current.catch(() => {});
@@ -1597,6 +1756,9 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             onNewProject();
           }}
           onResume={() => setHomeView(false)}
+          recovery={source === "idle" ? autosaved : null}
+          onRecover={() => void restoreAutosavedProject()}
+          onDiscardRecovery={() => void discardAutosave()}
           onStart={startIntent}
           onOpen={() => archiveInputRef.current?.click()}
           onDemo={() => {

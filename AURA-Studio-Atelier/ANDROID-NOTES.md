@@ -1,5 +1,23 @@
 # AURA Studio Android
 
+## 1.17.0 — otomatik kayıt, geri tuşu ve kararlılık
+
+**Son oturum (otomatik kayıt).** Bir dosyayla çalışırken yaptığın düzenlemeler birkaç saniye içinde bu cihazda (IndexedDB) saklanır; uygulama arka plana alındığında da hemen kaydedilir. Uygulama kapanırsa, Android görüntüleme motorunu durdurursa veya sayfa yeniden yüklenirse Başlangıç ekranında **Son oturum** kartı çıkar: **Geri yükle** kurguyu, medyayı, altyazıları, kapağı ve sahne ayarlarını proje dosyasıyla aynı doğrulanmış yoldan geri açar. × düğmesi onay sorduktan sonra saklanan kopyayı siler. Medya dosyaları bir kez yazılır; sonraki kayıtlar yalnızca küçük proje bilgisini günceller. Yeni projeye geçerken kapanan proje kurtarılabilir kalır. Proje ZIP'i paylaşım ve yedek için hâlâ önerilir.
+
+**Android geri tuşu.** Geri tuşu önce açık pencereyi, tam ekranı veya sunum modunu kapatır, sonra açık aracı kapatır, sonra Başlangıç ekranına döner. Başlangıçta kaydedilmemiş bir proje varsa çıkmadan önce sorar; dışa aktarma sürerken çıkış uyarı verir; otomatik kayıt yazılırken çıkışı kısa bir süre bekletir. Sayfa yanıt vermezse 1,5 saniye sonra normal geri davranışı çalışır.
+
+**Pil.** Ekran artık sürekli açık tutulmaz; yalnızca oynatma, kayıt/dışa aktarma, dosya hazırlama veya altyazı analizi sırasında açık kalır.
+
+**Kararlılık.** Katlanabilir telefonlar, çoklu pencere, ekran yoğunluğu, dil, klavye ve yazı boyutu değişimlerinde uygulama yeniden başlatılmaz; açık proje kaybolmaz. Ekran çentiği alanı da kenar payına dahil edildi.
+
+**Güvenlik ve çevrimdışı çalışma.** Android paketi artık açılışta uzak bir betik (grok.com extensions.js) yüklemez; APK yalnızca kendi dosyalarını çalıştırır. Gereksiz paylaşım kartı etiketleri kaldırıldı, tarayıcı tema rengi uygulamanın fildişi rengine eşitlendi. AURA yedeği olmayan bir ZIP açıldığında anlaşılır hata gösterilir.
+
+### 1.17.0 doğrulaması
+
+TypeScript ve web/Android derlemeleri geçti; mevcut birim testlerinin sonuçları değişmedi (yalnız platform iskeleti testlerindeki önceden var olan 12 hata). APK web varlıklarıyla Playwright/Chromium'da 390 piksel dokunmatik görünümde: dosya yükleme, sahne değişiminin otomatik kaydı, medyanın tek kez saklanması, yeniden yüklemede Son oturum kartı, geri yükleme sonrası dosya adı ve seçili sahne, silme onayı ve kalıcı silme, geri tuşu sırası (araç → başlangıç → çıkış, açık pencereyi kapatma) ve ekranı açık tutma çağrıları doğrulandı. 320×600 ve 1280×800 boyutlarında yatay taşma yok; TR/EN metinleri kontrol edildi. 61 APK varlığı derlemeyle byte düzeyinde aynı, ZIP CRC ve v2/v3 imza doğrulandı. Fiziksel Android cihaz/emülatör testi yapılmadı.
+
+**İmza notu:** Bu paket yeni bir test anahtarıyla imzalandı (önceki anahtar kaynak arşivinde yoktu). Telefonda eski AURA Studio kuruluysa bu sürümü kurmadan önce eskisini kaldırın.
+
 ### 1.16.0 doğrulaması
 
 TypeScript, web ve Android derlemeleri geçti. Geçiş sınırı/süre/kayıt ve bölme kuralları birim testlerinde kontrol edildi. 11 efektin başlangıç/bitiş kareleri, saydam olmayan çıktısı ve farklı ışık çakması doğrulandı. 390 ve 1280 pikselde geliştirme ve APK varlıkları üzerinden geçiş seçimi, süre, tüm aralıklara uygulama, kaldırma, geri al/yinele, arama, küçük görüntüler ve medya dahil yedek geri yükleme geçti. APK arayüzü 320 pikselde de taşmadan çalıştı. Üretim masaüstü/mobil kontrolleri geçti; 320×600 ve 390×844 dikey önizleme oranı 9:16, alt gezinme yüksekliği 45 piksel. MP4 H.264 720×1280, ses Opus; geçiş karelerinde iki gerçek sahnenin kademeli renk birleşimi doğrulandı. 6 saniyelik kurgu çıktısında mevcut gerçek zamanlı kayıt başlangıç/son payıyla 6,3 saniye kaydedildi; ses/video süre farkı 0 saniye. 61 APK varlığı derlemeyle byte düzeyinde eşit, ZIP CRC ve önceki sürümle aynı imza doğrulandı. Fiziksel Android telefon testi yapılmadı.
@@ -308,3 +326,15 @@ alındı. Teslim APK’sının kodu ve varlıkları test paketine eşit; imza se
 1.0.0 ile aynı, versionCode 2. Cihaz dosya seçicisinden gerçek bir parça
 yüklemenin ve fiziksel telefonda bu hatanın giderildiğinin doğrulaması henüz
 yapılmadı.
+
+
+## APK derleme (Android SDK olmadan)
+
+`npm run build:android:web` web varlıklarını `android/build/web` içine üretir. `scripts/build-android.mjs` Android SDK yerine şu ortam değişkenleriyle de çalışır:
+
+- `AURA_ANDROID_BUILD_TOOLS`: `aapt2`, `zipalign`, `apksigner` ve `lib/d8.jar` ya da `dx` içeren klasör (ör. Ubuntu `aapt apksigner zipalign dalvik-exchange` paketleri → `/usr/lib/android-sdk/build-tools/debian`).
+- `AURA_ANDROID_JAR`: Java derlemesi için android.jar (API 30+; ör. Maven Central `org.robolectric:android-all:14-robolectric-10818077`).
+- `AURA_ANDROID_RES_JAR` (isteğe bağlı): aapt2 için ayrı çerçeve kaynak tablosu.
+- `AURA_ANDROID_KEYSTORE`, `AURA_ANDROID_KEY_PASSWORD`, `AURA_ANDROID_KEY_ALIAS`, `AURA_ANDROID_APK`.
+
+`dx` lambda ifadelerini dönüştürmediği için `MainActivity.java` lambdasız yazılmıştır.
