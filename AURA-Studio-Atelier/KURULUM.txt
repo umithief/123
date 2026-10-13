@@ -1,4 +1,17 @@
-AURA Studio Atelier 1.22.0 — Android
+AURA Studio Atelier 1.23.0 — Android
+
+## 1.23.0 — basit kullanım iyileştirmeleri
+
+**Hızlı video boyutu.** Önizlemenin üstündeki **9:16 ▾** düğmesiyle 16:9, 9:16, 1:1 ve 4:5 arasında Dışa aktar paneline gitmeden geçilir; seçim hatırlanır.
+**Telefonda dikey başlangıç.** Daha önce boyut seçilmediyse telefonda projeler 9:16 (Reels/Story) açılır; önizleme ekranı doldurur, boş kenar kalmaz. Masaüstünde 16:9 korunur.
+**Net kaydet simgesi.** Üst çubuktaki Projeyi kaydet düğmesi artık "Proje aç" ile aynı klasör simgesini değil kaydet simgesini kullanır.
+**Kapalı sekmelerin nedeni.** Altyazılarda Görünüm ve Metni düzenle kapalıyken "altyazı oluşturulunca açılır" açıklaması görünür.
+**Okunur şablon kartları.** Altyazı şablon önizlemeleri video gibi koyu zeminde gösterilir; açık renkli şablonlar (Klasik Salon, Altın Saat vb.) artık seçilir.
+**Daha kısa başlangıç ekranı.** Telefonda başlık küçültüldü; Müzik videosu, Video düzenle ve Altyazı ekle kartları ilk ekranda görünür.
+
+### 1.23.0 doğrulaması
+
+TypeScript, 58 AURA birim testi, web ve Android derlemeleri geçti. 390×844 telefonda varsayılan 9:16, masaüstünde 16:9; hızlı seçiciyle 1:1'e geçişte önizleme oranı 1,00 ve seçimin kaydı doğrulandı. Otomatik kayıt, paylaşım, yerleşim ve spektrum testleri yeniden geçti. Fiziksel cihaz testi yapılmadı.
 
 ## 1.22.0 — müzik türlerine özel 10 altyazı şablonu
 

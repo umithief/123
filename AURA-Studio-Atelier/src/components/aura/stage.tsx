@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Eye,
   FolderOpen,
+  Save,
   Maximize2,
   Mic,
   Minimize2,
@@ -441,6 +442,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     setMusic(restoreMusic(readSetting("aura-music")));
     const savedFormat = readSetting("aura-video-format");
     if (VIDEO_FORMATS.some((f) => f.id === savedFormat)) setFormat(savedFormat as VideoFormat);
+    // Phones mostly make Reels/Stories: start vertical until the user picks a size.
+    else if (window.matchMedia("(max-width: 700px)").matches) setFormat("portrait");
     if (readSetting("aura-video-resolution") === "1080") setResolution("1080");
     setCoverOptions(restoreCoverOptions(readSetting("aura-cover-options")));
     try {
@@ -1806,7 +1809,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 disabled={locked || archiveBusy || !captions.file}
                 onClick={() => void saveEditingProject()}
               >
-                <FolderOpen size={17} />
+                <Save size={17} />
                 <span>
                   {archiveBusy
                     ? en
@@ -1882,6 +1885,21 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 <span>{fileName || "Önizleme"}</span>
               </button>
               <div>
+                <label className="format-quick" title={en ? "Video size" : "Video boyutu"}>
+                  <select
+                    value={format}
+                    disabled={locked}
+                    aria-label={en ? "Video size" : "Video boyutu"}
+                    onChange={(event) => changeFormat(event.target.value as VideoFormat)}
+                  >
+                    {VIDEO_FORMATS.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.ratio}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="size-3" aria-hidden="true" />
+                </label>
                 <Button
                   variant="ghost"
                   disabled={locked || !editor.canUndo}

@@ -49,7 +49,7 @@ function TemplateThumbnail({ preset }: { preset: CaptionTemplate }) {
       ref={canvasRef}
       width={480}
       height={180}
-      className="h-auto w-full rounded-lg bg-canvas"
+      className="h-auto w-full rounded-lg bg-[#16130f]"
       aria-hidden="true"
     />
   );

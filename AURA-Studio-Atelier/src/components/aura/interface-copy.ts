@@ -649,6 +649,7 @@ Sağ|Right
 Stüdyo|Studio
 Sinema|Cinema
 Türler|Genres
+Görünüm ve metin düzenleme, altyazı oluşturulunca açılır.|Style and text editing open once captions exist.
 Pop Yıldızı|Pop Star
 Rap Sahnesi|Rap Stage
 Rock Gücü|Rock Power

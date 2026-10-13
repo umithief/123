@@ -129,6 +129,11 @@ export function CaptionPanel({
             ))}
           </ChoiceStrip>
         )}
+        {simple && view === "create" && !hasCues && !busy && (
+          <p className="caption-steps-hint text-xs leading-relaxed text-mute">
+            {ui("Görünüm ve metin düzenleme, altyazı oluşturulunca açılır.")}
+          </p>
+        )}
         <div hidden={simple && view !== "create"} className="space-y-3">
           {!simple && (
             <p className="text-xs leading-relaxed text-mute">
