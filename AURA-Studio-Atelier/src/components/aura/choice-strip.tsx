@@ -27,13 +27,20 @@ export function ChoiceStrip({
     if (box.left < edge.left + 4) strip.scrollLeft += box.left - edge.left - 4;
     else if (box.right > edge.right - 4) strip.scrollLeft += box.right - edge.right + 4;
   }
+  // A different gallery starts at its beginning with the selection in view.
   useEffect(() => {
     const strip = ref.current;
     if (!strip) return;
     strip.scrollLeft = 0;
     const selected = strip.querySelector<HTMLElement>('[aria-pressed="true"]');
     if (selected) reveal(selected);
-  }, [value, keys, props.hidden]);
+  }, [keys, props.hidden]);
+  // Choosing an item keeps the strip where it is; it only scrolls when the
+  // selection is partly hidden (e.g. changed by undo).
+  useEffect(() => {
+    const selected = ref.current?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (selected) reveal(selected);
+  }, [value]);
   useEffect(() => {
     const strip = ref.current;
     if (!strip) return;

@@ -1,5 +1,19 @@
 # AURA Studio Android
 
+## 1.19.0 — telefonda araç alanı ve kaymayan galeriler
+
+**Daha geniş araç paneli.** Telefonda açık araç ekranın %34'ü yerine %48'ine kadar büyür (360×760 ekranda 258 → 365 piksel). Zaman çizelgesi de açıkken panel artık önizlemeyi ezmez: önizleme en az ~%14 yükseklikte kalır (önceden 38 piksele kadar iniyordu), zaman çizelgesi sıkılaşır (253 → 177 piksel). Zaman göstergesi ve Böl/çoğalt/sil düğmeleri tek satırdadır; cetvel ve klip izi araç açıkken daha alçaktır.
+
+**Paneli büyüt.** Araç başlığındaki çift ok düğmesi paneli ekranın büyük kısmına genişletir (360×760'ta ~460 piksel). Bu modda üstte küçük bir önizleme ve oynatma çubuğu kalır, zaman çizelgesi gizlenir. Tekrar dokunmak önizlemeyi büyütür. Seçim cihazda hatırlanır.
+
+**Tüm araçlar görünür.** Sahne/Kurgu/Ses/Metin alanlarındaki araç kartları telefonda yan yana eşit sütunlardadır; yatay kaydırmada gizlenen araç kalmaz. Kısa ekranlarda açıklamalar gizlenir.
+
+**Seçim kaymıyor.** Animasyon, sahne, renk, efekt, yazı tipi, şablon ve diğer yatay galerilerde bir öğeye dokununca galeri başa atlayıp seçilen öğeyi sağ kenara taşımıyordu artık; galeri parmağınızın olduğu yerde kalır. Galeri yalnızca kategori/arama/klip değişince başa döner; seçili öğe kısmen gizliyse (ör. geri alma sonrası) sadece görünür olacak kadar kaydırılır.
+
+### 1.19.0 doğrulaması
+
+TypeScript, web ve Android derlemeleri geçti. 320×600, 360×760 ve 412×915 dokunmatik görünümlerde araç/zaman çizelgesi/önizleme yükseklikleri ölçüldü, yatay taşma yok; 1280×800 masaüstü düzeni değişmedi. Animasyon galerisinde ve sahne galerisinde dokunma sonrası kaydırma konumunun ve kartın yerinin aynı kaldığı, seçimin uygulandığı doğrulandı. Panel büyütme/küçültme ve araç kartlarının kaydırmasız görünmesi test edildi; 1.17/1.18 otomatik kayıt ve paylaşım testleri yeniden geçti. Fiziksel cihaz testi yapılmadı.
+
 ## 1.18.0 — Android kullanım kolaylığı
 
 **Paylaş → AURA Studio / Birlikte aç.** Galeri, dosya yöneticisi veya mesajlaşma uygulamasında bir videoyu, müziği ya da AURA proje ZIP'ini paylaş menüsünden **AURA Studio ile düzenle** seçeneğine gönderin. Uygulama açıksa aynı pencere kullanılır. Video, Kurgu → Kes & sahnelere ayır aracıyla; müzik, sahne galerisiyle açılır; ZIP proje olarak geri yüklenir. Açık bir proje varken dosya gelirse önce sorulur ve yeni dosya temiz bir projede açılır. Dosya kopyalanmaz, doğrudan paylaşan uygulamadan okunur.

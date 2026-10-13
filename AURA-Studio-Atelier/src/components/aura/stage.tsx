@@ -23,6 +23,8 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
   Undo2,
   Redo2,
   Type,
@@ -199,6 +201,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const motionPreviewEnd = useRef<number | null>(null);
   const [compactPreview, setCompactPreview] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  // Phones: the open tool can take most of the screen, remembered on the device.
+  const [panelTall, setPanelTall] = useState(() => readSetting("aura-panel-tall") === "1");
+  function togglePanelTall() {
+    const next = !panelTall;
+    setPanelTall(next);
+    writeSetting("aura-panel-tall", next ? "1" : "0");
+  }
   const [autoExport, setAutoExport] = useState(false);
   const autoExportRef = useRef(false);
   const audioExportRef = useRef(false);
@@ -1736,7 +1745,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           closeTool();
         }
       }}
-      className={`aura-studio atelier-studio ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
+      className={`aura-studio atelier-studio ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${easy && activeTool && panelTall ? "panel-tall" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
     >
       <audio ref={audioRef} className="hidden" playsInline />
       <header className="studio-header atelier-header">
@@ -2139,6 +2148,23 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 <ChevronLeft className="size-5" />
               </Button>
               <h2>{activeTool && toolName(activeTool, language)}</h2>
+              <Button
+                variant="ghost"
+                className="panel-size"
+                aria-pressed={panelTall}
+                aria-label={
+                  panelTall
+                    ? en
+                      ? "Show more preview"
+                      : "Önizlemeyi büyüt"
+                    : en
+                      ? "Enlarge tool panel"
+                      : "Araç panelini büyüt"
+                }
+                onClick={togglePanelTall}
+              >
+                {panelTall ? <ChevronsDown className="size-5" /> : <ChevronsUp className="size-5" />}
+              </Button>
               <Button onClick={closeTool} className="editor-done">
                 <Check className="size-4" />
                 {en ? ui("Done") : ui("Tamam")}

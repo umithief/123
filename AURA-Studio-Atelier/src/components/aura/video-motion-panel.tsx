@@ -174,13 +174,21 @@ export function VideoMotionPanel({
     if (item.left < edge.left + 4) strip.scrollLeft += item.left - edge.left - 4;
     else if (item.right > edge.right - 4) strip.scrollLeft += item.right - edge.right + 4;
   }
+  const selectedId = useRef(setting.id);
+  selectedId.current = setting.id;
+  // A new clip, section, category or search starts the gallery at its beginning.
   useEffect(() => {
     const strip = gallery.current;
     if (!strip) return;
     strip.scrollLeft = 0;
-    const selected = strip.querySelector<HTMLElement>(`[data-motion="${setting.id}"]`);
+    const selected = strip.querySelector<HTMLElement>(`[data-motion="${selectedId.current}"]`);
     if (selected) revealPreset(selected);
-  }, [target?.id, section, group, query, setting.id]);
+  }, [target?.id, section, group, query]);
+  // Picking an animation leaves the gallery in place under the finger.
+  useEffect(() => {
+    const selected = gallery.current?.querySelector<HTMLElement>(`[data-motion="${setting.id}"]`);
+    if (selected) revealPreset(selected);
+  }, [setting.id]);
   const sourceId = media?.asset ?? e.project.media.find((c) => c.sourceVideo)?.asset;
   const source = e.assets.get(sourceId ?? "")?.element;
   useEffect(() => {
