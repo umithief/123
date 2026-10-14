@@ -863,16 +863,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
 
   // The window key listener is installed once; it reads the current handlers
   // here so it never acts on state captured by the first render.
-  // A caption dragged on the timeline is the newest edit until the project changes;
-  // the shared undo button then reverts that drag first.
-  const [captionUndoFirst, setCaptionUndoFirst] = useState(false);
-  useEffect(() => setCaptionUndoFirst(false), [editor.project]);
-  const canUndoCaption = captionUndoFirst && captions.canUndo;
+  // Project and caption edits share one undo/redo, in the order they were made.
+  const canUndoAny = editor.canUndo || captions.canUndo,
+    canRedoAny = editor.canRedo || captions.canRedo;
   function undoLast() {
-    if (canUndoCaption) {
-      captions.undo();
-      setCaptionUndoFirst(false);
-    } else editor.undo();
+    if (captions.undoAt > editor.undoAt) captions.undo();
+    else editor.undo();
+  }
+  function redoNext() {
+    if (captions.redoAt > editor.redoAt) captions.redo();
+    else editor.redo();
   }
   const shortcutsRef = useRef({
     play: playTimeline,
@@ -886,7 +886,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       if (recStatusRef.current === "idle" && !loading) undoLast();
     },
     redo: () => {
-      if (recStatusRef.current === "idle" && !loading) editor.redo();
+      if (recStatusRef.current === "idle" && !loading) redoNext();
     },
     save: async () => {
       if (recStatusRef.current === "idle" && !loading) await saveEditingProject();
@@ -1913,7 +1913,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 </label>
                 <Button
                   variant="ghost"
-                  disabled={locked || !(editor.canUndo || canUndoCaption)}
+                  disabled={locked || !canUndoAny}
                   aria-label={ui("Son düzenlemeyi geri al")}
                   title={en ? "Undo (Ctrl+Z)" : "Geri al (Ctrl+Z)"}
                   onClick={undoLast}
@@ -1922,10 +1922,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 </Button>
                 <Button
                   variant="ghost"
-                  disabled={locked || !editor.canRedo}
+                  disabled={locked || !canRedoAny}
                   aria-label={ui("Son düzenlemeyi yinele")}
                   title={en ? "Redo (Ctrl+Shift+Z)" : "Yinele (Ctrl+Shift+Z)"}
-                  onClick={editor.redo}
+                  onClick={redoNext}
                 >
                   <Redo2 className="size-4" />
                 </Button>
@@ -2116,10 +2116,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                     }
                   }}
                   onCaptionsPreview={captions.previewCues}
-                  onCaptionsCommit={(next, before) => {
-                    captions.commitCues(next, before);
-                    setCaptionUndoFirst(true);
-                  }}
+                  onCaptionsCommit={captions.commitCues}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));
                     openTool("captions");

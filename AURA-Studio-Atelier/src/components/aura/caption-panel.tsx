@@ -8,6 +8,7 @@ import {
   Upload,
   Plus,
   Undo2,
+  Redo2,
   Play,
   ChevronLeft,
   ChevronRight,
@@ -390,6 +391,15 @@ export function CaptionPanel({
               <Undo2 className="size-4" />
               {ui("Geri al")}
             </button>
+            <button
+              type="button"
+              className={button}
+              disabled={!studio.canRedo || busy}
+              onClick={studio.redo}
+            >
+              <Redo2 className="size-4" />
+              {ui("Yinele")}
+            </button>
           </div>
           {studio.message && (
             <p role="status" className="text-xs leading-relaxed text-ink">
@@ -535,6 +545,14 @@ export function CaptionPanel({
                     onClick={studio.undo}
                   >
                     {ui("Geri al")}
+                  </button>
+                  <button
+                    type="button"
+                    className={button}
+                    disabled={!studio.canRedo || busy}
+                    onClick={studio.redo}
+                  >
+                    {ui("Yinele")}
                   </button>
                   <button type="button" className={button} onClick={download}>
                     {ui("SRT indir")}

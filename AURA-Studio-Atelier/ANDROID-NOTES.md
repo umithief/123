@@ -1,5 +1,16 @@
 # AURA Studio Android
 
+## 1.27.0 — altyazılarda çok adımlı geri alma
+
+**40 adımlık altyazı geçmişi.** Altyazı taşıma, kısaltma, metin ve zaman düzenleme, satır ekleme/silme, sözleri yapıştırma, SRT yükleme ve otomatik oluşturma artık tek tek geri alınır ve yinelenir. Altyazılar panelinde Geri al'ın yanına **Yinele** düğmesi eklendi.
+**Tek geri al, doğru sıra.** Üstteki Geri al / Yinele düğmeleri ve Ctrl + Z / Ctrl + Shift + Z, altyazı ile video düzenlemelerini yapıldıkları sırayla geri alır ve yineler. Örneğin önce altyazı taşıyıp sonra yazı katmanı eklediyseniz ilk Geri al katmanı, ikincisi altyazıyı geri alır.
+**Yazarken tek adım.** Bir altyazı satırına art arda yazılan harfler tek adım sayılır; Geri al harf harf değil, yazdığınız sözcük grubunu geri alır.
+**Yeni düzenleme yinelemeyi temizler.** Geri aldıktan sonra yeni bir değişiklik yapılırsa eski yinelemeler (altyazı ve video) düşer; beklenmedik bir adım geri gelmez.
+
+### 1.27.0 doğrulaması
+
+TypeScript ve 69 AURA birim testi geçti (iki geçmişin sıralı geri al/yinele testi dahil). Tarayıcıda sözleri ekleme → satıra yazma → altyazı taşıma → yazı katmanı ekleme → altyazı taşıma dizisi üstteki düğmeyle doğru sırada beş adım geri alındı ve yinelendi; yazma tek adım oldu, yeni düzenleme yinelemeyi kapattı, Ctrl + Z ve Ctrl + Shift + Z çalıştı. 1.25–1.26 zaman çizelgesi ve otomatik kayıt testleri yeniden geçti. Fiziksel cihaz testi yapılmadı.
+
 ## 1.26.0 — altyazılar zaman çizelgesinde sürüklenir
 
 **Altyazıyı taşı.** Zaman çizelgesindeki altyazı satırları sürüklenerek ileri ya da geri alınır; seçili altyazının uçlarındaki tutamaklarla başlangıcı ve bitişi ayarlanır. Karaoke kelime zamanları altyazıyla birlikte kayar, süre değişince orantılı olarak uzar veya kısalır. Klip hızlandırılmış ya da kesilmişse sürükleme miktarı doğru kaynak zamanına çevrilir.

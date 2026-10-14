@@ -112,6 +112,7 @@ SRT indir|Download SRT
 SRT altyazı dosyası|SRT caption file
 Satır ekle|Add line
 Geri al|Undo
+Yinele|Redo
 Altyazı oluşturma ilerlemesi|Caption generation progress
 Konum, boyut ve zamanlama|Position, size and timing
 Altyazıları göster|Show captions

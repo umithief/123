@@ -1,4 +1,5 @@
 import { createId } from "./id.ts";
+import { editStamp, redoable, stepStamp } from "./history-clock";
 import { useTransitionFrames } from "./video-frames";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { AudioEngine } from "./engine";
@@ -47,7 +48,9 @@ export function useEditor(
     [selected, setSelected] = useState(""),
     [error, setError] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
-  type History = { past: EditorProject[]; future: EditorProject[] };
+  // `at` orders entries against the caption history (see history-clock).
+  type Entry = { project: EditorProject; at: number };
+  type History = { past: Entry[]; future: Entry[] };
   const [history, setHistoryState] = useState<History>({ past: [], future: [] });
   // Undo/redo and rapid successive edits must see the latest history, not the
   // value captured by the render that created the handler.
@@ -291,7 +294,8 @@ export function useEditor(
       media: next.media.map((c) => (c.sourceVideo ? { ...c, end: projectDuration(next) } : c)),
     };
     const current = before ?? projectRef.current;
-    setHistory((h) => ({ past: [...h.past, current].slice(-40), future: [] }));
+    const at = editStamp();
+    setHistory((h) => ({ past: [...h.past, { project: current, at }].slice(-40), future: [] }));
     setProject(next);
     draw.current.project = next;
     projectRef.current = next;
@@ -701,9 +705,12 @@ export function useEditor(
     },
     undo: () => {
       const h = historyRef.current,
-        previous = h.past.at(-1);
+        previous = h.past.at(-1)?.project;
       if (!previous) return;
-      setHistory({ past: h.past.slice(0, -1), future: [projectRef.current, ...h.future] });
+      setHistory({
+        past: h.past.slice(0, -1),
+        future: [{ project: projectRef.current, at: stepStamp() }, ...h.future],
+      });
       setProject(previous);
       draw.current.project = previous;
       projectRef.current = previous;
@@ -712,9 +719,12 @@ export function useEditor(
     },
     redo: () => {
       const h = historyRef.current,
-        next = h.future[0];
+        next = redoable(h.future[0]?.at) ? h.future[0].project : null;
       if (!next) return;
-      setHistory({ past: [...h.past, projectRef.current].slice(-40), future: h.future.slice(1) });
+      setHistory({
+        past: [...h.past, { project: projectRef.current, at: stepStamp() }].slice(-40),
+        future: h.future.slice(1),
+      });
       setProject(next);
       draw.current.project = next;
       projectRef.current = next;
@@ -722,6 +732,10 @@ export function useEditor(
       seek(Math.min(draw.current.time, projectDuration(next)));
     },
     canUndo: history.past.length > 0,
-    canRedo: history.future.length > 0,
+    canRedo: redoable(history.future[0]?.at),
+    /** Stamp of the edit undo would revert (0 = none). */
+    undoAt: history.past.at(-1)?.at ?? 0,
+    /** Stamp of the step redo would restore (0 = none). */
+    redoAt: redoable(history.future[0]?.at) ? history.future[0].at : 0,
   };
 }

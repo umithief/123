@@ -13,6 +13,13 @@ import {
 import { readSetting, writeSetting } from "./storage";
 import { audioForRecognition } from "./transcription";
 import type { SourceKind } from "./engine";
+import { editStamp, isLatestStamp, redoable, stepStamp } from "./history-clock";
+
+// `at` orders caption steps against the project history (see history-clock);
+// `key` and `when` merge rapid typing in one line into a single step.
+type CueEntry = { cues: CaptionCue[]; at: number; key?: string; when?: number };
+type CueHistory = { past: CueEntry[]; future: CueEntry[] };
+const EMPTY_HISTORY: CueHistory = { past: [], future: [] };
 
 export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: SourceKind) {
   const [file, setFile] = useState<File | null>(null);
@@ -24,13 +31,37 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
-  const [undoCues, setUndoCues] = useState<CaptionCue[] | null>(null);
+  const [history, setHistoryState] = useState<CueHistory>(EMPTY_HISTORY);
+  const historyRef = useRef(history);
+  const setHistory = (next: CueHistory) => {
+    historyRef.current = next;
+    setHistoryState(next);
+  };
   const [error, setError] = useState<string | null>(null);
   const pending = useRef<{ cues: CaptionCue[]; options: CaptionOptions } | null>(null);
   const worker = useRef<Worker | null>(null);
   const generation = useRef(0);
   const draw = useRef({ cues, options });
   draw.current = { cues, options };
+
+  /** Remembers `before` as one undo step (up to 40). */
+  function record(before: CaptionCue[], key?: string) {
+    const h = historyRef.current,
+      last = h.past.at(-1),
+      now = Date.now();
+    if (key && last?.key === key && now - (last.when ?? 0) < 1500 && isLatestStamp(last.at)) {
+      setHistory({ past: [...h.past.slice(0, -1), { ...last, when: now }], future: [] });
+      return;
+    }
+    setHistory({
+      past: [...h.past, { cues: before, at: editStamp(), key, when: now }].slice(-40),
+      future: [],
+    });
+  }
+  function show(next: CaptionCue[]) {
+    draw.current = { ...draw.current, cues: next };
+    setCues(next);
+  }
 
   useEffect(() => {
     setOptions(restoreCaptionOptions(readSetting("aura-captions-options")));
@@ -57,7 +88,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
   function loadTrack(next: File | null) {
     cancel();
     setFile(next);
-    setUndoCues(null);
+    setHistory(EMPTY_HISTORY);
     setRange(null);
     if (next && pending.current) {
       setCues(pending.current.cues);
@@ -158,7 +189,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
             ...c,
             id: createId(),
           }));
-          setUndoCues(draw.current.cues);
+          record(draw.current.cues);
           setCues(
             range
               ? [
@@ -189,6 +220,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     }
   }
   function edit(id: string, patch: Partial<CaptionCue>) {
+    record(draw.current.cues, `edit:${id}:${Object.keys(patch).sort().join(",")}`);
     setCues((current) =>
       current
         .map((c) =>
@@ -224,7 +256,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       if (job !== generation.current) return;
       const parsed = importSrt(raw, audio.current?.duration || CAPTION_MAX_SECONDS);
       cancel();
-      setUndoCues(draw.current.cues);
+      record(draw.current.cues);
       setCues(parsed);
       setError(null);
       setMessage(`${parsed.length} altyazı yüklendi.`);
@@ -247,7 +279,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       try {
         const next = lyricsToCues(raw, draw.current.cues, audio.current?.duration || 600);
         cancel();
-        setUndoCues(draw.current.cues);
+        record(draw.current.cues);
         setCues(next);
         setError(null);
         setMessage("Sözler aynen eklendi. Tahmini zamanları dinleyerek kontrol edin.");
@@ -256,7 +288,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       }
     },
     stamp: (id: string, at: number) => {
-      setUndoCues(draw.current.cues);
+      record(draw.current.cues);
       setCues((current) =>
         current
           .map((c, index) =>
@@ -294,21 +326,41 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     commitCues: (next: CaptionCue[], before: CaptionCue[]) => {
       const sorted = [...next].sort((a, b) => a.start - b.start);
       draw.current = { ...draw.current, cues: sorted };
-      setUndoCues(before);
+      record(before);
       setCues(sorted);
       setMessage("Altyazı zamanı değişti.");
     },
-    canUndo: undoCues !== null,
+    canUndo: history.past.length > 0,
+    canRedo: redoable(history.future[0]?.at),
+    /** Stamp of the step undo would revert (0 = none). */
+    undoAt: history.past.at(-1)?.at ?? 0,
+    /** Stamp of the step redo would restore (0 = none). */
+    redoAt: redoable(history.future[0]?.at) ? history.future[0].at : 0,
     undo: () => {
-      if (undoCues !== null) {
-        setCues(undoCues);
-        setUndoCues(null);
-        setMessage("Son satır işlemi geri alındı.");
-      }
+      const h = historyRef.current,
+        previous = h.past.at(-1);
+      if (!previous) return;
+      setHistory({
+        past: h.past.slice(0, -1),
+        future: [{ cues: draw.current.cues, at: stepStamp() }, ...h.future].slice(0, 40),
+      });
+      show(previous.cues);
+      setMessage("Altyazı değişikliği geri alındı.");
+    },
+    redo: () => {
+      const h = historyRef.current,
+        next = h.future[0];
+      if (!next || !redoable(next.at)) return;
+      setHistory({
+        past: [...h.past, { cues: draw.current.cues, at: stepStamp() }].slice(-40),
+        future: h.future.slice(1),
+      });
+      show(next.cues);
+      setMessage("Altyazı değişikliği yinelendi.");
     },
     add: (at: number, duration: number) => {
       if (!file || duration <= 0) return;
-      setUndoCues(cues);
+      record(cues);
       const start = Math.max(0, Math.min(at, duration - 1));
       setCues((current) =>
         [
@@ -323,12 +375,12 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       );
     },
     remove: (id: string) => {
-      setUndoCues(cues);
+      record(cues);
       setCues((current) => current.filter((c) => c.id !== id));
     },
     clear: () => {
       cancel();
-      setUndoCues(cues);
+      record(cues);
       setCues([]);
       setError(null);
       setMessage("");
