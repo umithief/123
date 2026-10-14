@@ -863,6 +863,17 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
 
   // The window key listener is installed once; it reads the current handlers
   // here so it never acts on state captured by the first render.
+  // A caption dragged on the timeline is the newest edit until the project changes;
+  // the shared undo button then reverts that drag first.
+  const [captionUndoFirst, setCaptionUndoFirst] = useState(false);
+  useEffect(() => setCaptionUndoFirst(false), [editor.project]);
+  const canUndoCaption = captionUndoFirst && captions.canUndo;
+  function undoLast() {
+    if (canUndoCaption) {
+      captions.undo();
+      setCaptionUndoFirst(false);
+    } else editor.undo();
+  }
   const shortcutsRef = useRef({
     play: playTimeline,
     undo: () => {},
@@ -872,7 +883,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   shortcutsRef.current = {
     play: playTimeline,
     undo: () => {
-      if (recStatusRef.current === "idle" && !loading) editor.undo();
+      if (recStatusRef.current === "idle" && !loading) undoLast();
     },
     redo: () => {
       if (recStatusRef.current === "idle" && !loading) editor.redo();
@@ -1902,10 +1913,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 </label>
                 <Button
                   variant="ghost"
-                  disabled={locked || !editor.canUndo}
+                  disabled={locked || !(editor.canUndo || canUndoCaption)}
                   aria-label={ui("Son düzenlemeyi geri al")}
                   title={en ? "Undo (Ctrl+Z)" : "Geri al (Ctrl+Z)"}
-                  onClick={editor.undo}
+                  onClick={undoLast}
                 >
                   <Undo2 className="size-4" />
                 </Button>
@@ -2103,6 +2114,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                     } catch {
                       setError("Geçiş görüntüleri hazırlanamadı. Geçişi kaldırıp yeniden deneyin.");
                     }
+                  }}
+                  onCaptionsPreview={captions.previewCues}
+                  onCaptionsCommit={(next, before) => {
+                    captions.commitCues(next, before);
+                    setCaptionUndoFirst(true);
                   }}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));

@@ -4828,3 +4828,13 @@
     padding-inline: 0.375rem;
   }
 }
+/* The ruler stays in view while the rows below it scroll. */
+.edit-timeline .timeline-ruler {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-canvas);
+}
+.edit-timeline .timeline-playhead {
+  z-index: 6;
+}

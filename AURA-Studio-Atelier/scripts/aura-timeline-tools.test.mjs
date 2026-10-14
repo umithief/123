@@ -5,6 +5,8 @@ import {
   draggedItem,
   snapTo,
   timelineMarks,
+  retimedCue,
+  retimedCues,
 } from "../src/components/aura/timeline.ts";
 
 test("beats are found at the attacks of a pulsed signal", () => {
@@ -78,4 +80,48 @@ test("kicks are found under a sustained, wavering chord and noise", () => {
   const beats = detectBeats(x, sr);
   assert.equal(beats.length, 15);
   beats.forEach((beat, i) => assert.ok(Math.abs(beat - (0.5 + i * 0.5)) < 0.03));
+});
+test("moving a caption shifts its words; resizing stretches them", () => {
+  const cue = {
+    id: "c",
+    text: "iki kelime",
+    start: 2,
+    end: 4,
+    words: [
+      { text: "iki", start: 2, end: 3 },
+      { text: "kelime", start: 3, end: 4 },
+    ],
+  };
+  assert.deepEqual(retimedCue(cue, "move", 1.5, 10), {
+    ...cue,
+    start: 3.5,
+    end: 5.5,
+    words: [
+      { text: "iki", start: 3.5, end: 4.5 },
+      { text: "kelime", start: 4.5, end: 5.5 },
+    ],
+  });
+  assert.equal(retimedCue(cue, "move", 20, 10).end, 10);
+  assert.equal(retimedCue(cue, "move", -5, 10).start, 0);
+  const longer = retimedCue(cue, "end", 2, 10);
+  assert.deepEqual(longer.words.map((w) => [w.start, w.end]), [[2, 4], [4, 6]]);
+  const later = retimedCue(cue, "start", 1, 10);
+  assert.deepEqual(later.words.map((w) => [w.start, w.end]), [[3, 3.5], [3.5, 4]]);
+  assert.equal(retimedCue(cue, "start", 5, 10).start, 3.9);
+  assert.equal(retimedCue({ ...cue, words: undefined }, "end", 9, 10).end, 10);
+  assert.equal("words" in retimedCue({ id: "x", text: "a", start: 0, end: 1 }, "move", 1, 10), false);
+});
+test("a caption pushed into its neighbour shortens it, down to 0.3 s", () => {
+  const a = { id: "a", text: "a", start: 0, end: 2 },
+    b = { id: "b", text: "b", start: 2, end: 4 },
+    c = { id: "c", text: "c", start: 4, end: 6 },
+    all = [c, a, b];
+  const spans = (list) => list.map((x) => [x.id, x.start, x.end]);
+  assert.deepEqual(spans(retimedCues(all, "b", "move", 1, 10)), [["a", 0, 2], ["b", 3, 5], ["c", 5, 6]]);
+  assert.deepEqual(spans(retimedCues(all, "b", "move", 9, 10)), [["a", 0, 2], ["b", 3.7, 5.7], ["c", 5.7, 6]]);
+  assert.deepEqual(spans(retimedCues(all, "b", "move", -1, 10)), [["a", 0, 1], ["b", 1, 3], ["c", 4, 6]]);
+  assert.deepEqual(spans(retimedCues(all, "b", "start", -5, 10)), [["a", 0, 0.3], ["b", 0.3, 4], ["c", 4, 6]]);
+  assert.deepEqual(spans(retimedCues(all, "b", "end", 1, 10)), [["a", 0, 2], ["b", 2, 5], ["c", 5, 6]]);
+  assert.deepEqual(spans(retimedCues(all, "c", "end", 9, 10)), [["a", 0, 2], ["b", 2, 4], ["c", 4, 10]]);
+  assert.deepEqual(spans(retimedCues(all, "a", "move", -1, 10)), [["a", 0, 2], ["b", 2, 4], ["c", 4, 6]]);
 });

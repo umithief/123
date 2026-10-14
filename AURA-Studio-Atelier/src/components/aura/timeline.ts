@@ -145,3 +145,64 @@ export function draggedItem<
   if (rate > 0) next.offset = Math.max(0, (item.offset || 0) + (start - item.start) * rate);
   return next;
 }
+
+/** Moves or resizes a caption in source time; word timings follow the new
+ *  span proportionally so karaoke highlighting stays in step. */
+export function retimedCue(
+  cue: CaptionCue,
+  mode: ItemDrag,
+  delta: number,
+  duration: number,
+  min = 0,
+  max = Infinity,
+): CaptionCue {
+  max = Math.max(cue.end, Math.min(max, Math.max(duration, cue.end)));
+  min = Math.min(cue.start, min);
+  const length = cue.end - cue.start;
+  let start = cue.start,
+    end = cue.end;
+  if (mode === "move") {
+    start = Math.max(min, Math.min(Math.max(min, max - length), cue.start + delta));
+    end = start + length;
+  } else if (mode === "start") start = Math.max(min, Math.min(cue.end - 0.1, cue.start + delta));
+  else end = Math.min(max, Math.max(cue.start + 0.1, cue.end + delta));
+  const ratio = (end - start) / Math.max(0.001, length),
+    at = (t: number) => Number((start + (t - cue.start) * ratio).toFixed(3));
+  return {
+    ...cue,
+    start: Number(start.toFixed(3)),
+    end: Number(end.toFixed(3)),
+    ...(cue.words && {
+      words: cue.words.map((w) => ({ ...w, start: at(w.start), end: at(w.end) })),
+    }),
+  };
+}
+
+/** Retimes one caption inside a sorted list. Only one caption shows at a time,
+ *  so a caption pushed into its neighbour shortens it (down to 0.3 s) instead
+ *  of hiding it. */
+export function retimedCues(
+  cues: CaptionCue[],
+  id: string,
+  mode: ItemDrag,
+  delta: number,
+  duration: number,
+): CaptionCue[] {
+  const list = [...cues].sort((a, b) => a.start - b.start),
+    index = list.findIndex((c) => c.id === id);
+  if (index < 0) return cues;
+  const cue = list[index],
+    previous = list[index - 1],
+    next = list[index + 1];
+  const min = previous ? Math.min(cue.start, previous.start + 0.3) : 0,
+    max = next ? Math.max(cue.end, next.end - 0.3) : Infinity;
+  const moved = retimedCue(cue, mode, delta, duration, min, max);
+  return list.map((c, i) => {
+    if (i === index) return moved;
+    if (i === index - 1 && c.end > moved.start)
+      return retimedCue(c, "end", moved.start - c.end, duration);
+    if (i === index + 1 && c.start < moved.end)
+      return retimedCue(c, "start", moved.end - c.start, duration);
+    return c;
+  });
+}

@@ -285,6 +285,19 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     changeOptions,
     edit,
     importFile,
+    /** Live update while a caption is dragged on the timeline. */
+    previewCues: (next: CaptionCue[]) => {
+      draw.current = { ...draw.current, cues: next };
+      setCues(next);
+    },
+    /** Finishes a timeline drag; `before` is what "undo" restores. */
+    commitCues: (next: CaptionCue[], before: CaptionCue[]) => {
+      const sorted = [...next].sort((a, b) => a.start - b.start);
+      draw.current = { ...draw.current, cues: sorted };
+      setUndoCues(before);
+      setCues(sorted);
+      setMessage("Altyazı zamanı değişti.");
+    },
     canUndo: undoCues !== null,
     undo: () => {
       if (undoCues !== null) {

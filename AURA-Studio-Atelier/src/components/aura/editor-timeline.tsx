@@ -47,6 +47,7 @@ import {
   detectBeats,
   draggedItem,
   snapTo,
+  retimedCues,
   timelineMarks,
   trimmedClip,
   type ItemDrag,
@@ -56,6 +57,10 @@ import { formatTime } from "./studio-panels";
 import type { StudioTool } from "./studio-guide";
 type Editor = ReturnType<typeof useEditor>;
 type TrackItem = MediaClip | Overlay | SoundLayer;
+type CaptionSegment = ReturnType<typeof captionSegments>[number];
+type DragTarget =
+  | { kind: TimelineItemKind; id: string; item: TrackItem }
+  | { kind: "caption"; id: string; segment: CaptionSegment; cue: CaptionCue; rate: number };
 const LIST = { media: "media", layer: "layers", sound: "sounds" } as const;
 const SNAP_KEY = "aura-timeline-snap";
 
@@ -114,6 +119,8 @@ export function EditorTimeline({
   onCaption,
   onUpload,
   onTransitionPreview,
+  onCaptionsPreview,
+  onCaptionsCommit,
 }: {
   editor: Editor;
   file: File | null;
@@ -128,6 +135,8 @@ export function EditorTimeline({
   onCaption: (id: string) => void;
   onUpload: () => void;
   onTransitionPreview: (id: string) => Promise<void>;
+  onCaptionsPreview: (next: CaptionCue[]) => void;
+  onCaptionsCommit: (next: CaptionCue[], before: CaptionCue[]) => void;
 }) {
   const scroll = useRef<HTMLDivElement>(null);
   const thumbnails = useClipThumbnails(file, e.project.clips);
@@ -147,14 +156,17 @@ export function EditorTimeline({
   // Time bubble above the playhead or the edge being dragged.
   const [bubble, setBubble] = useState<{ at: number; snapped: boolean } | null>(null);
   const itemDrag = useRef<{
-    kind: TimelineItemKind;
-    id: string;
+    target: DragTarget;
     mode: ItemDrag;
     x: number;
     before: EditorProject;
-    item: TrackItem;
+    beforeCues: CaptionCue[];
+    cues: CaptionCue[] | null;
     moved: boolean;
   } | null>(null);
+  // Captions are selected here; clips and layers use the editor's selection.
+  const [captionSelected, setCaptionSelected] = useState<string | null>(null);
+  const pointerKind = useRef("mouse");
   // A finished drag must not also count as a tap on the item.
   const suppressClick = useRef(0);
   const anchor = useRef<{ time: number; x: number } | null>(null);
@@ -252,7 +264,9 @@ export function EditorTimeline({
     zoomTo,
     cancelDrag: () => {
       if (!itemDrag.current) return;
-      e.preview(itemDrag.current.before);
+      if (itemDrag.current.target.kind === "caption")
+        onCaptionsPreview(itemDrag.current.beforeCues);
+      else e.preview(itemDrag.current.before);
       itemDrag.current = null;
       setBubble(null);
     },
@@ -424,6 +438,7 @@ export function EditorTimeline({
   function snapTargets(except = "") {
     return [
       ...editPoints(except),
+      ...captions.filter((c) => c.cue !== except).flatMap((c) => [c.start, c.end]),
       e.draw.current.time,
       ...timelineMarks(beats, e.draw.current.project.clips),
     ];
@@ -439,7 +454,10 @@ export function EditorTimeline({
     onPause();
     e.seek(next);
     const node = scroll.current;
-    if (node && (next * scale < node.scrollLeft || next * scale > node.scrollLeft + node.clientWidth - 40))
+    if (
+      node &&
+      (next * scale < node.scrollLeft || next * scale > node.scrollLeft + node.clientWidth - 40)
+    )
       node.scrollLeft = Math.max(0, next * scale - node.clientWidth / 2);
   }
   function toggleSnap() {
@@ -471,7 +489,11 @@ export function EditorTimeline({
     if (snap) {
       const targets = snapTargets(item.id);
       const edges =
-        mode === "move" ? (["start", "end"] as const) : mode === "start" ? (["start"] as const) : (["end"] as const);
+        mode === "move"
+          ? (["start", "end"] as const)
+          : mode === "start"
+            ? (["start"] as const)
+            : (["end"] as const);
       let best: { shift: number } | null = null;
       for (const edge of edges) {
         const target = snapTo(next[edge], targets, threshold);
@@ -485,27 +507,78 @@ export function EditorTimeline({
     }
     return { next, snapped };
   }
-  function startItemDrag(
-    event: PointerEvent<HTMLElement>,
-    kind: TimelineItemKind,
-    item: TrackItem,
-    mode: ItemDrag,
-  ) {
+  function isSelected(target: DragTarget) {
+    return target.kind === "caption" ? captionSelected === target.cue.id : e.selected === target.id;
+  }
+  function select(target: DragTarget) {
+    if (target.kind === "caption") {
+      setCaptionSelected(target.cue.id);
+      e.setSelected("");
+    } else {
+      setCaptionSelected(null);
+      e.setSelected(target.id);
+    }
+  }
+  function startItemDrag(event: PointerEvent<HTMLElement>, target: DragTarget, mode: ItemDrag) {
+    pointerKind.current = event.pointerType;
     if (disabled || event.button !== 0) return;
     // On touch an item is dragged once selected; until then a swipe scrolls.
-    if (mode === "move" && event.pointerType === "touch" && e.selected !== item.id) return;
+    if (mode === "move" && event.pointerType === "touch" && !isSelected(target)) return;
     if (mode !== "move") event.stopPropagation();
     itemDrag.current = {
-      kind,
-      id: item.id,
+      target,
       mode,
       x: event.clientX,
       before: e.draw.current.project,
-      item,
+      beforeCues: cues,
+      cues: null,
       moved: false,
     };
     if (mode !== "move" || event.pointerType !== "mouse")
       event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  /** Caption drags are measured on the timeline and applied in source time. */
+  function draggedCaption(
+    target: Extract<DragTarget, { kind: "caption" }>,
+    mode: ItemDrag,
+    delta: number,
+  ) {
+    const span = { start: target.segment.start, end: target.segment.end };
+    let shift = 0,
+      snapped = false;
+    if (snap) {
+      const moved = draggedItem(span, "layer", mode, delta, Infinity),
+        targets = snapTargets(target.cue.id);
+      const edges =
+        mode === "move"
+          ? (["start", "end"] as const)
+          : mode === "start"
+            ? (["start"] as const)
+            : (["end"] as const);
+      let best: number | null = null;
+      for (const edge of edges) {
+        const hit = snapTo(moved[edge], targets, 8 / scale);
+        if (hit !== null && (best === null || Math.abs(hit - moved[edge]) < Math.abs(best)))
+          best = hit - moved[edge];
+      }
+      if (best !== null) {
+        shift = best;
+        snapped = true;
+      }
+    }
+    const list = retimedCues(
+        itemDrag.current?.beforeCues ?? cues,
+        target.cue.id,
+        mode,
+        (delta + shift) * target.rate,
+        duration,
+      ),
+      cue = list.find((c) => c.id === target.cue.id)!;
+    const at =
+      mode === "end"
+        ? target.segment.end + (cue.end - target.cue.end) / target.rate
+        : target.segment.start + (cue.start - target.cue.start) / target.rate;
+    return { list, at, snapped };
   }
   function moveItemDrag(event: PointerEvent<HTMLElement>) {
     const drag = itemDrag.current;
@@ -515,12 +588,26 @@ export function EditorTimeline({
       if (Math.abs(dx) < 6) return;
       drag.moved = true;
       onPause();
-      e.setSelected(drag.id);
+      select(drag.target);
       if (!event.currentTarget.hasPointerCapture(event.pointerId))
         event.currentTarget.setPointerCapture(event.pointerId);
     }
-    const { next, snapped } = draggedWithSnap(drag.kind, drag.item, drag.mode, dx / scale, 8 / scale);
-    e.preview(replaceItem(drag.before, drag.kind, next));
+    const target = drag.target;
+    if (target.kind === "caption") {
+      const { list, at, snapped } = draggedCaption(target, drag.mode, dx / scale);
+      drag.cues = list;
+      onCaptionsPreview(drag.cues);
+      setBubble({ at, snapped });
+      return;
+    }
+    const { next, snapped } = draggedWithSnap(
+      target.kind,
+      target.item,
+      drag.mode,
+      dx / scale,
+      8 / scale,
+    );
+    e.preview(replaceItem(drag.before, target.kind, next));
     setBubble({ at: drag.mode === "end" ? next.end : next.start, snapped });
   }
   function stopItemDrag(event: PointerEvent<HTMLElement>, cancelled = false) {
@@ -532,21 +619,55 @@ export function EditorTimeline({
       event.currentTarget.releasePointerCapture(event.pointerId);
     if (!drag.moved) return;
     suppressClick.current = performance.now() + 400;
-    if (cancelled) e.preview(drag.before);
+    if (drag.target.kind === "caption") {
+      if (cancelled || !drag.cues) onCaptionsPreview(drag.beforeCues);
+      else onCaptionsCommit(drag.cues, drag.beforeCues);
+    } else if (cancelled) e.preview(drag.before);
     else e.commit(e.draw.current.project, drag.before);
   }
-  function nudgeItem(
-    event: KeyboardEvent<HTMLElement>,
-    kind: TimelineItemKind,
-    item: TrackItem,
-    mode: ItemDrag,
-  ) {
+  /** Mouse: a click opens the item's settings. Touch: the first tap selects
+   *  (so the item can be dragged), a tap on the selected item opens them. */
+  function tapItem(target: DragTarget, open: () => void) {
+    if (performance.now() < suppressClick.current) return;
+    const first = !isSelected(target);
+    select(target);
+    onPause();
+    e.seek(target.kind === "caption" ? target.segment.start : target.item.start);
+    if (pointerKind.current === "touch" && first) return;
+    open();
+  }
+  function nudgeItem(event: KeyboardEvent<HTMLElement>, target: DragTarget, mode: ItemDrag) {
     if (disabled || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
     if (mode === "move" && !event.altKey) return;
     event.preventDefault();
     const step = (event.shiftKey ? 1 : 0.1) * (event.key === "ArrowLeft" ? -1 : 1);
+    if (target.kind === "caption") {
+      onCaptionsCommit(retimedCues(cues, target.cue.id, mode, step * target.rate, duration), cues);
+      return;
+    }
     const current = e.draw.current.project;
-    e.commit(replaceItem(current, kind, draggedItem(item, kind, mode, step, e.total)));
+    e.commit(
+      replaceItem(current, target.kind, draggedItem(target.item, target.kind, mode, step, e.total)),
+    );
+  }
+  function trimHandles(target: DragTarget, left: number, width: number) {
+    return (["start", "end"] as const).map((edge) => (
+      <button
+        key={edge}
+        type="button"
+        disabled={disabled}
+        className={`item-trim item-trim-${edge}`}
+        style={{ left: edge === "start" ? left : left + width }}
+        aria-label={ui(edge === "start" ? "Başlangıcı sürükle" : "Bitişi sürükle")}
+        onPointerDown={(event) => startItemDrag(event, target, edge)}
+        onPointerMove={moveItemDrag}
+        onPointerUp={(event) => stopItemDrag(event)}
+        onPointerCancel={(event) => stopItemDrag(event, true)}
+        onKeyDown={(event) => nudgeItem(event, target, edge)}
+      >
+        <span />
+      </button>
+    ));
   }
   function trackItem(
     kind: TimelineItemKind,
@@ -555,7 +676,8 @@ export function EditorTimeline({
   ) {
     const left = item.start * scale,
       width = Math.max(12, (Math.min(e.total, item.end) - item.start) * scale),
-      chosen = e.selected === item.id;
+      chosen = e.selected === item.id,
+      target: DragTarget = { kind, id: item.id, item };
     return (
       <div className="timeline-track" key={item.id}>
         <Button
@@ -565,40 +687,17 @@ export function EditorTimeline({
           aria-label={options.label}
           aria-pressed={chosen}
           aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
-          onPointerDown={(event) => startItemDrag(event, kind, item, "move")}
+          onPointerDown={(event) => startItemDrag(event, target, "move")}
           onPointerMove={moveItemDrag}
           onPointerUp={(event) => stopItemDrag(event)}
           onPointerCancel={(event) => stopItemDrag(event, true)}
-          onKeyDown={(event) => nudgeItem(event, kind, item, "move")}
-          onClick={() => {
-            if (performance.now() < suppressClick.current) return;
-            e.setSelected(item.id);
-            onPause();
-            e.seek(item.start);
-            onTool(options.tool);
-          }}
+          onKeyDown={(event) => nudgeItem(event, target, "move")}
+          onClick={() => tapItem(target, () => onTool(options.tool))}
         >
           {options.icon}
           <span>{options.text}</span>
         </Button>
-        {chosen &&
-          (["start", "end"] as const).map((edge) => (
-            <button
-              key={edge}
-              type="button"
-              disabled={disabled}
-              className={`item-trim item-trim-${edge}`}
-              style={{ left: edge === "start" ? left : left + width }}
-              aria-label={ui(edge === "start" ? "Başlangıcı sürükle" : "Bitişi sürükle")}
-              onPointerDown={(event) => startItemDrag(event, kind, item, edge)}
-              onPointerMove={moveItemDrag}
-              onPointerUp={(event) => stopItemDrag(event)}
-              onPointerCancel={(event) => stopItemDrag(event, true)}
-              onKeyDown={(event) => nudgeItem(event, kind, item, edge)}
-            >
-              <span />
-            </button>
-          ))}
+        {chosen && trimHandles(target, left, width)}
       </div>
     );
   }
@@ -784,6 +883,15 @@ export function EditorTimeline({
             {visibleBeats.map((b) => (
               <i key={b} className="timeline-beat" style={{ left: b * scale }} aria-hidden="true" />
             ))}
+            {file && bubble && (
+              <span
+                className={`timeline-bubble ${bubble.snapped ? "is-snapped" : ""}`}
+                style={{ left: Math.max(24, Math.min(trackWidth - 24, bubble.at * scale)) }}
+                aria-hidden="true"
+              >
+                {preciseTime(bubble.at)}
+              </span>
+            )}
           </div>
           <div
             className="timeline-track timeline-source"
@@ -944,26 +1052,43 @@ export function EditorTimeline({
             )}
             {captions.length > 0 && (
               <div className="timeline-track" role="group" aria-label={ui("Altyazı satırı")}>
-                {captions.map((item) => (
-                  <Button
-                    key={item.id}
-                    disabled={disabled}
-                    className="timeline-item track-caption"
-                    style={{
-                      left: item.start * scale,
-                      width: Math.max(12, (item.end - item.start) * scale),
-                    }}
-                    aria-label={ui(`Altyazı: ${item.text}`)}
-                    onClick={() => {
-                      onPause();
-                      e.seek(item.start);
-                      onCaption(item.cue);
-                    }}
-                  >
-                    <Captions className="size-3" />
-                    <span>{item.text}</span>
-                  </Button>
-                ))}
+                {captions.map((item) => {
+                  const cue = cues.find((c) => c.id === item.cue),
+                    clip = e.project.clips.find((c) => item.id === `${c.id}-${item.cue}`);
+                  if (!cue || !clip) return null;
+                  const target: DragTarget = {
+                      kind: "caption",
+                      id: item.id,
+                      segment: item,
+                      cue,
+                      rate: clip.rate,
+                    },
+                    left = item.start * scale,
+                    width = Math.max(12, (item.end - item.start) * scale),
+                    chosen = captionSelected === item.cue;
+                  return (
+                    <div className="timeline-caption" key={item.id}>
+                      <Button
+                        disabled={disabled}
+                        className="timeline-item track-caption"
+                        style={{ left, width }}
+                        aria-label={ui(`Altyazı: ${item.text}`)}
+                        aria-pressed={chosen}
+                        aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+                        onPointerDown={(event) => startItemDrag(event, target, "move")}
+                        onPointerMove={moveItemDrag}
+                        onPointerUp={(event) => stopItemDrag(event)}
+                        onPointerCancel={(event) => stopItemDrag(event, true)}
+                        onKeyDown={(event) => nudgeItem(event, target, "move")}
+                        onClick={() => tapItem(target, () => onCaption(item.cue))}
+                      >
+                        <Captions className="size-3" />
+                        <span>{item.text}</span>
+                      </Button>
+                      {chosen && trimHandles(target, left, width)}
+                    </div>
+                  );
+                })}
               </div>
             )}
             {e.project.sounds.length > 0 && (
@@ -994,19 +1119,12 @@ export function EditorTimeline({
               <div />
             </div>
           )}
-          {file && bubble && (
-            <span
-              className={`timeline-bubble ${bubble.snapped ? "is-snapped" : ""}`}
-              style={{ left: Math.max(24, Math.min(trackWidth - 24, bubble.at * scale)) }}
-              aria-hidden="true"
-            >
-              {preciseTime(bubble.at)}
-            </span>
-          )}
         </div>
       </div>
       {!compact && file && (
-        <p className="timeline-hint">{ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katmanları sürükleyerek taşı")}</p>
+        <p className="timeline-hint">
+          {ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı")}
+        </p>
       )}
       <TransitionPanel
         editor={e}

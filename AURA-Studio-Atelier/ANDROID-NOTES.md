@@ -1,5 +1,18 @@
 # AURA Studio Android
 
+## 1.26.0 — altyazılar zaman çizelgesinde sürüklenir
+
+**Altyazıyı taşı.** Zaman çizelgesindeki altyazı satırları sürüklenerek ileri ya da geri alınır; seçili altyazının uçlarındaki tutamaklarla başlangıcı ve bitişi ayarlanır. Karaoke kelime zamanları altyazıyla birlikte kayar, süre değişince orantılı olarak uzar veya kısalır. Klip hızlandırılmış ya da kesilmişse sürükleme miktarı doğru kaynak zamanına çevrilir.
+**Komşuyu kısaltır.** Önizlemede aynı anda tek altyazı gösterildiği için bir altyazı yanındakinin üstüne sürüklenirse komşusu kısalır (en az 0,3 sn kalır); satırlar birbirini gizlemez.
+**Mıknatıs altyazıda da çalışır.** Altyazı uçları vuruşlara, oynatma başlığına, kesimlere, katmanlara ve diğer altyazılara yapışır; yazı ve görüntü katmanları da altyazı uçlarına yapışabilir.
+**Geri al.** Üstteki Geri al düğmesi ve Ctrl + Z son altyazı taşımasını geri alır. Alt + ok seçili altyazıyı 0,1 sn (Shift ile 1 sn) kaydırır.
+**Telefonda dokunma.** Katman ve altyazılarda ilk dokunuş seçer (sürüklemeye hazır hale getirir), seçiliyken dokunmak ayarları açar. Seçili olmayan satırın üstünde kaydırma çizelgeyi kaydırır.
+**Sabit cetvel.** Alt satırlar kaydırılırken zaman cetveli, vuruş noktaları ve zaman balonu üstte görünür kalır.
+
+### 1.26.0 doğrulaması
+
+TypeScript ve 67 AURA birim testi geçti (altyazı taşıma, kelime zamanları ve komşu kısaltma testleri dahil). Tarayıcıda masaüstü fare ve telefon dokunmatiğiyle altyazı taşıma, uçtan kısaltma, vuruşa yapışma, komşu kısaltma, Geri al ve Alt + ok denendi; 1.25 zaman çizelgesi testleri yeniden geçti. Fiziksel cihaz testi yapılmadı.
+
 ## 1.25.0 — daha yetenekli zaman çizelgesi
 
 **Katmanları sürükle.** Yazı, görüntü ve ek ses katmanları zaman çizelgesinde sürüklenerek taşınır. Seçili katmanın iki ucundaki tutamaklarla başlangıcı ve bitişi uzatılıp kısaltılır. Başı kısaltılan ses ve videolar içerikte kaymadan devam eder; taşınan yazının anahtar kareleri de onunla birlikte gelir. Telefonda önce katmana dokunup seçin, sonra sürükleyin; seçili olmayan katmanın üstünde kaydırma yapınca çizelge kayar.

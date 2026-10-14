@@ -37,7 +37,7 @@ Bulanık çözülme|Blur dissolve
 Dairesel açılma|Iris reveal
 Işık çakması|Light flash
 Oynatma başlığına git|Go to playhead
-Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katmanları sürükleyerek taşı|Clip: select · Edges: trim · Boundary icon: transition · Drag layers to move them
+Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı|Clip: select · Edges: trim · Boundary icon: transition · Drag layers and captions to move them
 Başlangıcı sürükle|Drag start
 Bitişi sürükle|Drag end
 Önceki kesim noktası|Previous edit point
