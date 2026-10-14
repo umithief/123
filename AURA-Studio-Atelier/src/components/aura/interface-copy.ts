@@ -43,6 +43,28 @@ Bitişi sürükle|Drag end
 Önceki kesim noktası|Previous edit point
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
+Vuruşlara böl|Split on beats
+Kapat|Close
+Vuruşlar bulunamadı|No beats found
+vuruş bulundu|beats found
+Bu parçada vuruş bulunamadı.|No beats were found in this track.
+Nereyi bölelim?|What should be split?
+Bölme alanı|Split range
+Tüm video|Whole video
+Seçili klip|Selected clip
+Ne sıklıkla?|How often?
+Kesim sıklığı|Cut frequency
+Her vuruş|Every beat
+2 vuruş|2 beats
+4 vuruş · 1 ölçü|4 beats · 1 bar
+8 vuruş · 2 ölçü|8 beats · 2 bars
+Kesimlerde geçiş|Transition at cuts
+kesim eklenecek|cuts will be added
+parçalar|parts
+Bu aralıkta eklenecek kesim yok.|There are no cuts to add in this range.
+Bir videoda en fazla 60 parça olabilir; ilk|A video can have at most 60 parts; the first
+kesim eklenecek. Tümü için daha seyrek bir aralık seçin.|cuts will be added. Pick a sparser interval for all of them.
+Bir videoda en fazla 60 parça olabilir. Önce bazı kesimleri birleştirin veya silin.|A video can have at most 60 parts. Delete some cuts first.
 Otomatik sahne ayırma|Automatic scene splitting
 Sahne değişimlerini cihazda bulur ve ayrı kliplere böler.|Finds scene changes on your device and splits them into separate clips.
 Kesimleri kontrol edin; istemediklerinizi kaldırın.|Review the cuts and deselect any you do not want.

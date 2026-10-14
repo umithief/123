@@ -1,4 +1,19 @@
-AURA Studio Atelier 1.27.0 — Android
+AURA Studio Atelier 1.28.0 — Android
+
+## 1.28.0 — vuruşlara göre otomatik bölme
+
+**Vuruşlara böl.** Zaman çizelgesi araç satırındaki davul düğmesi bir pencere açar. Şarkının temposu (≈ BPM) ve bulunan vuruş sayısı gösterilir; seçimlere göre video tek dokunuşla müziğin vuruşlarından kesilir.
+- **Nereyi:** Tüm video ya da yalnızca seçili klip.
+- **Ne sıklıkla:** Her vuruş, 2 vuruş, 4 vuruş (1 ölçü) veya 8 vuruş (2 ölçü). Sayım ilk vuruştan başladığı için 4 ve 8 vuruşluk kesimler ölçü başlarına düşer.
+- **Geçiş:** İsterseniz yeni kesimlerin hepsine aynı geçiş (çapraz çözülme, ışık çakması, zoom…) eklenir; süresi tempoya göre bir vuruşu aşmayacak şekilde ayarlanır.
+- Kaç kesim ekleneceği ve parçaların ortalama süresi önceden yazar. Bir videoda en fazla 60 parça olabildiği için sınır aşılacaksa uyarır ve daha seyrek aralık önerir.
+- Tüm kesimler tek adımda eklenir; tek Geri al ile hepsi geri alınır.
+
+**Düzenli vuruş ızgarası.** Vuruşlar artık algılanan seslerden çıkarılan sabit bir tempo ızgarasına oturtulur (70–160 BPM). Izgara her vuruşta yakındaki gerçek vuruşa çekildiği için uzun şarkılarda kayma olmaz. Cetveldeki vuruş noktaları ve mıknatıs da bu ızgarayı kullanır; hi-hat gibi ara sesler artık ayrı vuruş sayılmaz.
+
+### 1.28.0 doğrulaması
+
+TypeScript ve 74 AURA birim testi geçti (tempo ızgarası, kayma, kesim noktaları, 60 parça sınırı ve geçiş işaretleme testleri dahil). Tarayıcıda 30 sn'lik 120 BPM test parçasında tempo 120 BPM bulundu; 4 vuruşta bir bölme 0,99–28,99 sn'de 15 kesim ve 15 geçiş ekledi; Geri al tek adımda kaldırdı, Yinele geri getirdi; seçili klip kapsamı yalnızca o klibi böldü. Masaüstü ve telefon ekranında denendi; önceki zaman çizelgesi, altyazı, geri alma ve otomatik kayıt testleri yeniden geçti. Gerçek şarkılarla ve fiziksel cihazda test yapılmadı.
 
 ## 1.27.0 — altyazılarda çok adımlı geri alma
 

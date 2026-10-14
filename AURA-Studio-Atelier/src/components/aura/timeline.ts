@@ -1,4 +1,5 @@
-import type { EditClip } from "./editor";
+import { splitClip, type EditClip } from "./editor.ts";
+import type { SceneTransition } from "./scene-transitions.ts";
 import type { CaptionCue } from "./captions";
 
 export function trimmedClip(
@@ -138,7 +139,8 @@ export function draggedItem<
     return { ...item, end: Math.max(item.start + 0.1, Math.min(limit, end)) };
   }
   // Trimming the start: the source may not be rewound before its beginning.
-  const rate = kind === "media" ? (item.kind === "video" ? item.rate || 1 : 0) : kind === "sound" ? 1 : 0;
+  const rate =
+    kind === "media" ? (item.kind === "video" ? item.rate || 1 : 0) : kind === "sound" ? 1 : 0;
   let start = Math.max(0, Math.min(item.end - 0.1, item.start + delta));
   if (rate > 0) start = Math.max(start, item.start - (item.offset || 0) / rate);
   const next = { ...item, start };
@@ -205,4 +207,116 @@ export function retimedCues(
       return retimedCue(c, "start", moved.end - c.start, duration);
     return c;
   });
+}
+
+/** A steady beat grid from detected onsets: the tempo is the inter-onset
+ *  period (70–160 BPM) that most onsets agree with, and each beat is pulled
+ *  onto a nearby onset so a long song does not drift. Falls back to the raw
+ *  onsets when there are too few to judge a tempo. */
+export function beatGrid(
+  onsets: number[],
+  duration: number,
+): { beats: number[]; bpm: number | null } {
+  if (onsets.length < 8) return { beats: onsets, bpm: null };
+  // The tempo is judged on the first 600 onsets; the walk below follows drift.
+  const sample = onsets.slice(0, 600);
+  let period = 0,
+    best = -1;
+  for (let p = 0.375; p <= 0.857; p += 0.0025) {
+    let score = 0;
+    for (let i = 0; i < sample.length; i++)
+      for (let j = i + 1; j < sample.length && sample[j] - sample[i] < p * 4.2; j++) {
+        const d = sample[j] - sample[i],
+          k = Math.round(d / p);
+        if (k < 1) continue;
+        const miss = (d - k * p) / 0.025;
+        score += Math.exp(-miss * miss) / k;
+      }
+    if (score > best) {
+      best = score;
+      period = p;
+    }
+  }
+  // Phase: where most of the opening onsets fall on the grid (later ones may
+  // have drifted); the grid starts at the first onset on it, not in silence.
+  const opening = onsets.filter((t) => t < onsets[0] + 16);
+  let phase = 0,
+    hits = -1;
+  for (let f = 0; f < period; f += 0.005) {
+    let count = 0;
+    for (const t of opening) {
+      const r = (((t - f) % period) + period) % period;
+      if (Math.min(r, period - r) < 0.04) count++;
+    }
+    if (count > hits) {
+      hits = count;
+      phase = f;
+    }
+  }
+  const first = onsets.find((t) => {
+    const r = (((t - phase) % period) + period) % period;
+    return Math.min(r, period - r) < 0.04;
+  });
+  const beats: number[] = [];
+  let at = first ?? phase,
+    cursor = 0;
+  while (at <= duration + 1e-6 && beats.length < 5000) {
+    while (cursor < onsets.length && onsets[cursor] < at - 0.08) cursor++;
+    const near =
+      cursor < onsets.length && Math.abs(onsets[cursor] - at) <= 0.08 ? onsets[cursor] : null;
+    if (near !== null) at = near;
+    beats.push(Number(at.toFixed(3)));
+    at += period;
+  }
+  return { beats, bpm: Math.round(60 / period) };
+}
+
+/** Timeline times to cut at: every `every`-th beat inside [from, to], away
+ *  from existing cuts and the range edges. */
+export function beatCutTimes(
+  beats: number[],
+  clips: EditClip[],
+  every: number,
+  from: number,
+  to: number,
+  gap = 0.2,
+): number[] {
+  const edges = [0];
+  let at = 0;
+  for (const clip of clips) edges.push((at += (clip.out - clip.in) / clip.rate));
+  // A beat right at the start of the range counts as its first beat.
+  const inside = timelineMarks(beats, clips).filter((t) => t >= from - 0.05 && t < to - 1e-6);
+  return (
+    inside
+      // Counting from the first beat keeps 4-beat cuts on the bar lines.
+      .filter((_, i) => i % every === 0)
+      .filter((t) => t - from >= gap && to - t >= gap && edges.every((e) => Math.abs(e - t) >= gap))
+      .filter((t, i, list) => i === 0 || t - list[i - 1] >= gap)
+  );
+}
+
+/** Cuts the timeline at `times` (one undo step for the caller). New cuts may
+ *  get a transition; stops at `limit` clips and reports what was left out. */
+export function splitAtTimes(
+  clips: EditClip[],
+  times: number[],
+  limit: number,
+  transition?: SceneTransition,
+): { clips: EditClip[]; added: number; skipped: number } {
+  let next = clips,
+    added = 0;
+  for (const time of times) {
+    if (next.length >= limit) break;
+    const split = splitClip(next, time);
+    if (split === next) continue;
+    next = split;
+    added++;
+  }
+  if (transition && transition.id !== "none") {
+    const old = new Set(clips.map((c) => c.id));
+    next = next.map((c, i) =>
+      i > 0 && !old.has(c.id) ? { ...c, transition: { ...transition } } : c,
+    );
+  }
+  return { clips: next, added, skipped: times.length - added };
 }

@@ -25,6 +25,7 @@ import {
   ArrowRightLeft,
   LocateFixed,
   Magnet,
+  Drum,
   SkipBack,
   SkipForward,
 } from "lucide-react";
@@ -42,7 +43,9 @@ import {
   type Overlay,
   type SoundLayer,
 } from "./editor";
+import { BeatSplitPanel, MAX_CLIPS } from "./beat-split-panel";
 import {
+  beatGrid,
   captionSegments,
   detectBeats,
   draggedItem,
@@ -146,6 +149,9 @@ export function EditorTimeline({
     [peaks, setPeaks] = useState<number[]>([]);
   const [trimming, setTrimming] = useState(false);
   const [beats, setBeats] = useState<number[]>([]);
+  const [beatSplitOpen, setBeatSplitOpen] = useState(false);
+  // Marks, snapping and beat cuts use the steady grid rather than every onset.
+  const grid = useMemo(() => beatGrid(beats, duration), [beats, duration]);
   const [snap, setSnap] = useState(() => {
     try {
       return localStorage.getItem(SNAP_KEY) !== "off";
@@ -388,7 +394,7 @@ export function EditorTimeline({
         ...[...action.before.media, ...action.before.layers, ...action.before.sounds].flatMap(
           (item) => [item.start, item.end],
         ),
-        ...timelineMarks(beats, [...head, { ...clip, out: duration }]),
+        ...timelineMarks(grid.beats, [...head, { ...clip, out: duration }]),
       ];
       const target = snapTo(end, targets, 8 / action.scale);
       if (target !== null && target > start)
@@ -440,7 +446,7 @@ export function EditorTimeline({
       ...editPoints(except),
       ...captions.filter((c) => c.cue !== except).flatMap((c) => [c.start, c.end]),
       e.draw.current.time,
-      ...timelineMarks(beats, e.draw.current.project.clips),
+      ...timelineMarks(grid.beats, e.draw.current.project.clips),
     ];
   }
   function jump(direction: -1 | 1) {
@@ -715,7 +721,10 @@ export function EditorTimeline({
   // Ruler labels follow the visible section rather than allocating thousands of nodes.
   const [scrollAt, setScrollAt] = useState(0);
   const firstTick = Math.floor(scrollAt / scale / tick) * tick;
-  const beatMarks = useMemo(() => timelineMarks(beats, e.project.clips), [beats, e.project.clips]);
+  const beatMarks = useMemo(
+    () => timelineMarks(grid.beats, e.project.clips),
+    [grid.beats, e.project.clips],
+  );
   const visibleBeats = beatMarks.filter(
     (b) => b * scale >= scrollAt - 20 && b * scale <= scrollAt + viewport + 20,
   );
@@ -798,6 +807,19 @@ export function EditorTimeline({
           >
             <Scissors className="size-4" />
             {ui("Böl")}
+          </Button>
+          <Button
+            variant="ghost"
+            className="timeline-beat-split"
+            aria-label={ui("Vuruşlara böl")}
+            title={ui(beats.length ? "Vuruşlara böl" : "Vuruşlar bulunamadı")}
+            disabled={disabled || !file || !beats.length || e.project.clips.length >= MAX_CLIPS}
+            onClick={() => {
+              onPause();
+              setBeatSplitOpen(true);
+            }}
+          >
+            <Drum className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -1126,6 +1148,16 @@ export function EditorTimeline({
           {ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı")}
         </p>
       )}
+      <BeatSplitPanel
+        open={beatSplitOpen}
+        onClose={() => setBeatSplitOpen(false)}
+        clips={e.project.clips}
+        selected={e.selected}
+        beats={grid.beats}
+        bpm={grid.bpm}
+        disabled={disabled}
+        onApply={(next) => e.commit({ ...e.draw.current.project, clips: next })}
+      />
       <TransitionPanel
         editor={e}
         incomingId={transitionId}

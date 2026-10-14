@@ -4838,3 +4838,44 @@
 .edit-timeline .timeline-playhead {
   z-index: 6;
 }
+
+/* 1.28 beat split dialog. */
+.beat-split-dialog {
+  width: min(30rem, calc(100% - 2rem));
+}
+.beat-split-field {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+.beat-split-field > span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.beat-split-summary {
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--color-raised);
+}
+.transition-dialog .beat-split-apply {
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 2rem;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .beat-split-dialog.transition-dialog {
+    width: 100%;
+  }
+}
+.beat-split-dialog .choice-strip {
+  flex-wrap: wrap;
+  overflow: visible;
+}
