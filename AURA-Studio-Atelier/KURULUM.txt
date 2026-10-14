@@ -1,4 +1,18 @@
-AURA Studio Atelier 1.24.0 — Android
+AURA Studio Atelier 1.25.0 — Android
+
+## 1.25.0 — daha yetenekli zaman çizelgesi
+
+**Katmanları sürükle.** Yazı, görüntü ve ek ses katmanları zaman çizelgesinde sürüklenerek taşınır. Seçili katmanın iki ucundaki tutamaklarla başlangıcı ve bitişi uzatılıp kısaltılır. Başı kısaltılan ses ve videolar içerikte kaymadan devam eder; taşınan yazının anahtar kareleri de onunla birlikte gelir. Telefonda önce katmana dokunup seçin, sonra sürükleyin; seçili olmayan katmanın üstünde kaydırma yapınca çizelge kayar.
+**Mıknatıs.** Açıkken sürüklenen kenarlar oynatma başlığına, kesimlere, diğer katmanların uçlarına ve müzikteki vuruşlara yapışır; ana kliplerin bitişini kırparken de çalışır. Yapışınca zaman balonu renk değiştirir. Araç satırındaki mıknatıs düğmesiyle kapatılır, seçim hatırlanır.
+**Vuruş işaretleri.** Müzik yüklenince vuruşlar bulunur ve cetvelde nokta olarak gösterilir; kesim ve katmanları ritme oturtmak kolaylaşır.
+**Kesim noktaları arasında atlama.** ⏮ ⏭ düğmeleri oynatma başlığını önceki veya sonraki kesime ya da katman ucuna götürür.
+**İki parmakla yakınlaştırma.** Telefonda çizelge iki parmakla 8 kata kadar yakınlaştırılır; masaüstünde Ctrl + fare tekerleği. Yakınlaştırma parmakların ortasındaki anı yerinde tutar.
+**Hassas zaman balonu.** Cetvelde gezinirken veya bir ucu sürüklerken anlık zaman 0:12.4 biçiminde gösterilir.
+**Klavye.** Cetvelde Shift + ok 1 saniye ilerletir; seçili katman Alt + ok ile 0,1 sn (Shift ile 1 sn) kaydırılır.
+
+### 1.25.0 doğrulaması
+
+TypeScript ve 65 AURA birim testi geçti (vuruş tespiti, kesimlere göre vuruş yerleşimi, yapışma ve katman sürükleme için 7 yeni test dahil). Tarayıcıda fare ve dokunmatikle katman taşıma, uçtan kısaltma, vuruşa yapışma, geri alma, kesim noktası atlama, iki parmakla ve Ctrl + tekerlekle yakınlaştırma denendi; otomatik kayıt ve yerleşim testleri yeniden geçti. Fiziksel cihaz testi yapılmadı.
 
 ## 1.24.0 — kompakt ve sade telefon tasarımı
 

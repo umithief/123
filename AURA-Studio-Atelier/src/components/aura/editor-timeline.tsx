@@ -1,6 +1,15 @@
 import { ui } from "./interface-copy";
 import { createId } from "./id.ts";
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   Scissors,
   Copy,
@@ -15,6 +24,9 @@ import {
   AudioLines,
   ArrowRightLeft,
   LocateFixed,
+  Magnet,
+  SkipBack,
+  SkipForward,
 } from "lucide-react";
 import { useClipThumbnails } from "./video-frames";
 import { TransitionPanel } from "./transition-panel";
@@ -22,11 +34,36 @@ import { SCENE_TRANSITIONS, sceneTransitionDuration } from "./scene-transitions"
 import { Button } from "../ui/button";
 import type { useEditor } from "./use-editor";
 import type { CaptionCue } from "./captions";
-import { clipDuration, type EditClip, type EditorProject } from "./editor";
-import { captionSegments, trimmedClip } from "./timeline";
+import {
+  clipDuration,
+  type EditClip,
+  type EditorProject,
+  type MediaClip,
+  type Overlay,
+  type SoundLayer,
+} from "./editor";
+import {
+  captionSegments,
+  detectBeats,
+  draggedItem,
+  snapTo,
+  timelineMarks,
+  trimmedClip,
+  type ItemDrag,
+  type TimelineItemKind,
+} from "./timeline";
 import { formatTime } from "./studio-panels";
 import type { StudioTool } from "./studio-guide";
 type Editor = ReturnType<typeof useEditor>;
+type TrackItem = MediaClip | Overlay | SoundLayer;
+const LIST = { media: "media", layer: "layers", sound: "sounds" } as const;
+const SNAP_KEY = "aura-timeline-snap";
+
+/** m:ss.t — precise enough for placing a cut on a beat. */
+function preciseTime(seconds: number) {
+  const tenths = Math.round(Math.max(0, seconds) * 10);
+  return `${Math.floor(tenths / 600)}:${String(Math.floor(tenths / 10) % 60).padStart(2, "0")}.${tenths % 10}`;
+}
 
 function ClipWave({
   peaks,
@@ -99,6 +136,30 @@ export function EditorTimeline({
     [zoom, setZoom] = useState(1),
     [peaks, setPeaks] = useState<number[]>([]);
   const [trimming, setTrimming] = useState(false);
+  const [beats, setBeats] = useState<number[]>([]);
+  const [snap, setSnap] = useState(() => {
+    try {
+      return localStorage.getItem(SNAP_KEY) !== "off";
+    } catch {
+      return true;
+    }
+  });
+  // Time bubble above the playhead or the edge being dragged.
+  const [bubble, setBubble] = useState<{ at: number; snapped: boolean } | null>(null);
+  const itemDrag = useRef<{
+    kind: TimelineItemKind;
+    id: string;
+    mode: ItemDrag;
+    x: number;
+    before: EditorProject;
+    item: TrackItem;
+    moved: boolean;
+  } | null>(null);
+  // A finished drag must not also count as a tap on the item.
+  const suppressClick = useRef(0);
+  const anchor = useRef<{ time: number; x: number } | null>(null);
+  const zoomRef = useRef(zoom),
+    scaleRef = useRef(1);
   const trim = useRef<{
     before: EditorProject;
     clip: EditClip;
@@ -114,6 +175,8 @@ export function EditorTimeline({
       Math.max(24, Math.min(60, (viewport - 48) / Math.max(6, e.total))),
     ) * zoom;
   const trackWidth = Math.max(viewport, e.total * scale + 48);
+  zoomRef.current = zoom;
+  scaleRef.current = scale;
   const selected = e.project.clips.find((clip) => clip.id === e.selected);
   const captions = useMemo(
     () => captionSegments(cues, e.project.clips, captionOffset),
@@ -132,6 +195,7 @@ export function EditorTimeline({
   useEffect(() => {
     let current = true;
     setPeaks([]);
+    setBeats([]);
     if (!file || file.size > 50 * 1024 * 1024) return;
     void (async () => {
       try {
@@ -148,6 +212,7 @@ export function EditorTimeline({
           next.push(value);
         }
         setPeaks(next);
+        setBeats(detectBeats(samples, buffer.sampleRate));
       } catch {
         /* Some video formats cannot be decoded separately; editing still works. */
       }
@@ -163,13 +228,89 @@ export function EditorTimeline({
     if (cursor < node.scrollLeft || cursor > node.scrollLeft + node.clientWidth - 40)
       node.scrollLeft = Math.max(0, cursor - node.clientWidth / 2);
   }, [e.time, scale, playing, trimming]);
+  // Zooming keeps the anchored moment (playhead, pinch centre or pointer) in place.
+  useLayoutEffect(() => {
+    const node = scroll.current,
+      point = anchor.current;
+    if (!node || !point) return;
+    anchor.current = null;
+    node.scrollLeft = Math.max(0, point.time * scale - point.x);
+  }, [scale]);
+  function zoomTo(next: number, point?: { time: number; x: number }) {
+    const node = scroll.current,
+      value = Math.max(1, Math.min(8, next));
+    if (Math.abs(value - zoomRef.current) < 0.001) return;
+    anchor.current = point ?? {
+      time: e.draw.current.time,
+      x: (node?.clientWidth ?? viewport) / 2,
+    };
+    setZoom(value);
+  }
+  // Native listeners are attached once; they reach the latest render through refs.
+  const live = useRef({ zoomTo, cancelDrag: () => {} });
+  live.current = {
+    zoomTo,
+    cancelDrag: () => {
+      if (!itemDrag.current) return;
+      e.preview(itemDrag.current.before);
+      itemDrag.current = null;
+      setBubble(null);
+    },
+  };
   useEffect(() => {
-    if (scroll.current)
-      scroll.current.scrollLeft = Math.max(
-        0,
-        e.draw.current.time * scale - scroll.current.clientWidth / 2,
-      );
-  }, [zoom]);
+    const node = scroll.current;
+    if (!node) return;
+    let pinch: { distance: number; zoom: number; time: number; x: number } | null = null;
+    const spread = (t: TouchList) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const start = (event: TouchEvent) => {
+      if (event.touches.length !== 2) return;
+      // A second finger turns any scrub or drag into a pinch.
+      scrubbing.current = false;
+      live.current.cancelDrag();
+      const x =
+        (event.touches[0].clientX + event.touches[1].clientX) / 2 -
+        node.getBoundingClientRect().left;
+      pinch = {
+        distance: Math.max(1, spread(event.touches)),
+        zoom: zoomRef.current,
+        time: (x + node.scrollLeft) / scaleRef.current,
+        x,
+      };
+    };
+    const move = (event: TouchEvent) => {
+      if (!pinch || event.touches.length !== 2) return;
+      event.preventDefault();
+      live.current.zoomTo((pinch.zoom * spread(event.touches)) / pinch.distance, {
+        time: pinch.time,
+        x: pinch.x,
+      });
+    };
+    const end = (event: TouchEvent) => {
+      if (event.touches.length < 2) pinch = null;
+    };
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const x = event.clientX - node.getBoundingClientRect().left;
+      live.current.zoomTo(zoomRef.current * Math.exp(-event.deltaY * 0.002), {
+        time: (x + node.scrollLeft) / scaleRef.current,
+        x,
+      });
+    };
+    node.addEventListener("touchstart", start, { passive: true });
+    node.addEventListener("touchmove", move, { passive: false });
+    node.addEventListener("touchend", end);
+    node.addEventListener("touchcancel", end);
+    node.addEventListener("wheel", wheel, { passive: false });
+    return () => {
+      node.removeEventListener("touchstart", start);
+      node.removeEventListener("touchmove", move);
+      node.removeEventListener("touchend", end);
+      node.removeEventListener("touchcancel", end);
+      node.removeEventListener("wheel", wheel);
+    };
+  }, []);
   useEffect(
     () => () => {
       if (trim.current) e.preview(trim.current.before);
@@ -179,8 +320,13 @@ export function EditorTimeline({
   function seekPointer(event: PointerEvent<HTMLElement>) {
     const node = scroll.current;
     if (!node) return;
-    const at = (event.clientX - node.getBoundingClientRect().left + node.scrollLeft) / scale;
-    e.seek(Math.max(0, Math.min(e.total, at)));
+    let at = (event.clientX - node.getBoundingClientRect().left + node.scrollLeft) / scale;
+    at = Math.max(0, Math.min(e.total, at));
+    // Scrubbing with the magnet on settles on cuts and item edges.
+    const snapped = snap ? snapTo(at, editPoints(), 8 / scale) : null;
+    if (snapped !== null) at = snapped;
+    e.seek(at);
+    setBubble({ at, snapped: snapped !== null });
   }
   function startScrub(event: PointerEvent<HTMLElement>) {
     if (disabled || !file || event.button !== 0) return;
@@ -191,6 +337,7 @@ export function EditorTimeline({
   }
   function stopScrub(event: PointerEvent<HTMLElement>) {
     scrubbing.current = false;
+    setBubble(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
   }
@@ -206,12 +353,37 @@ export function EditorTimeline({
   function moveTrim(event: PointerEvent<HTMLButtonElement>) {
     const action = trim.current;
     if (!action) return;
-    const clip = trimmedClip(
+    let clip = trimmedClip(
       action.clip,
       action.edge,
       ((event.clientX - action.x) / action.scale) * action.clip.rate,
       duration,
     );
+    // The end of a cut can land on the playhead, a beat or another edge.
+    const start = clipStart(action.before.clips, clip.id);
+    if (snap && action.edge === "out") {
+      // Targets come from the project before the drag; cuts after this one move with it.
+      const index = action.before.clips.findIndex((c) => c.id === clip.id),
+        head = action.before.clips.slice(0, index),
+        end = start + clipDuration(clip);
+      const targets = [
+        0,
+        ...head.map((c) => clipStart(action.before.clips, c.id)),
+        start,
+        e.draw.current.time,
+        ...[...action.before.media, ...action.before.layers, ...action.before.sounds].flatMap(
+          (item) => [item.start, item.end],
+        ),
+        ...timelineMarks(beats, [...head, { ...clip, out: duration }]),
+      ];
+      const target = snapTo(end, targets, 8 / action.scale);
+      if (target !== null && target > start)
+        clip = trimmedClip(clip, "out", (target - end) * clip.rate, duration);
+    }
+    setBubble({
+      at: action.edge === "out" ? start + clipDuration(clip) : start,
+      snapped: false,
+    });
     e.preview({
       ...action.before,
       clips: action.before.clips.map((c) => (c.id === clip.id ? clip : c)),
@@ -222,12 +394,213 @@ export function EditorTimeline({
     if (!action) return;
     trim.current = null;
     setTrimming(false);
+    setBubble(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
     const next = e.draw.current.project;
     if (cancelled) e.preview(action.before);
     else if (JSON.stringify(next.clips) !== JSON.stringify(action.before.clips))
       e.commit(next, action.before);
+  }
+  function clipStart(list: EditClip[], id: string) {
+    let at = 0;
+    for (const clip of list) {
+      if (clip.id === id) return at;
+      at += clipDuration(clip);
+    }
+    return at;
+  }
+  /** Cut points and item edges in timeline time. */
+  function editPoints(except = "") {
+    const project = e.draw.current.project,
+      points = [0];
+    let at = 0;
+    for (const clip of project.clips) points.push((at += clipDuration(clip)));
+    for (const item of [...project.media, ...project.layers, ...project.sounds])
+      if (item.id !== except && !("sourceVideo" in item && item.sourceVideo))
+        points.push(item.start, item.end);
+    return points;
+  }
+  function snapTargets(except = "") {
+    return [
+      ...editPoints(except),
+      e.draw.current.time,
+      ...timelineMarks(beats, e.draw.current.project.clips),
+    ];
+  }
+  function jump(direction: -1 | 1) {
+    const now = e.draw.current.time,
+      points = [...new Set(editPoints().map((p) => Math.min(e.total, p)))].sort((a, b) => a - b);
+    const next =
+      direction > 0
+        ? points.find((p) => p > now + 0.02)
+        : [...points].reverse().find((p) => p < now - 0.02);
+    if (next === undefined) return;
+    onPause();
+    e.seek(next);
+    const node = scroll.current;
+    if (node && (next * scale < node.scrollLeft || next * scale > node.scrollLeft + node.clientWidth - 40))
+      node.scrollLeft = Math.max(0, next * scale - node.clientWidth / 2);
+  }
+  function toggleSnap() {
+    const next = !snap;
+    setSnap(next);
+    try {
+      localStorage.setItem(SNAP_KEY, next ? "on" : "off");
+    } catch {
+      /* The choice simply is not remembered. */
+    }
+  }
+  function replaceItem(project: EditorProject, kind: TimelineItemKind, item: TrackItem) {
+    const key = LIST[kind];
+    return {
+      ...project,
+      [key]: (project[key] as TrackItem[]).map((c) => (c.id === item.id ? item : c)),
+    } as EditorProject;
+  }
+  /** Applies a drag of `delta` seconds, pulled onto the nearest snap target. */
+  function draggedWithSnap(
+    kind: TimelineItemKind,
+    item: TrackItem,
+    mode: ItemDrag,
+    delta: number,
+    threshold: number,
+  ) {
+    let next = draggedItem(item, kind, mode, delta, e.total);
+    let snapped = false;
+    if (snap) {
+      const targets = snapTargets(item.id);
+      const edges =
+        mode === "move" ? (["start", "end"] as const) : mode === "start" ? (["start"] as const) : (["end"] as const);
+      let best: { shift: number } | null = null;
+      for (const edge of edges) {
+        const target = snapTo(next[edge], targets, threshold);
+        if (target !== null && (!best || Math.abs(target - next[edge]) < Math.abs(best.shift)))
+          best = { shift: target - next[edge] };
+      }
+      if (best) {
+        next = draggedItem(item, kind, mode, delta + best.shift, e.total);
+        snapped = true;
+      }
+    }
+    return { next, snapped };
+  }
+  function startItemDrag(
+    event: PointerEvent<HTMLElement>,
+    kind: TimelineItemKind,
+    item: TrackItem,
+    mode: ItemDrag,
+  ) {
+    if (disabled || event.button !== 0) return;
+    // On touch an item is dragged once selected; until then a swipe scrolls.
+    if (mode === "move" && event.pointerType === "touch" && e.selected !== item.id) return;
+    if (mode !== "move") event.stopPropagation();
+    itemDrag.current = {
+      kind,
+      id: item.id,
+      mode,
+      x: event.clientX,
+      before: e.draw.current.project,
+      item,
+      moved: false,
+    };
+    if (mode !== "move" || event.pointerType !== "mouse")
+      event.currentTarget.setPointerCapture(event.pointerId);
+  }
+  function moveItemDrag(event: PointerEvent<HTMLElement>) {
+    const drag = itemDrag.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    if (!drag.moved) {
+      if (Math.abs(dx) < 6) return;
+      drag.moved = true;
+      onPause();
+      e.setSelected(drag.id);
+      if (!event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    const { next, snapped } = draggedWithSnap(drag.kind, drag.item, drag.mode, dx / scale, 8 / scale);
+    e.preview(replaceItem(drag.before, drag.kind, next));
+    setBubble({ at: drag.mode === "end" ? next.end : next.start, snapped });
+  }
+  function stopItemDrag(event: PointerEvent<HTMLElement>, cancelled = false) {
+    const drag = itemDrag.current;
+    if (!drag) return;
+    itemDrag.current = null;
+    setBubble(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!drag.moved) return;
+    suppressClick.current = performance.now() + 400;
+    if (cancelled) e.preview(drag.before);
+    else e.commit(e.draw.current.project, drag.before);
+  }
+  function nudgeItem(
+    event: KeyboardEvent<HTMLElement>,
+    kind: TimelineItemKind,
+    item: TrackItem,
+    mode: ItemDrag,
+  ) {
+    if (disabled || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    if (mode === "move" && !event.altKey) return;
+    event.preventDefault();
+    const step = (event.shiftKey ? 1 : 0.1) * (event.key === "ArrowLeft" ? -1 : 1);
+    const current = e.draw.current.project;
+    e.commit(replaceItem(current, kind, draggedItem(item, kind, mode, step, e.total)));
+  }
+  function trackItem(
+    kind: TimelineItemKind,
+    item: TrackItem,
+    options: { className: string; icon: ReactNode; label: string; text: string; tool: StudioTool },
+  ) {
+    const left = item.start * scale,
+      width = Math.max(12, (Math.min(e.total, item.end) - item.start) * scale),
+      chosen = e.selected === item.id;
+    return (
+      <div className="timeline-track" key={item.id}>
+        <Button
+          disabled={disabled}
+          className={`timeline-item ${options.className}`}
+          style={{ left, width }}
+          aria-label={options.label}
+          aria-pressed={chosen}
+          aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+          onPointerDown={(event) => startItemDrag(event, kind, item, "move")}
+          onPointerMove={moveItemDrag}
+          onPointerUp={(event) => stopItemDrag(event)}
+          onPointerCancel={(event) => stopItemDrag(event, true)}
+          onKeyDown={(event) => nudgeItem(event, kind, item, "move")}
+          onClick={() => {
+            if (performance.now() < suppressClick.current) return;
+            e.setSelected(item.id);
+            onPause();
+            e.seek(item.start);
+            onTool(options.tool);
+          }}
+        >
+          {options.icon}
+          <span>{options.text}</span>
+        </Button>
+        {chosen &&
+          (["start", "end"] as const).map((edge) => (
+            <button
+              key={edge}
+              type="button"
+              disabled={disabled}
+              className={`item-trim item-trim-${edge}`}
+              style={{ left: edge === "start" ? left : left + width }}
+              aria-label={ui(edge === "start" ? "Başlangıcı sürükle" : "Bitişi sürükle")}
+              onPointerDown={(event) => startItemDrag(event, kind, item, edge)}
+              onPointerMove={moveItemDrag}
+              onPointerUp={(event) => stopItemDrag(event)}
+              onPointerCancel={(event) => stopItemDrag(event, true)}
+              onKeyDown={(event) => nudgeItem(event, kind, item, edge)}
+            >
+              <span />
+            </button>
+          ))}
+      </div>
+    );
   }
   let at = 0;
   const clips = e.project.clips.map((clip, i) => {
@@ -243,6 +616,10 @@ export function EditorTimeline({
   // Ruler labels follow the visible section rather than allocating thousands of nodes.
   const [scrollAt, setScrollAt] = useState(0);
   const firstTick = Math.floor(scrollAt / scale / tick) * tick;
+  const beatMarks = useMemo(() => timelineMarks(beats, e.project.clips), [beats, e.project.clips]);
+  const visibleBeats = beatMarks.filter(
+    (b) => b * scale >= scrollAt - 20 && b * scale <= scrollAt + viewport + 20,
+  );
   return (
     <section
       className={`edit-timeline ${compact ? "is-compact" : ""}`}
@@ -269,18 +646,49 @@ export function EditorTimeline({
           </Button>
           <Button
             variant="ghost"
+            aria-label={ui("Önceki kesim noktası")}
+            title={ui("Önceki kesim noktası")}
+            disabled={!file}
+            onClick={() => jump(-1)}
+          >
+            <SkipBack className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            aria-label={ui("Sonraki kesim noktası")}
+            title={ui("Sonraki kesim noktası")}
+            disabled={!file}
+            onClick={() => jump(1)}
+          >
+            <SkipForward className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="timeline-snap"
+            aria-label={ui("Mıknatıs: kenarları ve vuruşları yakala")}
+            title={ui("Mıknatıs: kenarları ve vuruşları yakala")}
+            aria-pressed={snap}
+            disabled={!file}
+            onClick={toggleSnap}
+          >
+            <Magnet className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            className="timeline-zoom-button"
             aria-label={ui("Zaman çizelgesini uzaklaştır")}
             disabled={zoom <= 1}
-            onClick={() => setZoom(Math.max(1, zoom / 1.5))}
+            onClick={() => zoomTo(zoom / 1.5)}
           >
             <Minus className="size-4" />
           </Button>
           <span className="timeline-zoom">{zoom.toFixed(1)}×</span>
           <Button
             variant="ghost"
+            className="timeline-zoom-button"
             aria-label={ui("Zaman çizelgesini yakınlaştır")}
-            disabled={zoom >= 4}
-            onClick={() => setZoom(Math.min(4, zoom * 1.5))}
+            disabled={zoom >= 8}
+            onClick={() => zoomTo(zoom * 1.5)}
           >
             <Plus className="size-4" />
           </Button>
@@ -361,7 +769,8 @@ export function EditorTimeline({
                         0,
                         Math.min(
                           e.total,
-                          e.draw.current.time + (event.key === "ArrowLeft" ? -0.1 : 0.1),
+                          e.draw.current.time +
+                            (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 1 : 0.1),
                         ),
                       ),
               );
@@ -371,6 +780,9 @@ export function EditorTimeline({
               <span key={value} style={{ left: (value + firstTick) * scale }}>
                 {formatTime(value + firstTick)}
               </span>
+            ))}
+            {visibleBeats.map((b) => (
+              <i key={b} className="timeline-beat" style={{ left: b * scale }} aria-hidden="true" />
             ))}
           </div>
           <div
@@ -506,58 +918,28 @@ export function EditorTimeline({
           <div className="timeline-secondary">
             {media.length > 0 && (
               <div className="timeline-track" role="group" aria-label={ui("Görüntü satırı")}>
-                {media.map((item) => (
-                  <div className="timeline-track" key={item.id}>
-                    <Button
-                      key={item.id}
-                      disabled={disabled}
-                      className="timeline-item track-media"
-                      style={{
-                        left: item.start * scale,
-                        width: Math.max(12, (Math.min(e.total, item.end) - item.start) * scale),
-                      }}
-                      aria-label={ui(`Görüntü: ${item.name}`)}
-                      aria-pressed={e.selected === item.id}
-                      onClick={() => {
-                        e.setSelected(item.id);
-                        onPause();
-                        e.seek(item.start);
-                        onTool("media");
-                      }}
-                    >
-                      <ImagePlus className="size-3" />
-                      <span>{item.name}</span>
-                    </Button>
-                  </div>
-                ))}
+                {media.map((item) =>
+                  trackItem("media", item, {
+                    className: "track-media",
+                    icon: <ImagePlus className="size-3" />,
+                    label: ui(`Görüntü: ${item.name}`),
+                    text: item.name,
+                    tool: "media",
+                  }),
+                )}
               </div>
             )}
             {e.project.layers.length > 0 && (
               <div className="timeline-track" role="group" aria-label={ui("Yazı ve şekil satırı")}>
-                {e.project.layers.map((item) => (
-                  <div className="timeline-track" key={item.id}>
-                    <Button
-                      key={item.id}
-                      disabled={disabled}
-                      className="timeline-item track-text"
-                      style={{
-                        left: item.start * scale,
-                        width: Math.max(12, (Math.min(e.total, item.end) - item.start) * scale),
-                      }}
-                      aria-label={ui(`Katman: ${item.text || item.kind}`)}
-                      aria-pressed={e.selected === item.id}
-                      onClick={() => {
-                        e.setSelected(item.id);
-                        onPause();
-                        e.seek(item.start);
-                        onTool("layers");
-                      }}
-                    >
-                      <Type className="size-3" />
-                      <span>{item.text || item.kind}</span>
-                    </Button>
-                  </div>
-                ))}
+                {e.project.layers.map((item) =>
+                  trackItem("layer", item, {
+                    className: "track-text",
+                    icon: <Type className="size-3" />,
+                    label: ui(`Katman: ${item.text || item.kind}`),
+                    text: item.text || item.kind,
+                    tool: "layers",
+                  }),
+                )}
               </div>
             )}
             {captions.length > 0 && (
@@ -586,30 +968,15 @@ export function EditorTimeline({
             )}
             {e.project.sounds.length > 0 && (
               <div className="timeline-track" role="group" aria-label={ui("Ek ses satırı")}>
-                {e.project.sounds.map((item) => (
-                  <div className="timeline-track" key={item.id}>
-                    <Button
-                      key={item.id}
-                      disabled={disabled}
-                      className="timeline-item track-sound"
-                      style={{
-                        left: item.start * scale,
-                        width: Math.max(12, (Math.min(e.total, item.end) - item.start) * scale),
-                      }}
-                      aria-label={ui(`Ek ses: ${item.name}`)}
-                      aria-pressed={e.selected === item.id}
-                      onClick={() => {
-                        e.setSelected(item.id);
-                        onPause();
-                        e.seek(item.start);
-                        onTool("voice");
-                      }}
-                    >
-                      <AudioLines className="size-3" />
-                      <span>{item.name}</span>
-                    </Button>
-                  </div>
-                ))}
+                {e.project.sounds.map((item) =>
+                  trackItem("sound", item, {
+                    className: "track-sound",
+                    icon: <AudioLines className="size-3" />,
+                    label: ui(`Ek ses: ${item.name}`),
+                    text: item.name,
+                    tool: "voice",
+                  }),
+                )}
               </div>
             )}
             {file &&
@@ -627,10 +994,19 @@ export function EditorTimeline({
               <div />
             </div>
           )}
+          {file && bubble && (
+            <span
+              className={`timeline-bubble ${bubble.snapped ? "is-snapped" : ""}`}
+              style={{ left: Math.max(24, Math.min(trackWidth - 24, bubble.at * scale)) }}
+              aria-hidden="true"
+            >
+              {preciseTime(bubble.at)}
+            </span>
+          )}
         </div>
       </div>
       {!compact && file && (
-        <p className="timeline-hint">{ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş")}</p>
+        <p className="timeline-hint">{ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katmanları sürükleyerek taşı")}</p>
       )}
       <TransitionPanel
         editor={e}

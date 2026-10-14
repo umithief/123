@@ -4741,3 +4741,90 @@
     font-weight: 600;
   }
 }
+
+/* 1.25 timeline tools: beat marks, snapping, draggable layers, time bubble. */
+.timeline-beat {
+  position: absolute;
+  top: 0.3125rem;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  margin-left: -0.15625rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.timeline-actions .timeline-snap[aria-pressed="true"] {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+.timeline-item {
+  cursor: grab;
+}
+.timeline-item[aria-pressed="true"] {
+  /* A selected item follows the finger instead of scrolling the timeline. */
+  touch-action: none;
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.timeline-item[aria-pressed="true"]:active {
+  cursor: grabbing;
+}
+.item-trim {
+  position: absolute;
+  top: 0;
+  z-index: 4;
+  width: 2rem;
+  height: 2.75rem;
+  margin-left: -1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  cursor: ew-resize;
+}
+.item-trim > span {
+  display: block;
+  width: 0.3125rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-canvas);
+  pointer-events: none;
+}
+.timeline-bubble {
+  position: absolute;
+  top: 0;
+  z-index: 6;
+  transform: translateX(-50%);
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.timeline-bubble.is-snapped {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+@media (max-width: 700px) {
+  /* Pinch zooms on a phone, so the zoom buttons give their room to the
+     edit-point buttons; a row that still overflows scrolls from its start. */
+  .atelier-studio .timeline-actions > div {
+    justify-content: normal;
+  }
+  .atelier-studio .timeline-actions > div > :first-child {
+    margin-left: auto;
+  }
+  .atelier-studio .timeline-actions .timeline-zoom-button {
+    display: none;
+  }
+  .atelier-studio .timeline-actions > div > button {
+    min-width: 2.5rem;
+    padding-inline: 0.375rem;
+  }
+}

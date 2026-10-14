@@ -37,7 +37,12 @@ Bulanık çözülme|Blur dissolve
 Dairesel açılma|Iris reveal
 Işık çakması|Light flash
 Oynatma başlığına git|Go to playhead
-Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş|Clip: select · Edges: trim · Boundary icon: transition
+Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katmanları sürükleyerek taşı|Clip: select · Edges: trim · Boundary icon: transition · Drag layers to move them
+Başlangıcı sürükle|Drag start
+Bitişi sürükle|Drag end
+Önceki kesim noktası|Previous edit point
+Sonraki kesim noktası|Next edit point
+Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Otomatik sahne ayırma|Automatic scene splitting
 Sahne değişimlerini cihazda bulur ve ayrı kliplere böler.|Finds scene changes on your device and splits them into separate clips.
 Kesimleri kontrol edin; istemediklerinizi kaldırın.|Review the cuts and deselect any you do not want.
