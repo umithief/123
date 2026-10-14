@@ -1,4 +1,20 @@
-AURA Studio Atelier 1.29.0 — Android
+AURA Studio Atelier 1.30.0 — Android
+
+## 1.30.0 — hazır düzenleme araçları
+
+**Hazır araçlar.** Kurgu alanındaki **Hazır araçlar** düğmesi ya da zaman çizelgesi araç satırındaki sihirli değnek tek dokunuşluk düzenlemeleri bir arada açar. Her biri tek adımda uygulanır ve tek Geri al ile geri alınır.
+- **En iyi bölüm (15 / 30 / 60 sn):** Şarkının en güçlü (en yüksek enerjili) kısmını bir vuruştan başlayarak seçer, başına ve sonuna yumuşak geçiş koyar; Reels, TikTok ve Shorts için hazır uzunluk. Mevcut kesimlerin yerini alır.
+- **Vuruşlara böl** ve **Görüntüleri vuruşlara yerleştir:** Önceki sürümlerdeki pencereler artık buradan açılır; araç satırında iki düğme yerine tek düğme kaldı.
+- **Sessiz yerleri kes:** 0,6 sn'den uzun sessizlikleri çıkarır (konuşma, vlog, röportaj). Kaç saniye çıkarılacağı önceden yazar; kısa nefes araları korunur.
+- **Baştaki ve sondaki boşluğu kırp:** İlk sesten önceki ve son sesten sonraki sessizliği kırpar; kaç saniye olduğu önceden yazar.
+- **Yumuşak giriş ve çıkış:** Video yavaşça açılır, sonunda yavaşça kısılarak biter.
+- **Tüm kesimlere geçiş:** Bütün kesimlere çapraz çözülme ekler; sonra tek tek değiştirilebilir.
+
+Ayrıca süre göstergesi, kesimlerin toplamındaki küçük yuvarlama artıkları yüzünden 30 sn'yi 0:29 göstermez.
+
+### 1.30.0 doğrulaması
+
+TypeScript ve 83 AURA birim testi geçti (en güçlü bölüm, sessizlik bulma, sessiz yer kesme, 60 parça sınırı, kenar kırpma, yumuşak giriş/çıkış ve toplu geçiş testleri dahil). Tarayıcıda 70 sn'lik test parçasında en iyi 30 sn tam olarak 34,99–64,99 sn'deki güçlü bölümü seçti; sessiz yerleri kes 7,9 sn çıkardı ve ortadaki boşluktan iki parça oluşturdu; kenar kırpma baştan 1,3 sn, sondan 4,8 sn kırptı; vuruşlara böl yeni menüden açılıp 32 parça yaptı; tüm kesimlere geçiş 31 geçiş ekledi. Masaüstü ve telefon ekranında denendi; önceki tüm zaman çizelgesi, altyazı, geri alma, vuruş ve otomatik kayıt testleri yeniden geçti. Gerçek şarkı/video ve fiziksel cihaz testi yapılmadı.
 
 ## 1.29.0 — görüntüleri vuruşlara göre otomatik yerleştirme
 

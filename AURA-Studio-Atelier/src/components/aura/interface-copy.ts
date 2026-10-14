@@ -44,6 +44,31 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Hazır araçlar|Ready-made tools
+Tek dokunuşla düzenle; her biri Geri al ile tek adımda geri alınır.|Edit in one tap; Undo reverts each in a single step.
+En iyi bölüm|Best part
+Şarkının en güçlü kısmını Reels, TikTok veya Shorts için seçer; mevcut kesimlerin yerini alır.|Picks the strongest part of the song for Reels, TikTok or Shorts; it replaces the current cuts.
+Videoyu müziğin vuruşlarından keser.|Cuts the video on the music's beats.
+Fotoğraflar müziğin vuruşunda sırayla değişir.|Photos change in order on the music's beats.
+Aç|Open
+Sessiz yerleri kes|Cut silent parts
+Ses okunamadığı için kullanılamıyor.|Unavailable because the audio could not be read.
+Konuşma ve vlog için:|For talks and vlogs:
+sessizlik çıkarılır.|of silence is removed.
+Çıkarılacak sessizlik bulunamadı.|No silence to remove.
+Kes|Cut
+Baştaki ve sondaki boşluğu kırp|Trim silence at the start and end
+Baştan|From the start
+sondan|from the end
+sessizlik kırpılır.|of silence is trimmed.
+Başta ve sonda sessizlik yok.|There is no silence at the start or end.
+Kırp|Trim
+Yumuşak giriş ve çıkış|Soft start and ending
+Video sessizce açılır, sonunda yavaşça kısılarak biter.|The video fades in and gently fades out at the end.
+Uygula|Apply
+Tüm kesimlere geçiş|Transition on every cut
+kesime çapraz çözülme eklenir.|cuts get a cross dissolve.
+Önce videoyu bölün; tek parçada geçiş olmaz.|Split the video first; a single part has no cuts.
 Görüntüleri vuruşlara yerleştir|Place pictures on beats
 Her görüntü müziğin vuruşunda değişir.|Each picture changes on a beat of the music.
 Görüntüler|Pictures

@@ -864,6 +864,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   // The window key listener is installed once; it reads the current handlers
   // here so it never acts on state captured by the first render.
   // Project and caption edits share one undo/redo, in the order they were made.
+  const [quickToolsSignal, setQuickToolsSignal] = useState(0);
   const canUndoAny = editor.canUndo || captions.canUndo,
     canRedoAny = editor.canRedo || captions.canRedo;
   function undoLast() {
@@ -2117,6 +2118,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   }}
                   onCaptionsPreview={captions.previewCues}
                   onCaptionsCommit={captions.commitCues}
+                  quickToolsSignal={quickToolsSignal}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));
                     openTool("captions");
@@ -2162,6 +2164,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
               workspace={workspace}
               onTool={openTool}
               disabled={locked || loading}
+              onQuickTools={() => setQuickToolsSignal((n) => n + 1)}
               onAddText={() => {
                 editor.addLayer("text");
                 openTool("layers");

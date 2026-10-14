@@ -4942,3 +4942,70 @@
   height: 1.125rem;
   accent-color: var(--color-accent);
 }
+
+/* 1.30 ready-made tools dialog. */
+.quick-tools-dialog {
+  width: min(34rem, calc(100% - 2rem));
+  gap: 0.5rem;
+}
+.quick-tool {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+}
+.quick-tool-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: var(--color-raised);
+  color: var(--color-accent);
+}
+.quick-tool h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.quick-tool p {
+  margin-top: 0.125rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--color-mute);
+}
+.quick-tool-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+.transition-dialog .quick-tool-actions button {
+  min-width: 3rem;
+  min-height: 2.5rem;
+  padding: 0 0.875rem;
+  white-space: nowrap;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .quick-tools-dialog.transition-dialog {
+    width: 100%;
+  }
+  .quick-tool {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    gap: 0.5rem 0.625rem;
+    padding: 0.625rem;
+  }
+  .quick-tool-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  .quick-tool-actions {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+}

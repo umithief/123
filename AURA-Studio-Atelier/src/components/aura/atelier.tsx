@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Wand2,
   AudioLines,
   Captions,
   Check,
@@ -226,6 +227,7 @@ export function ToolLibrary({
   onAddText,
   onCover,
   onUpload,
+  onQuickTools,
   language,
   disabled,
 }: {
@@ -234,6 +236,7 @@ export function ToolLibrary({
   onAddText: () => void;
   onCover: () => void;
   onUpload: () => void;
+  onQuickTools: () => void;
   language: InterfaceLanguage;
   disabled: boolean;
 }) {
@@ -246,6 +249,17 @@ export function ToolLibrary({
         <h2>{en ? w.en : w.tr}</h2>
         <p>{en ? w.english : w.description}</p>
       </div>
+      {workspace === "edit" && (
+        <button
+          type="button"
+          className="library-primary"
+          disabled={disabled}
+          onClick={onQuickTools}
+        >
+          <Wand2 size={17} />
+          {en ? "Ready-made tools" : "Hazır araçlar"}
+        </button>
+      )}
       {(workspace === "text" || workspace === "design" || workspace === "audio") && (
         <button
           type="button"

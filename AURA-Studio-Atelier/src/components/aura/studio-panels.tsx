@@ -50,7 +50,8 @@ import {
 } from "./studio";
 
 export function formatTime(seconds: number) {
-  const whole = Math.floor(Math.max(0, Number.isFinite(seconds) ? seconds : 0));
+  // The epsilon keeps 29.999999… (float sums of cut lengths) from showing as 0:29.
+  const whole = Math.floor(Math.max(0, Number.isFinite(seconds) ? seconds : 0) + 1e-6);
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 

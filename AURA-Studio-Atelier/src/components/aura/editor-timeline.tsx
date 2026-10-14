@@ -25,8 +25,7 @@ import {
   ArrowRightLeft,
   LocateFixed,
   Magnet,
-  Drum,
-  Images,
+  Wand2,
   SkipBack,
   SkipForward,
 } from "lucide-react";
@@ -44,8 +43,9 @@ import {
   type Overlay,
   type SoundLayer,
 } from "./editor";
-import { BeatSplitPanel, MAX_CLIPS } from "./beat-split-panel";
+import { BeatSplitPanel } from "./beat-split-panel";
 import { BeatImagesPanel } from "./beat-images-panel";
+import { QuickToolsPanel } from "./quick-tools-panel";
 import {
   beatGrid,
   captionSegments,
@@ -126,6 +126,7 @@ export function EditorTimeline({
   onTransitionPreview,
   onCaptionsPreview,
   onCaptionsCommit,
+  quickToolsSignal = 0,
 }: {
   editor: Editor;
   file: File | null;
@@ -142,6 +143,8 @@ export function EditorTimeline({
   onTransitionPreview: (id: string) => Promise<void>;
   onCaptionsPreview: (next: CaptionCue[]) => void;
   onCaptionsCommit: (next: CaptionCue[], before: CaptionCue[]) => void;
+  /** Incremented to open the ready-made tools from outside the timeline. */
+  quickToolsSignal?: number;
 }) {
   const scroll = useRef<HTMLDivElement>(null);
   const thumbnails = useClipThumbnails(file, e.project.clips);
@@ -152,7 +155,12 @@ export function EditorTimeline({
   const [trimming, setTrimming] = useState(false);
   const [beats, setBeats] = useState<number[]>([]);
   const [beatSplitOpen, setBeatSplitOpen] = useState(false),
-    [beatImagesOpen, setBeatImagesOpen] = useState(false);
+    [beatImagesOpen, setBeatImagesOpen] = useState(false),
+    [quickToolsOpen, setQuickToolsOpen] = useState(false);
+  // The Edit workspace's "Ready-made tools" button asks for the dialog.
+  useEffect(() => {
+    if (quickToolsSignal) setQuickToolsOpen(true);
+  }, [quickToolsSignal]);
   // Marks, snapping and beat cuts use the steady grid rather than every onset.
   const grid = useMemo(() => beatGrid(beats, duration), [beats, duration]);
   const [snap, setSnap] = useState(() => {
@@ -813,29 +821,16 @@ export function EditorTimeline({
           </Button>
           <Button
             variant="ghost"
-            className="timeline-beat-split"
-            aria-label={ui("Vuruşlara böl")}
-            title={ui(beats.length ? "Vuruşlara böl" : "Vuruşlar bulunamadı")}
-            disabled={disabled || !file || !beats.length || e.project.clips.length >= MAX_CLIPS}
+            className="timeline-quick-tools"
+            aria-label={ui("Hazır araçlar")}
+            title={ui("Hazır araçlar")}
+            disabled={disabled || !file}
             onClick={() => {
               onPause();
-              setBeatSplitOpen(true);
+              setQuickToolsOpen(true);
             }}
           >
-            <Drum className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="timeline-beat-images"
-            aria-label={ui("Görüntüleri vuruşlara yerleştir")}
-            title={ui(beats.length ? "Görüntüleri vuruşlara yerleştir" : "Vuruşlar bulunamadı")}
-            disabled={disabled || !file || !beats.length}
-            onClick={() => {
-              onPause();
-              setBeatImagesOpen(true);
-            }}
-          >
-            <Images className="size-4" />
+            <Wand2 className="size-4" />
           </Button>
           <Button
             variant="ghost"
@@ -1164,6 +1159,21 @@ export function EditorTimeline({
           {ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı")}
         </p>
       )}
+      <QuickToolsPanel
+        open={quickToolsOpen}
+        onClose={() => setQuickToolsOpen(false)}
+        clips={e.project.clips}
+        duration={duration}
+        peaks={peaks}
+        beats={grid.beats}
+        disabled={disabled || !file}
+        onApply={(next) => {
+          e.commit({ ...e.draw.current.project, clips: next });
+          e.setSelected(next[0]?.id ?? "");
+        }}
+        onBeatSplit={() => setBeatSplitOpen(true)}
+        onBeatImages={() => setBeatImagesOpen(true)}
+      />
       <BeatSplitPanel
         open={beatSplitOpen}
         onClose={() => setBeatSplitOpen(false)}
