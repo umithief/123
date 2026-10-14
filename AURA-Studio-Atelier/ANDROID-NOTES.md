@@ -1,5 +1,16 @@
 # AURA Studio Android
 
+## 1.24.0 — kompakt ve sade telefon tasarımı
+
+**İnce üst çubuklar.** Telefonda başlık, araç satırı (dosya, 9:16, geri al) ve oynatıcı inceltildi; önizleme bir araç açıkken de daha büyük görünür.
+**Alt sayfa görünümlü panel.** Araç paneli yuvarlak köşeli, hafif gölgeli ve üstünde tutamak çizgisi olan bir alt sayfa gibi durur; başlığı daha kısa ve belirgindir.
+**Yeni sekme düğmeleri.** Panel içindeki sekmeler (Ekolayzır/Efektler/Ritim, Filtreler/Efektler… vb.) sade bir zemin üstünde beyaz, hafif gölgeli "hap" ile seçili gösterilir.
+**Şık alt menü.** Sahne/Kurgu/Ses/Metin menüsünde seçili alanın simgesi yumuşak bir hap içinde, adı kalın görünür; menü daha incedir.
+
+### 1.24.0 doğrulaması
+
+TypeScript, AURA birim testleri, web ve Android derlemeleri geçti. 390×844 ve 320×640 telefon ekranlarında başlık 64→53 px, araç satırı 44→40 px, oynatıcı 57→48 px, panel başlığı 53→47 px oldu; araç açıkken önizleme 192→209 px büyüdü, taşma yok. Değişiklikler yalnızca telefon genişliğinde geçerlidir; masaüstü aynıdır. Fiziksel cihaz testi yapılmadı.
+
 ## 1.23.0 — basit kullanım iyileştirmeleri
 
 **Hızlı video boyutu.** Önizlemenin üstündeki **9:16 ▾** düğmesiyle 16:9, 9:16, 1:1 ve 4:5 arasında Dışa aktar paneline gitmeden geçilir; seçim hatırlanır.
