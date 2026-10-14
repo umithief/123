@@ -44,6 +44,39 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Video şablonları|Video templates
+Boyut, sahne, renk, altyazı ve kurgu tek dokunuşla hazır.|Size, scene, colour, captions and edit in one tap.
+Sosyal|Social
+Müzik videosu|Music video
+Sinematik|Cinematic
+Sade|Minimal
+vuruşta kesim|-beat cuts
+Kurguyu da uygula|Also apply the edit
+En iyi bölümü seçer, vuruşlardan keser; mevcut kesimlerin yerini alır.|Picks the best part and cuts on the beats; it replaces the current cuts.
+Müzik çözümlenemediği için yalnızca görünüm uygulanır.|The music could not be analysed, so only the look is applied.
+Şablondan önceki hâline dön|Back to before the template
+Reels Enerji|Reels Energy
+En güçlü 30 sn, her ölçüde ışık çakması|Strongest 30 s, a light flash every bar
+TikTok Hızlı|TikTok Fast
+15 sn, iki vuruşta bir zoom kesim|15 s, a zoom cut every two beats
+Story Sakin|Calm Story
+15 sn, rüya ışığı ve yumuşak geçiş|15 s, dreamy light and soft fades
+Shorts Neon|Shorts Neon
+30 sn, neon tünel ve bulanık kesimler|30 s, neon tunnel and blur cuts
+Sözlü Klip|Lyric Video
+Tüm şarkı, okunaklı sözler, ipek dalga|Whole song, readable lyrics, silk wave
+Konser Işıkları|Concert Lights
+Avize ışıkları, iki ölçüde bir beyaz parlama|Chandelier lights, a white flash every two bars
+Plak, film dokusu ve sıcak tonlar|Vinyl, film grain and warm tones
+Rock Sahnesi|Rock Stage
+Sert kontrast, iki ölçüde bir çakma|Hard contrast, a flash every two bars
+Film çerçevesi, koyu kenarlar, tutulma|Film frame, dark edges, eclipse
+Altın Saat|Golden Hour
+Sıcak ışık sızıntısı ve altın tonlar|Warm light leaks and golden tones
+Kara Film|Film Noir
+Siyah beyaz, film tanesi, org boruları|Black and white, film grain, organ pipes
+Sade Gönderi|Clean Post
+4:5, en güçlü 60 sn, temiz görünüm|4:5, strongest 60 s, clean look
 Hazır araçlar|Ready-made tools
 Tek dokunuşla düzenle; her biri Geri al ile tek adımda geri alınır.|Edit in one tap; Undo reverts each in a single step.
 En iyi bölüm|Best part

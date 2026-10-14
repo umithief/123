@@ -6,6 +6,7 @@ import {
   Drum,
   Flame,
   Images,
+  LayoutTemplate,
   ScissorsLineDashed,
   Sunrise,
   X,
@@ -63,6 +64,7 @@ export function QuickToolsPanel({
   onApply,
   onBeatSplit,
   onBeatImages,
+  onTemplates,
 }: {
   open: boolean;
   onClose: () => void;
@@ -77,6 +79,7 @@ export function QuickToolsPanel({
   onApply: (clips: EditClip[]) => void;
   onBeatSplit: () => void;
   onBeatImages: () => void;
+  onTemplates: () => void;
 }) {
   const ranges = useMemo(() => soundRanges(peaks, duration), [peaks, duration]);
   const silences = useMemo(() => withoutSilences(clips, ranges), [clips, ranges]);
@@ -114,6 +117,22 @@ export function QuickToolsPanel({
               </Button>
             </Dialog.Close>
           </div>
+          <Card
+            icon={<LayoutTemplate className="size-5" />}
+            title={ui("Video şablonları")}
+            text={ui("Boyut, sahne, renk, altyazı ve kurgu tek dokunuşla hazır.")}
+          >
+            <Button
+              variant="ghost"
+              disabled={disabled}
+              onClick={() => {
+                onClose();
+                onTemplates();
+              }}
+            >
+              {ui("Aç")}
+            </Button>
+          </Card>
           <Card
             icon={<Flame className="size-5" />}
             title={ui("En iyi bölüm")}

@@ -1,4 +1,22 @@
-AURA Studio Atelier 1.30.0 — Android
+AURA Studio Atelier 1.31.0 — Android
+
+## 1.31.0 — hazır video şablonları
+
+**12 video şablonu.** Sahne veya Kurgu alanındaki **Video şablonları** düğmesi (ya da Hazır araçlar penceresi) şablon galerisini açar. Bir şablona dokununca videonun tamamı hazırlanır: video boyutu, sahne/spektrum, renk paleti, ton, efekt hızı ve vuruş nabzı, altyazı şablonu, başlık stili, renk filtresi ve video efekti. Kartlarda sahnenin önizlemesi ve boyut/süre/kesim etiketleri görünür.
+- **Sosyal (9:16):** Reels Enerji (en güçlü 30 sn, her ölçüde ışık çakması) · TikTok Hızlı (15 sn, iki vuruşta zoom kesim) · Story Sakin (15 sn, rüya ışığı) · Shorts Neon (30 sn, neon tünel, bulanık kesimler).
+- **Müzik videosu (16:9, tüm şarkı):** Sözlü Klip · Konser Işıkları · Lo-fi Oda · Rock Sahnesi.
+- **Sinematik:** Sinema (film çerçevesi) · Altın Saat · Kara Film (siyah beyaz, film tanesi).
+- **Sade:** Sade Gönderi (4:5, en güçlü 60 sn).
+
+**Kurguyu da uygula.** Açıkken şablon müziği çözümleyip en iyi bölümü seçer, vuruşlardan keser, geçiş ve yumuşak giriş/çıkış ekler; kapatılırsa yalnızca görünüm değişir. Şablonlar arasında geçerken kurgu her seferinde pencere açılmadan önceki hâlinden hesaplanır, kesimler üst üste binmez. Görüntünün döndürme, çevirme ve yakınlaştırma ayarı korunur.
+
+**Geri dönüş.** "Şablondan önceki hâline dön" görünümü ve kurguyu pencere açılmadan önceki hâline getirir; kurgu değişiklikleri Geri al ile de geri alınabilir.
+
+**Ortak ses çözümlemesi.** Dalga formu, vuruşlar ve tempo artık tek yerde hesaplanır; zaman çizelgesi, hazır araçlar ve şablonlar aynı sonucu kullanır.
+
+### 1.31.0 doğrulaması
+
+TypeScript ve 87 AURA birim testi geçti (12 şablonun geçerli sahne, palet, altyazı, efekt ve geçişlere işaret ettiği; görünümün döndürme/yakınlaştırmayı koruduğu; sosyal şablonun en güçlü 30 sn'yi ölçü başlarından kestiği; çözümleme yokken yalnızca görünümün uygulandığı testler dahil). Tarayıcıda 70 sn'lik test parçasında Reels Enerji 9:16, 30 sn ve 15 parça; Sinema'ya geçişte yeniden tüm şarkı ve 16:9; TikTok Hızlı 15 sn; geri dönüşte başlangıç görünümü ve kurgusu; yalnız görünümle Kara Film kurguya dokunmadan uygulandı. Masaüstü ve telefon ekranında denendi; önceki tüm testler yeniden geçti. Gerçek şarkı ve fiziksel cihaz testi yapılmadı.
 
 ## 1.30.0 — hazır düzenleme araçları
 

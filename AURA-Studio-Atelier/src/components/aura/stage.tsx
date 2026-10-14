@@ -1,3 +1,7 @@
+import { VideoTemplatesPanel } from "./video-templates-panel";
+import { templateAdjust, templateClips, type VideoTemplate } from "./video-templates";
+import { CAPTION_TEMPLATES } from "./caption-templates";
+import { useAudioAnalysis } from "./use-audio-analysis";
 import { ui } from "./interface-copy";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -266,6 +270,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [recording, setRecording] = useState(false);
   const [recSeconds, setRecSeconds] = useState(0);
   const captions = useCaptions(audioRef, source);
+  const analysis = useAudioAnalysis(captions.file, duration);
   const editor = useEditor(
     audioRef,
     engineRef,
@@ -1410,6 +1415,49 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     changeFormat(next.format);
     changeResolution(next.resolution);
   }
+  // Video templates. Switching between templates always starts from the look
+  // and cuts the project had when the dialog opened, so they never compound.
+  const [templatesOpen, setTemplatesOpen] = useState(false),
+    [appliedTemplate, setAppliedTemplate] = useState<string | null>(null),
+    [templateBefore, setTemplateBefore] = useState<{
+      snapshot: StudioSnapshot;
+      project: EditorProject;
+    } | null>(null);
+  function openTemplates() {
+    setTemplateBefore(null);
+    setTemplatesOpen(true);
+  }
+  function applyVideoTemplate(t: VideoTemplate, withEdit: boolean) {
+    if (recStatusRef.current !== "idle") return;
+    const before = templateBefore ?? { snapshot, project: editor.draw.current.project };
+    if (!templateBefore) setTemplateBefore(before);
+    chooseMode(t.mode);
+    chooseTheme(t.theme);
+    changeSensitivity(t.sensitivity);
+    changeFinish(t.finish);
+    changeEffects(t.effects);
+    changeFormat(t.format);
+    changePlace(t.title.place);
+    changeStyle(t.title.style);
+    const caption = CAPTION_TEMPLATES.find((c) => c.id === t.caption);
+    if (caption) captions.changeOptions(caption.options);
+    const project = editor.draw.current.project;
+    editor.commit({
+      ...project,
+      clips: withEdit
+        ? templateClips(t, before.project.clips, duration, analysis.peaks, analysis.grid.beats)
+        : before.project.clips,
+      adjust: templateAdjust(t, before.project.adjust),
+    });
+    setAppliedTemplate(t.id);
+  }
+  function revertVideoTemplate() {
+    if (!templateBefore || recStatusRef.current !== "idle") return;
+    applySnapshot(templateBefore.snapshot);
+    editor.commit(templateBefore.project);
+    setTemplateBefore(null);
+    setAppliedTemplate(null);
+  }
   async function startNewProject() {
     if (archiveBusy) return;
     // The closing project stays recoverable from the home screen.
@@ -2119,6 +2167,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   onCaptionsPreview={captions.previewCues}
                   onCaptionsCommit={captions.commitCues}
                   quickToolsSignal={quickToolsSignal}
+                  analysis={analysis}
+                  onTemplates={openTemplates}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));
                     openTool("captions");
@@ -2174,8 +2224,19 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 coverFileRef.current?.click();
               }}
               onUpload={() => fileRef.current?.click()}
+              onTemplates={openTemplates}
             />
           )}
+          <VideoTemplatesPanel
+            open={templatesOpen}
+            onClose={() => setTemplatesOpen(false)}
+            current={appliedTemplate}
+            canEdit={analysis.peaks.length > 0}
+            canRevert={!!templateBefore}
+            disabled={locked || loading}
+            onApply={applyVideoTemplate}
+            onRevert={revertVideoTemplate}
+          />
           {easy && activeTool && activeTool !== "motion" && (
             <div className="editor-tool-heading">
               <Button variant="ghost" aria-label={ui("Zaman çizelgesine dön")} onClick={closeTool}>

@@ -46,10 +46,9 @@ import {
 import { BeatSplitPanel } from "./beat-split-panel";
 import { BeatImagesPanel } from "./beat-images-panel";
 import { QuickToolsPanel } from "./quick-tools-panel";
+import type { AudioAnalysis } from "./use-audio-analysis";
 import {
-  beatGrid,
   captionSegments,
-  detectBeats,
   draggedItem,
   snapTo,
   retimedCues,
@@ -127,6 +126,8 @@ export function EditorTimeline({
   onCaptionsPreview,
   onCaptionsCommit,
   quickToolsSignal = 0,
+  analysis,
+  onTemplates,
 }: {
   editor: Editor;
   file: File | null;
@@ -145,15 +146,18 @@ export function EditorTimeline({
   onCaptionsCommit: (next: CaptionCue[], before: CaptionCue[]) => void;
   /** Incremented to open the ready-made tools from outside the timeline. */
   quickToolsSignal?: number;
+  /** Shared decode of the source: waveform, onsets and the steady beat grid
+   *  (marks, snapping and beat cuts use the grid rather than every onset). */
+  analysis: AudioAnalysis;
+  onTemplates: () => void;
 }) {
   const scroll = useRef<HTMLDivElement>(null);
   const thumbnails = useClipThumbnails(file, e.project.clips);
   const [transitionId, setTransitionId] = useState<string | null>(null);
   const [viewport, setViewport] = useState(360),
-    [zoom, setZoom] = useState(1),
-    [peaks, setPeaks] = useState<number[]>([]);
+    [zoom, setZoom] = useState(1);
+  const { peaks, grid } = analysis;
   const [trimming, setTrimming] = useState(false);
-  const [beats, setBeats] = useState<number[]>([]);
   const [beatSplitOpen, setBeatSplitOpen] = useState(false),
     [beatImagesOpen, setBeatImagesOpen] = useState(false),
     [quickToolsOpen, setQuickToolsOpen] = useState(false);
@@ -161,8 +165,6 @@ export function EditorTimeline({
   useEffect(() => {
     if (quickToolsSignal) setQuickToolsOpen(true);
   }, [quickToolsSignal]);
-  // Marks, snapping and beat cuts use the steady grid rather than every onset.
-  const grid = useMemo(() => beatGrid(beats, duration), [beats, duration]);
   const [snap, setSnap] = useState(() => {
     try {
       return localStorage.getItem(SNAP_KEY) !== "off";
@@ -221,35 +223,6 @@ export function EditorTimeline({
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
-  useEffect(() => {
-    let current = true;
-    setPeaks([]);
-    setBeats([]);
-    if (!file || file.size > 50 * 1024 * 1024) return;
-    void (async () => {
-      try {
-        const context = new OfflineAudioContext(1, 1, 8000);
-        const buffer = await context.decodeAudioData(await file.arrayBuffer());
-        if (!current) return;
-        const samples = buffer.getChannelData(0),
-          next: number[] = [];
-        for (let bar = 0; bar < 2400; bar++) {
-          let value = 0;
-          const first = Math.floor((bar * samples.length) / 2400),
-            last = Math.floor(((bar + 1) * samples.length) / 2400);
-          for (let i = first; i < last; i += 4) value = Math.max(value, Math.abs(samples[i]));
-          next.push(value);
-        }
-        setPeaks(next);
-        setBeats(detectBeats(samples, buffer.sampleRate));
-      } catch {
-        /* Some video formats cannot be decoded separately; editing still works. */
-      }
-    })();
-    return () => {
-      current = false;
-    };
-  }, [file]);
   useEffect(() => {
     const node = scroll.current;
     if (!node || !playing || scrubbing.current || trimming) return;
@@ -1173,6 +1146,7 @@ export function EditorTimeline({
         }}
         onBeatSplit={() => setBeatSplitOpen(true)}
         onBeatImages={() => setBeatImagesOpen(true)}
+        onTemplates={onTemplates}
       />
       <BeatSplitPanel
         open={beatSplitOpen}

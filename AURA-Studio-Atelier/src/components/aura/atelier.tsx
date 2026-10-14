@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Wand2,
+  LayoutTemplate,
   AudioLines,
   Captions,
   Check,
@@ -228,6 +229,7 @@ export function ToolLibrary({
   onCover,
   onUpload,
   onQuickTools,
+  onTemplates,
   language,
   disabled,
 }: {
@@ -237,6 +239,7 @@ export function ToolLibrary({
   onCover: () => void;
   onUpload: () => void;
   onQuickTools: () => void;
+  onTemplates: () => void;
   language: InterfaceLanguage;
   disabled: boolean;
 }) {
@@ -249,6 +252,17 @@ export function ToolLibrary({
         <h2>{en ? w.en : w.tr}</h2>
         <p>{en ? w.english : w.description}</p>
       </div>
+      {(workspace === "design" || workspace === "edit") && (
+        <button
+          type="button"
+          className="library-primary library-templates"
+          disabled={disabled}
+          onClick={onTemplates}
+        >
+          <LayoutTemplate size={17} />
+          {en ? "Video templates" : "Video şablonları"}
+        </button>
+      )}
       {workspace === "edit" && (
         <button
           type="button"
