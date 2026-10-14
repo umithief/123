@@ -4879,3 +4879,66 @@
   flex-wrap: wrap;
   overflow: visible;
 }
+
+/* 1.29 beat slideshow dialog. */
+.beat-images-strip {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+.beat-images-strip > span,
+.transition-dialog .beat-images-add {
+  position: relative;
+  flex: none;
+  width: 3.5rem;
+  height: 3.5rem;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--color-raised);
+  color: var(--color-mute);
+  overflow: hidden;
+}
+.beat-images-strip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.beat-images-strip small {
+  position: absolute;
+  left: 0.2rem;
+  bottom: 0.15rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.55rem;
+  font-variant-numeric: tabular-nums;
+}
+.transition-dialog .beat-images-add {
+  flex-direction: column;
+  gap: 0.125rem;
+  border: 1px dashed var(--color-line-strong);
+  background: transparent;
+  font-size: 0.625rem;
+}
+.beat-images-options {
+  display: grid;
+  gap: 0.25rem;
+}
+.beat-images-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.5rem;
+  font-size: 0.8rem;
+}
+.beat-images-options input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--color-accent);
+}

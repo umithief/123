@@ -44,6 +44,26 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Görüntüleri vuruşlara yerleştir|Place pictures on beats
+Her görüntü müziğin vuruşunda değişir.|Each picture changes on a beat of the music.
+Görüntüler|Pictures
+Ekle|Add
+Fotoğraf veya kısa videolar ekleyin; sırayla vuruşlara yerleşir.|Add photos or short videos; they are placed on the beats in order.
+Ne sıklıkla değişsin?|How often should it change?
+Değişim sıklığı|Change frequency
+Geçiş|Transition
+Görüntü geçişi|Picture transition
+Kesme|Cut
+Yumuşak|Soft
+Zoom|Zoom
+Oynatma başlığından başla|Start at the playhead
+Görüntüler bitince başa dön|Repeat pictures to the end
+Karışık sıra|Shuffle
+yerleşim|placements
+her biri|each
+Yerleştirilecek görüntü yok.|No pictures to place.
+Görüntü satırı bu yerleşimle değişir; Geri al ile eski hâline dönebilirsiniz.|The picture row is replaced by this layout; Undo brings the old one back.
+Vuruşlara yerleştir|Place on beats
 Kapat|Close
 Vuruşlar bulunamadı|No beats found
 vuruş bulundu|beats found

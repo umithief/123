@@ -1,4 +1,18 @@
-AURA Studio Atelier 1.28.0 — Android
+AURA Studio Atelier 1.29.0 — Android
+
+## 1.29.0 — görüntüleri vuruşlara göre otomatik yerleştirme
+
+**Görüntüleri vuruşlara yerleştir.** Zaman çizelgesi araç satırındaki görüntüler düğmesi bir pencere açar. Projedeki fotoğraf ve videolar (pencereden **Ekle** ile yenileri de seçilebilir) müziğin vuruş ızgarasına sırayla yerleştirilir; her görüntü vuruşta değişir.
+- **Ne sıklıkla:** Her vuruş, 2 vuruş, 4 vuruş (1 ölçü) veya 8 vuruş (2 ölçü).
+- **Geçiş:** Kesme, Yumuşak, Zoom veya Kaydır; geçiş süresi tempoya göre yarım vuruşu aşmaz.
+- **Seçenekler:** Oynatma başlığından başla · Görüntüler bitince başa dön (kapalıysa her görüntü bir kez kullanılır) · Karışık sıra (her turda her görüntü bir kez, aynı görüntü art arda gelmez).
+- İlk vuruştan önceki giriş bölümü ilk görüntüye verilir. Kaç yerleşim olacağı ve ortalama süre önceden yazar.
+- Görüntülerin kendi ayarları (sığdırma, maske, hareket, saydamlık) korunur; aynı görüntü birden çok kez yerleştirilmişse bir kez sayılır, böylece pencere tekrar kullanılıp ayar değiştirilebilir.
+- Görüntü satırı tek adımda değişir; tek Geri al eski yerleşimi geri getirir.
+
+### 1.29.0 doğrulaması
+
+TypeScript ve 77 AURA birim testi geçti (yerleşim aralıkları, giriş bölümü, tekrar, karışık sıra ve görünüm koruma testleri dahil). Tarayıcıda 30 sn'lik 120 BPM parçaya pencereden 4 fotoğraf eklenip 2 vuruşta bir yerleştirildi: 30 yerleşim 0, 0,99, 1,99 … sn'de başladı; önizlemede renkler kırmızı → yeşil → mavi → sarı → kırmızı sırasıyla tam vuruşlarda değişti; Geri al tek adımda eski 4 görüntüye döndü. Masaüstü ve telefon ekranında denendi; önceki zaman çizelgesi, bölme, altyazı, geri alma ve otomatik kayıt testleri yeniden geçti. Gerçek şarkı ve fiziksel cihaz testi yapılmadı.
 
 ## 1.28.0 — vuruşlara göre otomatik bölme
 

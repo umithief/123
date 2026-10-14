@@ -26,6 +26,7 @@ import {
   LocateFixed,
   Magnet,
   Drum,
+  Images,
   SkipBack,
   SkipForward,
 } from "lucide-react";
@@ -44,6 +45,7 @@ import {
   type SoundLayer,
 } from "./editor";
 import { BeatSplitPanel, MAX_CLIPS } from "./beat-split-panel";
+import { BeatImagesPanel } from "./beat-images-panel";
 import {
   beatGrid,
   captionSegments,
@@ -149,7 +151,8 @@ export function EditorTimeline({
     [peaks, setPeaks] = useState<number[]>([]);
   const [trimming, setTrimming] = useState(false);
   const [beats, setBeats] = useState<number[]>([]);
-  const [beatSplitOpen, setBeatSplitOpen] = useState(false);
+  const [beatSplitOpen, setBeatSplitOpen] = useState(false),
+    [beatImagesOpen, setBeatImagesOpen] = useState(false);
   // Marks, snapping and beat cuts use the steady grid rather than every onset.
   const grid = useMemo(() => beatGrid(beats, duration), [beats, duration]);
   const [snap, setSnap] = useState(() => {
@@ -823,6 +826,19 @@ export function EditorTimeline({
           </Button>
           <Button
             variant="ghost"
+            className="timeline-beat-images"
+            aria-label={ui("Görüntüleri vuruşlara yerleştir")}
+            title={ui(beats.length ? "Görüntüleri vuruşlara yerleştir" : "Vuruşlar bulunamadı")}
+            disabled={disabled || !file || !beats.length}
+            onClick={() => {
+              onPause();
+              setBeatImagesOpen(true);
+            }}
+          >
+            <Images className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
             aria-label={ui("Seçili klibi çoğalt")}
             disabled={disabled || !selected || e.project.clips.length >= 60}
             onClick={() => {
@@ -1157,6 +1173,20 @@ export function EditorTimeline({
         bpm={grid.bpm}
         disabled={disabled}
         onApply={(next) => e.commit({ ...e.draw.current.project, clips: next })}
+      />
+      <BeatImagesPanel
+        open={beatImagesOpen}
+        onClose={() => setBeatImagesOpen(false)}
+        media={e.project.media}
+        thumbnail={(asset) => e.assets.get(asset)?.url}
+        marks={beatMarks}
+        bpm={grid.bpm}
+        time={e.time}
+        total={e.total}
+        busy={e.busy}
+        disabled={disabled}
+        onUpload={(files) => void e.upload(files)}
+        onApply={(media) => e.commit({ ...e.draw.current.project, media })}
       />
       <TransitionPanel
         editor={e}

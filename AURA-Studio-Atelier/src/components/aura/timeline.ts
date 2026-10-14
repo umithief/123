@@ -1,4 +1,5 @@
-import { splitClip, type EditClip } from "./editor.ts";
+import { splitClip, type EditClip, type MediaClip } from "./editor.ts";
+import { createId } from "./id.ts";
 import type { SceneTransition } from "./scene-transitions.ts";
 import type { CaptionCue } from "./captions";
 
@@ -319,4 +320,95 @@ export function splitAtTimes(
     );
   }
   return { clips: next, added, skipped: times.length - added };
+}
+
+export type BeatSlot = { start: number; end: number; image: number };
+
+/** Slots for a beat-synced slideshow: a new picture every `every` beats from
+ *  `from` to `to` (timeline time). A lead-in before the first beat becomes its
+ *  own slot. With `loop` the pictures repeat to the end, otherwise each is
+ *  used once. `order` maps slot → picture index (defaults to 0,1,2,…). */
+export function beatSlots(
+  marks: number[],
+  every: number,
+  from: number,
+  to: number,
+  count: number,
+  loop: boolean,
+  order?: (slot: number) => number,
+): BeatSlot[] {
+  if (count < 1 || to - from < 0.2) return [];
+  const cuts = marks
+    .filter((t) => t >= from - 0.05 && t < to)
+    .filter((_, i) => i % every === 0)
+    .filter((t) => t >= from + 0.2 && t <= to - 0.2);
+  const edges = [from, ...cuts, to],
+    slots: BeatSlot[] = [];
+  for (let i = 0; i < edges.length - 1 && slots.length < 300; i++) {
+    if (!loop && i >= count) break;
+    slots.push({
+      start: Number(edges[i].toFixed(3)),
+      end: Number(edges[i + 1].toFixed(3)),
+      image: order ? order(i) : i % count,
+    });
+  }
+  return slots;
+}
+
+/** A repeatable shuffle: every picture once per round, no picture twice in a row. */
+export function shuffledOrder(count: number, seed = 1): (slot: number) => number {
+  let state = seed >>> 0 || 1;
+  const random = () => (state = (state * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const rounds: number[][] = [];
+  return (slot: number) => {
+    const round = Math.floor(slot / count);
+    while (rounds.length <= round) {
+      const deck = Array.from({ length: count }, (_, i) => i);
+      for (let i = count - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      const previous = rounds.at(-1)?.at(-1);
+      if (count > 1 && deck[0] === previous) [deck[0], deck[1]] = [deck[1], deck[0]];
+      rounds.push(deck);
+    }
+    return rounds[round][slot % count];
+  };
+}
+
+/** The distinct pictures of a project in timeline order (a picture placed
+ *  several times counts once), ready to be laid out again. */
+export function slideshowPictures(media: MediaClip[]): MediaClip[] {
+  const seen = new Set<string>();
+  return [...media]
+    .filter((m) => !m.sourceVideo)
+    .sort((a, b) => a.start - b.start)
+    .filter((m) => !seen.has(m.asset) && seen.add(m.asset));
+}
+
+/** Replaces the picture track with one item per slot; each copies its
+ *  picture's look (fit, mask, motion…) and gets the chosen transition. */
+export function arrangedMedia(
+  media: MediaClip[],
+  pictures: MediaClip[],
+  slots: BeatSlot[],
+  transition: MediaClip["transition"],
+  transitionDuration: number,
+): MediaClip[] {
+  return [
+    ...media.filter((m) => m.sourceVideo),
+    ...slots.map((slot) => {
+      const picture = pictures[slot.image];
+      return {
+        ...picture,
+        id: createId(),
+        start: slot.start,
+        end: slot.end,
+        transition,
+        transitionDuration: Number(
+          Math.min(transitionDuration, (slot.end - slot.start) / 2).toFixed(3),
+        ),
+      };
+    }),
+  ];
 }
