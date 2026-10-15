@@ -1,5 +1,20 @@
 # AURA Studio Android
 
+## 1.32.0 — kesim araçları: aralık seç, çıkar ya da tut
+
+**Zaman çizelgesinde aralık düzenleme.** Kurgu çizelgesinin altına yeni bir araç satırı eklendi. **Giriş** ve **Çıkış** düğmeleri oynatma başlığının bulunduğu yere birer işaret koyar; cetvelde işaretli bölüm vurgulanır ve süresi (ör. "0:05 – 0:15 · 10,0 sn") yazılır.
+- **Aralığı çıkar:** İşaretli bölümü siler ve boşluğu kapatır (ripple); kalan parçalar sola kayar, video tek parça olmaya devam eder.
+- **Aralığı tut:** Yalnızca işaretli bölümü bırakır, gerisini atar (kırpma).
+- **×:** İşaretleri temizler.
+
+**Kenarı oynatma başlığına çek.** Seçili kesimin **Başı çek** / **Sonu çek** düğmeleri, kesimin başını ya da sonunu oynatma başlığına çeker; sonraki kesimler boşluğu kapatacak şekilde kayar. Hızlı ve hassas kırpma içindir.
+
+Tüm bu işlemler tek Geri al adımıdır; işaretler kaynak süresi içinde kalacak şekilde sınırlanır.
+
+### 1.32.0 doğrulaması
+
+TypeScript ve 97 AURA birim testi geçti (10 yeni test: aralık sıralama/sınırlama; ortadan çıkarma + ripple; bir klibi tam kapsayan aralığın yalnız o klibi düşürmesi; projeyi boş bırakmama; kırpmada baştaki geçişin temizlenmesi; çok kliple kırpma; giriş/çıkış kenarını başlığa çekme; klip hızını dikkate alma; kenara ya da klibe çok yakın başlığı reddetme). Tarayıcıda 30 sn'lik test parçasında: 5–15 sn işaretlendi (cetvelde bant ve kenarlar çizildi), "Aralığı tut" videoyu 10 sn'ye indirdi; "Başı çek" 3. saniyeden kırpıp 7 sn yaptı; "Aralığı çıkar" (1–4 sn) 4 sn ve 2 parça bıraktı; Geri al eski hâli getirdi. Masaüstü ve 390 px telefonda denendi (telefonda araç satırı alta sarıyor); önceki zaman çizelgesi, hazır araçlar, şablon ve geri alma testleri yeniden geçti. Gerçek şarkı ve fiziksel cihaz testi yapılmadı.
+
 ## 1.31.0 — hazır video şablonları
 
 **12 video şablonu.** Sahne veya Kurgu alanındaki **Video şablonları** düğmesi (ya da Hazır araçlar penceresi) şablon galerisini açar. Bir şablona dokununca videonun tamamı hazırlanır: video boyutu, sahne/spektrum, renk paleti, ton, efekt hızı ve vuruş nabzı, altyazı şablonu, başlık stili, renk filtresi ve video efekti. Kartlarda sahnenin önizlemesi ve boyut/süre/kesim etiketleri görünür.

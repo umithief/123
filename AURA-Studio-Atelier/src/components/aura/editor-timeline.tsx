@@ -28,7 +28,15 @@ import {
   Wand2,
   SkipBack,
   SkipForward,
+  BetweenVerticalStart,
+  BetweenVerticalEnd,
+  FoldVertical,
+  Crop,
+  ArrowRightToLine,
+  ArrowLeftToLine,
+  X,
 } from "lucide-react";
+import { orderedSpan, extractRange, keepRange, trimToPlayhead } from "./clip-edits";
 import { useClipThumbnails } from "./video-frames";
 import { TransitionPanel } from "./transition-panel";
 import { SCENE_TRANSITIONS, sceneTransitionDuration } from "./scene-transitions";
@@ -158,6 +166,9 @@ export function EditorTimeline({
     [zoom, setZoom] = useState(1);
   const { peaks, grid } = analysis;
   const [trimming, setTrimming] = useState(false);
+  // In/out marks for range edits (ripple-delete or crop), in timeline seconds.
+  const [rangeIn, setRangeIn] = useState<number | null>(null),
+    [rangeOut, setRangeOut] = useState<number | null>(null);
   const [beatSplitOpen, setBeatSplitOpen] = useState(false),
     [beatImagesOpen, setBeatImagesOpen] = useState(false),
     [quickToolsOpen, setQuickToolsOpen] = useState(false);
@@ -712,6 +723,32 @@ export function EditorTimeline({
   const visibleBeats = beatMarks.filter(
     (b) => b * scale >= scrollAt - 20 && b * scale <= scrollAt + viewport + 20,
   );
+  const span = rangeIn != null && rangeOut != null ? orderedSpan(rangeIn, rangeOut, e.total) : null;
+  const selectedSpan = (() => {
+    const found = selected && clips.find((c) => c.clip.id === selected.id);
+    return found ? { start: found.start, end: found.start + clipDuration(found.clip) } : null;
+  })();
+  const canTrim =
+    !!selectedSpan && e.time > selectedSpan.start + 0.1 && e.time < selectedSpan.end - 0.1;
+  // Marks past the end (after an undo or a shorter edit) clamp to the total via
+  // orderedSpan and the display below, so there is no stale state to clear.
+  function applyRange(fn: (clips: EditClip[], from: number, to: number) => EditClip[], at: number) {
+    if (!span) return;
+    const next = fn(e.project.clips, span[0], span[1]);
+    if (next === e.project.clips) return;
+    onPause();
+    e.commit({ ...e.project, clips: next });
+    e.seek(at);
+    setRangeIn(null);
+    setRangeOut(null);
+  }
+  function trimEdge(edge: "in" | "out") {
+    if (!selected || !canTrim) return;
+    const next = trimToPlayhead(e.project.clips, selected.id, edge, e.draw.current.time);
+    if (next === e.project.clips) return;
+    onPause();
+    e.commit({ ...e.project, clips: next });
+  }
   return (
     <section
       className={`edit-timeline ${compact ? "is-compact" : ""}`}
@@ -834,6 +871,92 @@ export function EditorTimeline({
           </Button>
         </div>
       </div>
+      <div className="timeline-range" role="group" aria-label={ui("Aralık ve kırpma araçları")}>
+        <Button
+          variant="ghost"
+          className="timeline-range-mark"
+          disabled={disabled || !file}
+          title={ui("Giriş işaretini oynatma başlığına koy")}
+          onClick={() => {
+            onPause();
+            setRangeIn(Number(e.draw.current.time.toFixed(3)));
+          }}
+        >
+          <BetweenVerticalStart className="size-4" />
+          {ui("Giriş")}
+        </Button>
+        <Button
+          variant="ghost"
+          className="timeline-range-mark"
+          disabled={disabled || !file}
+          title={ui("Çıkış işaretini oynatma başlığına koy")}
+          onClick={() => {
+            onPause();
+            setRangeOut(Number(e.draw.current.time.toFixed(3)));
+          }}
+        >
+          <BetweenVerticalEnd className="size-4" />
+          {ui("Çıkış")}
+        </Button>
+        <span className="timeline-range-info" role="status">
+          {span
+            ? `${preciseTime(span[0])} – ${preciseTime(span[1])} · ${(span[1] - span[0]).toFixed(1)} ${ui("sn")}`
+            : ui("Giriş ve çıkış işaretleyin")}
+        </span>
+        <Button
+          variant="ghost"
+          className="timeline-range-act"
+          disabled={disabled || !span}
+          title={ui("İşaretli aralığı çıkar ve boşluğu kapat")}
+          onClick={() => applyRange(extractRange, span ? span[0] : 0)}
+        >
+          <FoldVertical className="size-4" />
+          {ui("Aralığı çıkar")}
+        </Button>
+        <Button
+          variant="ghost"
+          className="timeline-range-act"
+          disabled={disabled || !span}
+          title={ui("Yalnızca işaretli aralığı tut")}
+          onClick={() => applyRange(keepRange, 0)}
+        >
+          <Crop className="size-4" />
+          {ui("Aralığı tut")}
+        </Button>
+        <Button
+          variant="ghost"
+          aria-label={ui("İşaretleri temizle")}
+          title={ui("İşaretleri temizle")}
+          disabled={rangeIn == null && rangeOut == null}
+          onClick={() => {
+            setRangeIn(null);
+            setRangeOut(null);
+          }}
+        >
+          <X className="size-4" />
+        </Button>
+        <span className="timeline-range-sep" aria-hidden="true" />
+        <Button
+          variant="ghost"
+          className="timeline-range-act"
+          disabled={disabled || !canTrim}
+          title={ui("Seçili kesimin başını oynatma başlığına çek")}
+          onClick={() => trimEdge("in")}
+        >
+          <ArrowRightToLine className="size-4" />
+          {ui("Başı çek")}
+        </Button>
+        <Button
+          variant="ghost"
+          className="timeline-range-act"
+          disabled={disabled || !canTrim}
+          title={ui("Seçili kesimin sonunu oynatma başlığına çek")}
+          onClick={() => trimEdge("out")}
+        >
+          <ArrowLeftToLine className="size-4" />
+          {ui("Sonu çek")}
+        </Button>
+      </div>
       <div
         ref={scroll}
         className="timeline-scroll"
@@ -889,6 +1012,27 @@ export function EditorTimeline({
             {visibleBeats.map((b) => (
               <i key={b} className="timeline-beat" style={{ left: b * scale }} aria-hidden="true" />
             ))}
+            {file && span && (
+              <span
+                className="timeline-range-band"
+                style={{ left: span[0] * scale, width: (span[1] - span[0]) * scale }}
+                aria-hidden="true"
+              />
+            )}
+            {file && rangeIn != null && (
+              <i
+                className="timeline-range-edge is-in"
+                style={{ left: Math.min(rangeIn, e.total) * scale }}
+                aria-hidden="true"
+              />
+            )}
+            {file && rangeOut != null && (
+              <i
+                className="timeline-range-edge is-out"
+                style={{ left: Math.min(rangeOut, e.total) * scale }}
+                aria-hidden="true"
+              />
+            )}
             {file && bubble && (
               <span
                 className={`timeline-bubble ${bubble.snapped ? "is-snapped" : ""}`}

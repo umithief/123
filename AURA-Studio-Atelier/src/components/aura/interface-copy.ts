@@ -44,6 +44,19 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Aralık ve kırpma araçları|Range and trim tools
+Giriş işaretini oynatma başlığına koy|Set the in point at the playhead
+Çıkış işaretini oynatma başlığına koy|Set the out point at the playhead
+Giriş ve çıkış işaretleyin|Mark an in and an out point
+İşaretli aralığı çıkar ve boşluğu kapat|Remove the marked range and close the gap
+Aralığı çıkar|Remove range
+Yalnızca işaretli aralığı tut|Keep only the marked range
+Aralığı tut|Keep range
+İşaretleri temizle|Clear marks
+Seçili kesimin başını oynatma başlığına çek|Pull the selected clip's start to the playhead
+Başı çek|Trim start
+Seçili kesimin sonunu oynatma başlığına çek|Pull the selected clip's end to the playhead
+Sonu çek|Trim end
 Video şablonları|Video templates
 Boyut, sahne, renk, altyazı ve kurgu tek dokunuşla hazır.|Size, scene, colour, captions and edit in one tap.
 Sosyal|Social
