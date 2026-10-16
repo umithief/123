@@ -126,7 +126,13 @@ import {
   writeAutosave,
   type AutosaveInfo,
 } from "./autosave";
-import { exportSrt, importSrt, restoreCaptionOptions, loadCaptionFont } from "./captions";
+import {
+  exportSrt,
+  importSrt,
+  restoreCaptionOptions,
+  loadCaptionFont,
+  type CaptionPosition,
+} from "./captions";
 import { EasyExportPanel, ExportProgress } from "./easy-export";
 
 const STUDIO_TABS = [
@@ -321,6 +327,39 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     dx: number;
     dy: number;
     time: number;
+  } | null>(null);
+  // Captions on the preview: tap to pick one up and drag it anywhere, tap
+  // twice to edit its words in place. Boxes are shares of the frame.
+  const captionBoxRef = useRef<{
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    line: number;
+  } | null>(null);
+  const captionDrag = useRef<{
+    id: string;
+    x: number;
+    y: number;
+    cx: number;
+    cy: number;
+    before: CaptionPosition | null;
+    moved: boolean;
+  } | null>(null);
+  const captionTap = useRef<{ id: string; at: number; x: number; y: number } | null>(null);
+  const captionOutlineRef = useRef<HTMLDivElement>(null);
+  const captionSelectedRef = useRef<string | null>(null);
+  const captionEditingRef = useRef(false);
+  const [captionSnap, setCaptionSnap] = useState(false);
+  const [captionEdit, setCaptionEdit] = useState<{
+    id: string;
+    text: string;
+    /** Placement over the frame, in percent, and the caption's type size. */
+    left: number;
+    top: number;
+    width: number;
+    fontSize: number;
   } | null>(null);
   const [visualView, setVisualView] = useState("scenes");
   const soundDetailsRef = useRef<HTMLDetailsElement>(null);
@@ -721,9 +760,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         reduce && recStatusRef.current === "idle",
         editor.draw.current.transitionFrames,
       );
-      if (sourceRef.current === "file") {
+      let captionBox = null;
+      // The caption being typed is shown only in the editor above it.
+      if (sourceRef.current === "file" && !captionEditingRef.current) {
         const subtitles = captions.draw.current;
-        paintCaptions(
+        captionBox = paintCaptions(
           context,
           width,
           height,
@@ -734,6 +775,28 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           `rgb(${themeRef.current.mid.join(",")})`,
           reduce && recStatusRef.current === "idle",
         );
+      }
+      captionBoxRef.current = captionBox && {
+        id: captionBox.id,
+        x: captionBox.x / width,
+        y: captionBox.y / height,
+        w: captionBox.width / width,
+        h: captionBox.height / height,
+        line: captionBox.lineHeight / height,
+      };
+      // The selection outline follows the caption every frame.
+      const outline = captionOutlineRef.current,
+        box = captionBoxRef.current;
+      if (outline) {
+        const shown =
+          !!box && captionSelectedRef.current === box.id && recStatusRef.current === "idle";
+        outline.hidden = !shown;
+        if (shown) {
+          outline.style.left = `${(box.x - 0.012) * 100}%`;
+          outline.style.top = `${(box.y - 0.01) * 100}%`;
+          outline.style.width = `${(box.w + 0.024) * 100}%`;
+          outline.style.height = `${(box.h + 0.02) * 100}%`;
+        }
       }
       paintEditorLayers(
         context,
@@ -1695,8 +1758,20 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       setArchiveBusy(false);
     }
   }
+  // The inline caption editor grows with its text instead of scrolling.
+  useEffect(() => {
+    captionEditingRef.current = !!captionEdit;
+  }, [captionEdit]);
+  function fitTextarea(node: HTMLTextAreaElement) {
+    node.style.height = "auto";
+    node.style.height = `${node.scrollHeight + 2}px`;
+  }
+  function selectCaption(id: string | null) {
+    captionSelectedRef.current = id;
+    if (!id && captionOutlineRef.current) captionOutlineRef.current.hidden = true;
+  }
   function pointerCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (recStatusRef.current !== "idle" || !editor.project.layers.length) return;
+    if (recStatusRef.current !== "idle") return;
     const rect = event.currentTarget.getBoundingClientRect(),
       x = (event.clientX - rect.left) / rect.width,
       y = (event.clientY - rect.top) / rect.height,
@@ -1708,7 +1783,32 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           l.kind === "text" ? Math.min(0.4, l.text.length * 0.022) * f.scale : 0.12 * f.scale;
       return Math.abs(x - f.x) < halfWidth && Math.abs(y - f.y) < 0.13 * f.scale;
     });
-    if (!layer) return;
+    if (!layer) {
+      const box = captionBoxRef.current,
+        reach = 0.025;
+      if (
+        box &&
+        x >= box.x - reach &&
+        x <= box.x + box.w + reach &&
+        y >= box.y - reach &&
+        y <= box.y + box.h + reach
+      ) {
+        engineRef.current?.pause();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        captionDrag.current = {
+          id: box.id,
+          x,
+          y,
+          cx: box.x + box.w / 2,
+          cy: box.y + box.h / 2,
+          before: captions.draw.current.options.position,
+          moved: false,
+        };
+        selectCaption(box.id);
+      } else selectCaption(null);
+      return;
+    }
+    selectCaption(null);
     engineRef.current?.pause();
     event.currentTarget.setPointerCapture(event.pointerId);
     const f = frameAt(layer, t);
@@ -1726,6 +1826,23 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
   }
   function moveCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
+    const lift = captionDrag.current;
+    if (lift) {
+      const rect = event.currentTarget.getBoundingClientRect(),
+        dx = (event.clientX - rect.left) / rect.width - lift.x,
+        dy = (event.clientY - rect.top) / rect.height - lift.y;
+      // A small wobble is still a tap.
+      if (!lift.moved && Math.hypot(dx * rect.width, dy * rect.height) < 6) return;
+      lift.moved = true;
+      let x = Math.max(0, Math.min(1, lift.cx + dx));
+      const y = Math.max(0, Math.min(1, lift.cy + dy));
+      // The horizontal centre is magnetic, like in most video editors.
+      const snapped = Math.abs(x - 0.5) < 12 / rect.width;
+      if (snapped) x = 0.5;
+      if (snapped !== captionSnap) setCaptionSnap(snapped);
+      captions.previewPosition({ x, y });
+      return;
+    }
     const drag = overlayDrag.current;
     if (!drag) return;
     const rect = event.currentTarget.getBoundingClientRect();
@@ -1752,6 +1869,49 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     });
   }
   function finishCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
+    const lift = captionDrag.current;
+    if (lift) {
+      captionDrag.current = null;
+      setCaptionSnap(false);
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      const position = captions.draw.current.options.position;
+      if (lift.moved) {
+        if (position) captions.commitPosition(position, lift.before);
+        captionTap.current = null;
+        return;
+      }
+      if (event.type === "pointercancel") return;
+      // Two taps on the same caption open it for typing.
+      const now = performance.now(),
+        last = captionTap.current;
+      if (
+        last &&
+        last.id === lift.id &&
+        now - last.at < 400 &&
+        Math.hypot(last.x - lift.x, last.y - lift.y) < 0.06
+      ) {
+        captionTap.current = null;
+        const cue = captions.cues.find((c) => c.id === lift.id),
+          box = captionBoxRef.current;
+        if (cue && box) {
+          // Wide enough to type in, centred on the caption, inside the frame.
+          const frameWidth = frameRef.current?.clientWidth ?? 400,
+            width = Math.min(96, Math.max(60, 26000 / frameWidth, (box.w + 0.1) * 100)),
+            centre = (box.x + box.w / 2) * 100,
+            frame = frameRef.current?.clientHeight ?? 400;
+          setCaptionEdit({
+            id: cue.id,
+            text: cue.text,
+            width,
+            left: Math.max(2, Math.min(98 - width, centre - width / 2)),
+            top: Math.max(1, (box.y - 0.015) * 100),
+            fontSize: Math.max(14, Math.min(34, (box.line * frame) / 1.4)),
+          });
+        }
+      } else captionTap.current = { id: lift.id, at: now, x: lift.x, y: lift.y };
+      return;
+    }
     const drag = overlayDrag.current;
     if (!drag) return;
     overlayDrag.current = null;
@@ -2111,6 +2271,51 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 ref={canvasRef}
                 aria-label={ui(`${activeMode.label} müzik görselleştirmesi`)}
               />
+              <div ref={captionOutlineRef} className="caption-outline" hidden aria-hidden="true">
+                <span>{ui("Sürükle · iki kez dokun: düzenle")}</span>
+              </div>
+              {captionSnap && <div className="caption-center-guide" aria-hidden="true" />}
+              {captionEdit && (
+                <textarea
+                  className="caption-inline-edit"
+                  aria-label={ui("Altyazı metni")}
+                  autoFocus
+                  rows={1}
+                  ref={(node) => {
+                    if (node) fitTextarea(node);
+                  }}
+                  onInput={(event) => fitTextarea(event.currentTarget)}
+                  style={{
+                    left: `${captionEdit.left}%`,
+                    top: `${captionEdit.top}%`,
+                    width: `${captionEdit.width}%`,
+                    fontSize: `${captionEdit.fontSize}px`,
+                  }}
+                  defaultValue={captionEdit.text}
+                  onFocus={(event) => event.currentTarget.select()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.dataset.cancel = "1";
+                      event.currentTarget.blur();
+                    } else if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  onBlur={(event) => {
+                    if (event.currentTarget.dataset.cancel) {
+                      setCaptionEdit(null);
+                      return;
+                    }
+                    const text = event.currentTarget.value.replace(/\s+/g, " ").trim();
+                    const edit = captionEdit;
+                    setCaptionEdit(null);
+                    if (text && text !== edit.text) captions.edit(edit.id, { text });
+                  }}
+                />
+              )}
               {recording && (
                 <div className="record-badge">
                   <span />

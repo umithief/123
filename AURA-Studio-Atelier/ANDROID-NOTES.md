@@ -1,5 +1,19 @@
 # AURA Studio Android
 
+## 2.1.0 — altyazıyı önizlemede taşı ve düzenle
+
+**Dokun ve taşı.** Oynatılan videonun üzerindeki altyazıya dokununca video duraklar ve altyazı seçilir; etrafında kesik çizgili bir çerçeve ve "Sürükle · iki kez dokun: düzenle" ipucu görünür. Parmakla (veya fareyle) sürükleyerek altyazıyı videonun istediğin yerine bırakabilirsin. Yatay orta çizgi mıknatıslıdır: ortaya yaklaşınca altyazı tam ortaya oturur ve bir kılavuz çizgisi görünür. Altyazı ne kadar uzun olursa olsun her zaman kadrajın içinde kalır. Boş bir yere dokunmak seçimi kaldırır.
+
+**İki kez dokun, yaz.** Altyazıya iki kez dokununca metni altyazının olduğu yerde düzenlenebilir hâle gelir; yazı boyutu altyazıyla aynıdır. Enter kaydeder, Esc vazgeçer, başka bir yere dokunmak da kaydeder.
+
+**Geri al.** Her taşıma ve her metin değişikliği tek bir Geri al adımıdır.
+
+**Konum ayarı.** Altyazılar → "Konum, boyut ve zamanlama" bölümünde sürüklenmiş altyazı "Serbest (sürüklendi)" olarak görünür; Alt/Orta/Üst seçilince serbest konum bırakılır. Konum tüm altyazılar için ortaktır, proje yedeğinde ve otomatik kayıtta saklanır, dışa aktarılan videoya da aynen işlenir. Altyazı şablonları konuma dokunmaz.
+
+### 2.1.0 doğrulaması
+
+TypeScript ve 114 AURA birim testi geçti (4 yeni test: konum doğrulama ve eski projelerde boş konum; şablonların konuma dokunmaması; çizimin altyazı kutusunu bildirmesi; serbest konumda kutunun taşınması ve kadraj içinde kalması). Tarayıcıda masaüstünde fareyle ve 390 px telefonda gerçek dokunma olaylarıyla: dokununca seçim, sürükleyince konum (0,30 / 0,25) ve çerçevenin takibi, orta çizgiye mıknatıs (x = 0,500), iki kez dokununca düzenleyici, Enter ile kayıt, Esc ile vazgeçme ve üç adımlık geri alma (metin → ikinci taşıma → ilk taşıma → hazır konum) doğrulandı. Önceki altyazı animasyonu, proje yedeği ve ekran turları yeniden geçti. Fiziksel cihazda ve sanal klavyeyle denenmedi.
+
 ## 2.0.1 — kaydırma düzeltmesi
 
 **Dokunmatik kaydırma.** Araç panellerinde ve pencerelerde parmak bir sekme, çip, kart veya galeri satırının üzerinden başlatıldığında yukarı/aşağı kaydırma çalışmıyordu; yalnızca boş alandan kaydırınca panel ilerliyordu. Bu yatay satırlar artık her iki yöne izin verir: tarayıcı hareketin yönüne göre karar verir, yukarı/aşağı hareket paneli, sağa/sola hareket satırı kaydırır. Spektrum ve hareket galerileri, Ses/Altyazı/Kes panellerindeki sekmeler ve çipler, şablon penceresi kategori çipleri düzeldi.

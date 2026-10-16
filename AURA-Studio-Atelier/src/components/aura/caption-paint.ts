@@ -15,6 +15,17 @@ import {
   type CaptionOptions,
 } from "./captions";
 
+/** Where the caption block sits at rest, in canvas pixels. Used to pick up a
+ *  caption on the preview; entrance/exit motion is not included. */
+export type CaptionBox = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  lineHeight: number;
+};
+
 export function paintCaptions(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -26,10 +37,10 @@ export function paintCaptions(
   accent: string,
   reducedMotion = false,
   previewScale = 1,
-) {
-  if (!options.enabled) return;
+): CaptionBox | null {
+  if (!options.enabled) return null;
   const cue = activeCaption(cues, time, options.offset);
-  if (!cue) return;
+  if (!cue) return null;
   const at = time - options.offset;
   // Layered In/Out/Loop motion: the caption's own, else the shared one. A
   // chosen entrance or exit replaces the combo's block entrance, and a chosen
@@ -124,13 +135,28 @@ export function paintCaptions(
     lineHeight = size * 1.4;
   const safeBottom = Math.max(height * 0.3, height - reserve - 26);
   const blockHeight = shown.length * lineHeight;
-  const center =
+  const blockWidth = Math.max(
+    1,
+    ...shown.map(
+      (line) => line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1),
+    ),
+  );
+  let center =
     options.place === "top"
       ? Math.min(92, height * 0.14) + blockHeight / 2
       : options.place === "center"
         ? Math.min(height * 0.48, safeBottom - blockHeight / 2)
         : safeBottom - blockHeight / 2;
-  ctx.translate(width / 2, center);
+  let cx = width / 2;
+  // A dragged caption keeps its centre where it was dropped, but the whole
+  // block always stays inside the frame.
+  if (options.position) {
+    const keep = (value: number, half: number, total: number) =>
+      half * 2 >= total - 16 ? total / 2 : Math.max(half + 8, Math.min(total - half - 8, value));
+    cx = keep(options.position.x * width, blockWidth / 2, width);
+    center = keep(options.position.y * height, blockHeight / 2, height);
+  }
+  ctx.translate(cx, center);
   if (frame !== REST) {
     ctx.translate(frame.x * size, frame.y * size);
     if (frame.rotate) ctx.rotate(frame.rotate);
@@ -182,18 +208,12 @@ export function paintCaptions(
   }
   if (frame.blur > 0)
     ctx.filter = `${ctx.filter && ctx.filter !== "none" ? `${ctx.filter} ` : ""}blur(${frame.blur * size}px)`;
-  ctx.translate(-width / 2, -center);
+  ctx.translate(-cx, -center);
   if (frame.revealMode !== "none" && frame.reveal < 1) {
     // Uncover the block itself (not the whole frame) so the reveal is visible
     // on short lines too; the margin keeps outlines and glow inside.
-    const blockWidth = Math.max(
-        1,
-        ...shown.map(
-          (line) => line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1),
-        ),
-      ),
-      pad = size * 0.4,
-      left = (width - blockWidth) / 2 - pad,
+    const pad = size * 0.4,
+      left = cx - blockWidth / 2 - pad,
       full = blockWidth + pad * 2,
       top = center - blockHeight / 2 - pad,
       tall = blockHeight + pad * 2;
@@ -218,7 +238,7 @@ export function paintCaptions(
   for (let index = 0; index < shown.length; index++) {
     const line = shown[index],
       total = line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1);
-    let x = (width - total) / 2;
+    let x = cx - total / 2;
     const y0 = center + (index - (shown.length - 1) / 2) * lineHeight;
     let y = y0;
     ctx.save();
@@ -586,4 +606,12 @@ export function paintCaptions(
     ctx.restore();
   }
   ctx.restore();
+  return {
+    id: cue.id,
+    x: cx - blockWidth / 2,
+    y: center - blockHeight / 2,
+    width: blockWidth,
+    height: blockHeight,
+    lineHeight,
+  };
 }

@@ -488,8 +488,9 @@ export function CaptionPanel({
                   {ui("Altyazı konumu")}
                   <select
                     aria-label={ui("Altyazı konumu")}
-                    value={studio.options.place}
+                    value={studio.options.position ? "free" : studio.options.place}
                     onChange={(e) =>
+                      e.target.value !== "free" &&
                       studio.changeOptions({ place: e.target.value as typeof studio.options.place })
                     }
                     className="min-h-11 rounded-xl border border-line bg-canvas px-3 text-ink"
@@ -497,8 +498,16 @@ export function CaptionPanel({
                     <option value="bottom">{ui("Alt")}</option>
                     <option value="center">{ui("Orta")}</option>
                     <option value="top">{ui("Üst")}</option>
+                    {studio.options.position && (
+                      <option value="free">{ui("Serbest (sürüklendi)")}</option>
+                    )}
                   </select>
                 </label>
+                <p className="text-xs leading-relaxed text-mute">
+                  {ui(
+                    "Önizlemede altyazıya dokunup sürükleyerek istediğin yere taşı; iki kez dokunarak metnini düzenle.",
+                  )}
+                </p>
                 <label className="flex min-h-11 items-center gap-3 text-xs text-ink">
                   {ui("Yazı boyutu")}
                   <input

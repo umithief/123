@@ -14,10 +14,14 @@ export type CaptionCue = {
   /** This caption's own In/Out/Loop motion; replaces the shared one. */
   motion?: CaptionMotion;
 };
+/** Centre of the caption block as a share of the frame (0–1 each way). */
+export type CaptionPosition = { x: number; y: number };
 export type CaptionOptions = {
   enabled: boolean;
   style: "classic" | "karaoke" | "minimal";
   place: "bottom" | "center" | "top";
+  /** Dragged on the preview; replaces `place` while set. */
+  position: CaptionPosition | null;
   size: number;
   offset: number;
   animation: CaptionAnimation;
@@ -135,6 +139,7 @@ export const DEFAULT_CAPTIONS: CaptionOptions = {
   enabled: true,
   style: "karaoke",
   place: "bottom",
+  position: null,
   size: 30,
   offset: 0,
   animation: "fade",
@@ -157,6 +162,14 @@ export const DEFAULT_CAPTIONS: CaptionOptions = {
 };
 export const CAPTION_MAX_SECONDS = 600;
 
+export function parseCaptionPosition(raw: unknown): CaptionPosition | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { x, y } = raw as Record<string, unknown>;
+  return typeof x === "number" && typeof y === "number" && Number.isFinite(x) && Number.isFinite(y)
+    ? { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) }
+    : null;
+}
+
 export function restoreCaptionOptions(raw: string | null): CaptionOptions {
   try {
     const v = JSON.parse(raw ?? "null");
@@ -166,6 +179,7 @@ export function restoreCaptionOptions(raw: string | null): CaptionOptions {
       enabled: v?.enabled !== false,
       style: ["classic", "karaoke", "minimal"].includes(v?.style) ? v.style : "karaoke",
       place: ["bottom", "center", "top"].includes(v?.place) ? v.place : "bottom",
+      position: parseCaptionPosition(v?.position),
       size: Number.isFinite(v?.size) ? Math.max(20, Math.min(48, v.size)) : 30,
       offset: Number.isFinite(v?.offset) ? Math.max(-5, Math.min(5, v.offset)) : 0,
       animation: CAPTION_ANIMATIONS.some((a) => a.id === v?.animation) ? v.animation : "fade",

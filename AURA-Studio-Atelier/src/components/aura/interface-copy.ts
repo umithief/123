@@ -150,6 +150,10 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Sürükle · iki kez dokun: düzenle|Drag · tap twice to edit
+Altyazı metni|Caption text
+Serbest (sürüklendi)|Free (dragged)
+Önizlemede altyazıya dokunup sürükleyerek istediğin yere taşı; iki kez dokunarak metnini düzenle.|Tap a caption on the preview and drag it anywhere; tap it twice to edit its words.
 Araçlardan yazı, görüntü veya altyazı ekle.|Add text, media or captions with the tools.
 Açık görünüm|Light appearance
 Koyu görünüm|Dark appearance

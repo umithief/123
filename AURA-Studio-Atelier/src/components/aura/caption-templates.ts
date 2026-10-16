@@ -14,6 +14,7 @@ const {
   offset: _offset,
   place: _place,
   motion: _motion,
+  position: _position,
   ...appearance
 } = DEFAULT_CAPTIONS;
 function template(

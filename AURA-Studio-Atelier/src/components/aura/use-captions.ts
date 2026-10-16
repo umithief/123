@@ -9,6 +9,7 @@ import {
   restoreCaptionOptions,
   type CaptionCue,
   type CaptionOptions,
+  type CaptionPosition,
 } from "./captions";
 import { readSetting, writeSetting } from "./storage";
 import { audioForRecognition } from "./transcription";
@@ -18,7 +19,15 @@ import type { CaptionMotion } from "./caption-motion";
 
 // `at` orders caption steps against the project history (see history-clock);
 // `key` and `when` merge rapid typing in one line into a single step.
-type CueEntry = { cues: CaptionCue[]; at: number; key?: string; when?: number };
+// `pos` is the caption position at that step, so dragging a caption on the
+// preview undoes like any other caption edit.
+type CueEntry = {
+  cues: CaptionCue[];
+  pos: CaptionPosition | null;
+  at: number;
+  key?: string;
+  when?: number;
+};
 type CueHistory = { past: CueEntry[]; future: CueEntry[] };
 const EMPTY_HISTORY: CueHistory = { past: [], future: [] };
 
@@ -46,7 +55,11 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
   draw.current = { cues, options };
 
   /** Remembers `before` as one undo step (up to 40). */
-  function record(before: CaptionCue[], key?: string) {
+  function record(
+    before: CaptionCue[],
+    key?: string,
+    pos: CaptionPosition | null = draw.current.options.position,
+  ) {
     const h = historyRef.current,
       last = h.past.at(-1),
       now = Date.now();
@@ -55,7 +68,7 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       return;
     }
     setHistory({
-      past: [...h.past, { cues: before, at: editStamp(), key, when: now }].slice(-40),
+      past: [...h.past, { cues: before, pos, at: editStamp(), key, when: now }].slice(-40),
       future: [],
     });
   }
@@ -98,7 +111,21 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     } else setCues([]);
     setError(null);
   }
+  function setPosition(position: CaptionPosition | null, store = true) {
+    setOptions((current) => {
+      const next = { ...current, position };
+      draw.current = { ...draw.current, options: next };
+      if (store) writeSetting("aura-captions-options", JSON.stringify(next));
+      return next;
+    });
+  }
   function changeOptions(patch: Partial<CaptionOptions>) {
+    const current = draw.current.options;
+    // Choosing bottom/centre/top again drops a dragged position.
+    if ("place" in patch && !("position" in patch) && current.position)
+      patch = { ...patch, position: null };
+    if ("position" in patch && patch.position !== current.position)
+      record(draw.current.cues, "position", current.position);
     setOptions((current) => {
       const next = { ...current, ...patch };
       writeSetting("aura-captions-options", JSON.stringify(next));
@@ -341,6 +368,14 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
         }),
       );
     },
+    /** Live position while a caption is dragged on the preview. */
+    previewPosition: (position: CaptionPosition) => setPosition(position, false),
+    /** Finishes a drag on the preview; `before` is what "undo" restores. */
+    commitPosition: (position: CaptionPosition, before: CaptionPosition | null) => {
+      record(draw.current.cues, undefined, before);
+      setPosition(position);
+      setMessage("Altyazı konumu değişti.");
+    },
     /** Live update while a caption is dragged on the timeline. */
     previewCues: (next: CaptionCue[]) => {
       draw.current = { ...draw.current, cues: next };
@@ -366,9 +401,13 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
       if (!previous) return;
       setHistory({
         past: h.past.slice(0, -1),
-        future: [{ cues: draw.current.cues, at: stepStamp() }, ...h.future].slice(0, 40),
+        future: [
+          { cues: draw.current.cues, pos: draw.current.options.position, at: stepStamp() },
+          ...h.future,
+        ].slice(0, 40),
       });
       show(previous.cues);
+      if (previous.pos !== draw.current.options.position) setPosition(previous.pos);
       setMessage("Altyazı değişikliği geri alındı.");
     },
     redo: () => {
@@ -376,10 +415,14 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
         next = h.future[0];
       if (!next || !redoable(next.at)) return;
       setHistory({
-        past: [...h.past, { cues: draw.current.cues, at: stepStamp() }].slice(-40),
+        past: [
+          ...h.past,
+          { cues: draw.current.cues, pos: draw.current.options.position, at: stepStamp() },
+        ].slice(-40),
         future: h.future.slice(1),
       });
       show(next.cues);
+      if (next.pos !== draw.current.options.position) setPosition(next.pos);
       setMessage("Altyazı değişikliği yinelendi.");
     },
     add: (at: number, duration: number) => {
