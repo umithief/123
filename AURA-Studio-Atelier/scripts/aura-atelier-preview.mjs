@@ -6,7 +6,7 @@ try{for(const width of [390,1280,320]){
  await p.getByLabel('Müzik dosyası',{exact:true}).setInputFiles('/workspace/screenshots/aura-portrait-fixture.mp4');
  await p.waitForFunction(()=>!document.querySelector('.aura-studio').classList.contains('at-home'));
  await p.screenshot({path:`/workspace/screenshots/atelier-editor-${width}.png`});
- await p.locator('.library-tools [data-tool="scenes"]').click();
+ await p.locator('.aura-toolbar [data-tool="scenes"]').click();
  await p.screenshot({path:`/workspace/screenshots/atelier-scenes-${width}.png`});
  await p.locator('.atelier-navigation [data-workspace="text"]').click();await p.getByRole('button',{name:'Yazı ekle',exact:true}).click();
  await p.getByLabel('Katman metni',{exact:true}).fill('Kendi ritmini yarat');await p.getByLabel('Katman metni',{exact:true}).press('Tab');

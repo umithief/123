@@ -45,8 +45,8 @@ try {
         Altyazı: ["text", "captions"],
       };
       const [group, id] = routes[name];
-      await p.locator(`.atelier-navigation [data-workspace="${group}"]`).click();
-      await p.locator(`.library-tools [data-tool="${id}"]`).click();
+      void group;
+      await p.locator(`.aura-toolbar [data-tool="${id}"]`).click();
     };
     const choose = async (group, name) => {
       const g = p.getByRole("group", { name: group, exact: true });

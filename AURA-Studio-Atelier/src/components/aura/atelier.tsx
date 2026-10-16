@@ -7,7 +7,6 @@ import {
   LayoutTemplate,
   AudioLines,
   Captions,
-  Check,
   ChevronRight,
   Film,
   FolderOpen,
@@ -23,10 +22,8 @@ import {
   SlidersHorizontal,
   Sparkles,
   Type,
-  Upload,
   X,
 } from "lucide-react";
-import { ChoiceStrip } from "./choice-strip";
 import { ModePreview } from "./studio-panels";
 import { themeById, type ModeId } from "./palette";
 import type { StudioTool } from "./studio-guide";
@@ -191,152 +188,89 @@ export function toolName(tool: StudioTool, language: InterfaceLanguage) {
   const a = ACTIONS.find((a) => a.id === tool);
   return a ? (language === "tr" ? a.tr : a.en) : "";
 }
-export function WorkspaceNav({
+// Short labels for the tool bar; the full name is the button's title.
+const SHORT: Record<string, [string, string]> = {
+  scenes: ["Spektrum", "Visuals"],
+  artwork: ["Kapak", "Artwork"],
+  adjust: ["Renk", "Color"],
+  media: ["Medya", "Media"],
+  cuts: ["Kes", "Trim"],
+  motion: ["Hareket", "Motion"],
+  sound: ["Ses", "Sound"],
+  voice: ["Ses ekle", "Add audio"],
+  layers: ["Yazı", "Text"],
+  captions: ["Altyazı", "Captions"],
+};
+/** Every tool in one place, one tap away: a bottom bar on phones and a
+ *  labelled rail on larger screens. Groups keep the four areas recognisable. */
+export function ToolBar({
   active,
-  onChange,
-  language,
-  disabled,
-}: {
-  active: Workspace;
-  onChange: (id: Workspace) => void;
-  language: InterfaceLanguage;
-  disabled: boolean;
-}) {
-  return (
-    <nav
-      className="atelier-navigation"
-      aria-label={language === "tr" ? "Çalışma alanları" : "Workspaces"}
-    >
-      {WORKSPACES.map((w) => (
-        <button
-          key={w.id}
-          type="button"
-          data-workspace={w.id}
-          aria-pressed={active === w.id}
-          disabled={disabled}
-          onClick={() => onChange(w.id)}
-        >
-          <w.icon size={21} />
-          <span>{language === "tr" ? w.tr : w.en}</span>
-        </button>
-      ))}
-    </nav>
-  );
-}
-export function ToolLibrary({
-  workspace,
   onTool,
-  onAddText,
-  onCover,
-  onUpload,
-  onQuickTools,
   onTemplates,
+  onQuickTools,
   language,
   disabled,
 }: {
-  workspace: Workspace;
+  active: StudioTool | null;
   onTool: (tool: StudioTool) => void;
-  onAddText: () => void;
-  onCover: () => void;
-  onUpload: () => void;
-  onQuickTools: () => void;
   onTemplates: () => void;
+  onQuickTools: () => void;
   language: InterfaceLanguage;
   disabled: boolean;
 }) {
-  const w = WORKSPACES.find((w) => w.id === workspace)!;
   const en = language === "en";
   return (
-    <section className="atelier-library" aria-label={en ? `${w.en} tools` : `${w.tr} araçları`}>
-      <div className="library-heading">
-        <h2>{en ? w.en : w.tr}</h2>
-        <span className="library-swipe-hint">
-          {en ? "Swipe for tools" : "Araçlar için kaydır"}
-          <ArrowRight size={13} />
-        </span>
-        <p>{en ? w.english : w.description}</p>
+    <nav className="aura-toolbar" aria-label={en ? "Tools" : "Araçlar"}>
+      <div className="aura-toolgroup is-start" role="group" aria-label={en ? "Start" : "Başla"}>
+        <button
+          type="button"
+          data-tool="templates"
+          title={en ? "Video templates" : "Video şablonları"}
+          disabled={disabled}
+          onClick={onTemplates}
+        >
+          <LayoutTemplate size={20} />
+          <span>{en ? "Templates" : "Şablonlar"}</span>
+        </button>
+        <button
+          type="button"
+          data-tool="quick"
+          title={en ? "Ready-made tools" : "Hazır araçlar"}
+          disabled={disabled}
+          onClick={onQuickTools}
+        >
+          <Wand2 size={20} />
+          <span>{en ? "Quick" : "Hazır"}</span>
+        </button>
       </div>
-      <ChoiceStrip
-        className="library-tools"
-        aria-label={en ? `${w.en} tool list` : `${w.tr} araç listesi`}
-      >
-        {workspace === "text" && (
-          <button type="button" disabled={disabled} onClick={onAddText}>
-            <span className="library-tool-icon">
-              <Plus size={21} />
-            </span>
-            <span>
-              <strong>{en ? "Add text" : "Yazı ekle"}</strong>
-              <small>{en ? "Place a new title" : "Yeni başlık yerleştir"}</small>
-            </span>
-          </button>
-        )}
-        {ACTIONS.filter((a) => a.group === workspace).map((a) => (
-          <button
-            type="button"
-            key={a.id}
-            data-tool={a.id}
-            disabled={disabled}
-            onClick={() => onTool(a.id)}
-          >
-            <span className="library-tool-icon">
-              <a.icon size={21} />
-            </span>
-            <span>
-              <strong>{en ? a.en : a.tr}</strong>
-              <small>{en ? a.english : a.detail}</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
-        ))}
-        {(workspace === "design" || workspace === "edit") && (
-          <button
-            type="button"
-            className="library-templates"
-            disabled={disabled}
-            onClick={onTemplates}
-          >
-            <span className="library-tool-icon">
-              <LayoutTemplate size={21} />
-            </span>
-            <span>
-              <strong>{en ? "Video templates" : "Video şablonları"}</strong>
-              <small>{en ? "Start with a complete look" : "Hazır bir görünümle başla"}</small>
-            </span>
-          </button>
-        )}
-        {workspace === "edit" && (
-          <button type="button" disabled={disabled} onClick={onQuickTools}>
-            <span className="library-tool-icon">
-              <Wand2 size={21} />
-            </span>
-            <span>
-              <strong>{en ? "Ready-made tools" : "Hazır araçlar"}</strong>
-              <small>{en ? "Quick cuts and transitions" : "Hızlı kesim ve geçişler"}</small>
-            </span>
-          </button>
-        )}
-        {workspace === "audio" && (
-          <button type="button" disabled={disabled} onClick={onUpload}>
-            <span className="library-tool-icon">
-              <Upload size={21} />
-            </span>
-            <span>
-              <strong>{en ? "Change source" : "Parçayı değiştir"}</strong>
-              <small>{en ? "Choose a different track" : "Başka bir parça seç"}</small>
-            </span>
-          </button>
-        )}
-      </ChoiceStrip>
-      <div className="library-note">
-        <Check size={15} />
-        <span>
-          {en
-            ? "Changes appear instantly in the preview."
-            : "Değişiklikleri önizlemede anında gör."}
-        </span>
-      </div>
-    </section>
+      {WORKSPACES.map((w) => (
+        <div
+          key={w.id}
+          className="aura-toolgroup"
+          role="group"
+          data-group={w.id}
+          aria-label={en ? w.en : w.tr}
+        >
+          <span className="aura-toolgroup-label" aria-hidden="true">
+            {en ? w.en : w.tr}
+          </span>
+          {ACTIONS.filter((a) => a.group === w.id).map((a) => (
+            <button
+              type="button"
+              key={a.id}
+              data-tool={a.id}
+              title={en ? a.en : a.tr}
+              aria-pressed={active === a.id}
+              disabled={disabled}
+              onClick={() => onTool(a.id)}
+            >
+              <a.icon size={20} />
+              <span>{SHORT[a.id][en ? 1 : 0]}</span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </nav>
   );
 }
 const LOOKS: [ModeId, string, string, string][] = [

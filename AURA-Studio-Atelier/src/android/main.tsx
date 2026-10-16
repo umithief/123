@@ -4,6 +4,7 @@ import { AuraStage } from "@/components/aura/stage";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AuthProvider } from "@/lib/auth/provider";
 import "../styles.css";
+import "../aura-2.css";
 
 const routeTree = createRootRoute({
   component: () => (

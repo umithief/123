@@ -1313,7 +1313,7 @@ export function EditorTimeline({
               !captions.length &&
               !e.project.sounds.length && (
                 <p className="timeline-empty-hint">
-                  {ui("Alttaki araçlardan yazı, görüntü veya altyazı ekle.")}
+                  {ui("Araçlardan yazı, görüntü veya altyazı ekle.")}
                 </p>
               )}
           </div>

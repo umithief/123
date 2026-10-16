@@ -13,6 +13,8 @@ import {
   Eye,
   FolderOpen,
   Save,
+  Sun,
+  Moon,
   Maximize2,
   Mic,
   Minimize2,
@@ -44,12 +46,9 @@ import { type StudioTool } from "./studio-guide";
 import { EditorTimeline } from "./editor-timeline";
 import {
   AtelierHome,
-  ToolLibrary,
-  WorkspaceNav,
-  workspaceForTool,
+  ToolBar,
   toolName,
   useInterfaceLanguage,
-  type Workspace,
   type ProjectIntent,
 } from "./atelier";
 import { VideoMotionPanel } from "./video-motion-panel";
@@ -152,7 +151,6 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [homeView, setHomeView] = useState(true);
   const homeViewRef = useRef(homeView);
   homeViewRef.current = homeView;
-  const [workspace, setWorkspace] = useState<Workspace>("design");
   const pendingIntent = useRef<ProjectIntent | null>(null);
   const pendingLook = useRef<{ mode: ModeId; theme: string } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -209,7 +207,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [captionFocus, setCaptionFocus] = useState<{ id: string; serial: number } | null>(null);
   const motionPreviewEnd = useRef<number | null>(null);
   const [compactPreview, setCompactPreview] = useState(false);
-  const [timelineExpanded, setTimelineExpanded] = useState(false);
+  // The timeline is part of the editor, not an extra: it starts open.
+  const [timelineExpanded, setTimelineExpanded] = useState(true);
+  const [appearance, setAppearance] = useState<"dark" | "light">("dark");
+  useEffect(() => {
+    if (readSetting("aura-appearance") === "light") setAppearance("light");
+  }, []);
+  // Dialogs are portalled to <body>, so the theme lives on <html>.
+  useEffect(() => {
+    document.documentElement.dataset.theme = appearance;
+  }, [appearance]);
   const returnToTimeline = useRef(false);
   // Phones: the open tool can take most of the screen, remembered on the device.
   const [panelTall, setPanelTall] = useState(() => readSetting("aura-panel-tall") === "1");
@@ -325,9 +332,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     if (!activeTool) returnToTimeline.current = timelineExpanded;
     if (tool !== "motion") pauseMotionPreview();
     setHomeView(false);
-    setWorkspace(workspaceForTool(tool));
     setActiveTool(tool);
-    setTimelineExpanded(tool === "cuts" && !window.matchMedia("(max-width: 700px)").matches);
     if (["scenes", "media", "layers", "adjust", "motion"].includes(tool)) {
       setTab("visual");
       setVisualView(tool);
@@ -349,28 +354,27 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
               ? backupDetailsRef.current
               : null;
       target?.scrollIntoView({ block: "start" });
+      // Focus moves into the panel: the tool bar may hide on phones, and
+      // keyboard and screen-reader users land where the work is.
+      document
+        .querySelector<HTMLElement>(
+          ".studio-inspector .editor-tool-heading h2, .studio-inspector .video-motion-tab [role=tab][aria-selected=true]",
+        )
+        ?.focus({ preventScroll: true });
     });
   }
   function closeTool() {
     pauseMotionPreview();
     setActiveTool(null);
-    setTimelineExpanded(
-      returnToTimeline.current ||
-        (workspace === "edit" && !window.matchMedia("(max-width: 700px)").matches),
-    );
+    setTimelineExpanded(true);
     returnToTimeline.current = false;
+    // Focus returns to the tool that was open.
+    const closed = activeTool;
     requestAnimationFrame(() =>
       document
-        .querySelector<HTMLButtonElement>(`.atelier-navigation [data-workspace="${workspace}"]`)
+        .querySelector<HTMLButtonElement>(`.aura-toolbar [data-tool="${closed}"]`)
         ?.focus({ preventScroll: true }),
     );
-  }
-  function selectWorkspace(next: Workspace) {
-    returnToTimeline.current = false;
-    pauseMotionPreview();
-    setWorkspace(next);
-    setActiveTool(null);
-    setTimelineExpanded(next === "edit" && !window.matchMedia("(max-width: 700px)").matches);
   }
   function startIntent(intent: ProjectIntent) {
     if (source !== "idle") {
@@ -1824,7 +1828,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           closeTool();
         }
       }}
-      className={`aura-studio atelier-studio calm-layout ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${easy && activeTool && panelTall ? "panel-tall" : ""} ${timelineExpanded && !activeTool ? "timeline-focused" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
+      className={`aura-studio atelier-studio calm-layout aura-2 ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${easy && activeTool && panelTall ? "panel-tall" : ""} ${timelineExpanded && !activeTool ? "timeline-focused" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
     >
       <audio ref={audioRef} className="hidden" playsInline />
       <header className="studio-header atelier-header">
@@ -1857,6 +1861,35 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           )}
         </div>
         <div className="studio-header-actions">
+          <button
+            type="button"
+            className="appearance-switch"
+            aria-label={
+              appearance === "dark"
+                ? en
+                  ? "Light appearance"
+                  : "Açık görünüm"
+                : en
+                  ? "Dark appearance"
+                  : "Koyu görünüm"
+            }
+            title={
+              appearance === "dark"
+                ? en
+                  ? "Light appearance"
+                  : "Açık görünüm"
+                : en
+                  ? "Dark appearance"
+                  : "Koyu görünüm"
+            }
+            onClick={() => {
+              const next = appearance === "dark" ? "light" : "dark";
+              setAppearance(next);
+              writeSetting("aura-appearance", next);
+            }}
+          >
+            {appearance === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
           <button
             type="button"
             className="language-switch"
@@ -1950,11 +1983,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         />
       )}
       <div className="studio-workspace">
-        <WorkspaceNav
+        <ToolBar
           language={language}
-          active={workspace}
-          onChange={selectWorkspace}
-          disabled={locked || loading}
+          active={activeTool}
+          onTool={openTool}
+          onTemplates={openTemplates}
+          onQuickTools={() => {
+            setTimelineExpanded(true);
+            setQuickToolsSignal((n) => n + 1);
+          }}
+          disabled={locked || loading || source === "idle"}
         />
         <main className="studio-main">
           {easy && source !== "idle" && (
@@ -2241,25 +2279,6 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           )}
         </main>
         <aside className="studio-inspector" aria-label={ui("Stüdyo ayarları")}>
-          {easy && !activeTool && (
-            <ToolLibrary
-              language={language}
-              workspace={workspace}
-              onTool={openTool}
-              disabled={locked || loading}
-              onQuickTools={() => setQuickToolsSignal((n) => n + 1)}
-              onAddText={() => {
-                editor.addLayer("text");
-                openTool("layers");
-              }}
-              onCover={() => {
-                openTool("artwork");
-                coverFileRef.current?.click();
-              }}
-              onUpload={() => fileRef.current?.click()}
-              onTemplates={openTemplates}
-            />
-          )}
           <VideoTemplatesPanel
             open={templatesOpen}
             onClose={() => setTemplatesOpen(false)}

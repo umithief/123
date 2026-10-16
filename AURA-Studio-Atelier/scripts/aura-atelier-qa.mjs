@@ -57,10 +57,10 @@ try {
     await (await cover).setFiles("/workspace/project/public/og.jpg");
     await p.getByRole("button", { name: "Done", exact: true }).click();
     await group("audio");
-    await p.locator('.library-tools [data-tool="sound"]').click();
+    await p.locator('.aura-toolbar [data-tool="sound"]').click();
     await p.getByRole("group", { name: "Equalizer presets", exact: true }).waitFor();
     await group("edit");
-    await p.locator('.library-tools [data-tool="cuts"]').click();
+    await p.locator('.aura-toolbar [data-tool="cuts"]').click();
     const ruler = p.getByRole("slider", { name: "Seek in timeline", exact: true });
     await ruler.focus();
     await p.keyboard.press("Home");

@@ -1,5 +1,23 @@
 # AURA Studio Android
 
+## 2.0.0 — AURA 2.0: yeniden tasarlanan arayüz
+
+**Yeni görünüm.** Uygulama baştan sona yeni bir tasarım sistemine geçti: videoyu öne çıkaran koyu grafit yüzeyler, tek bir şampanya altını vurgu rengi, tek yazı ölçeği ve her yerde aynı düğme, seçim, kart ve kaydırıcı biçimi. Başlıktaki güneş/ay düğmesi **açık görünüme** geçirir; seçim cihazda hatırlanır. Pencereler, uyarılar ve tüm araç panelleri aynı görünümü kullanır.
+
+**Her araç tek dokunuşta.** Önceki "çalışma alanı seç → araçlar için kaydır → aracı aç" düzeni kaldırıldı. Tüm araçlar tek bir araç çubuğunda: Şablonlar, Hazır · Spektrum, Kapak, Renk · Medya, Kes, Hareket · Ses, Ses ekle · Yazı, Altyazı. Telefonda çubuk ekranın altında kaydırılabilir bir sıra (CapCut düzeni); tablet ve bilgisayarda solda etiketli bir dikey çubuk. Açık araç çubukta vurgulanır; araç kapanınca odak o araca döner, açılınca panele geçer.
+
+**Zaman çizelgesi hep açık.** Kurgu ekranında zaman çizelgesi varsayılan olarak görünür (bilgisayarda ekranın altında tam genişlikte). Klip/Aralık/Görünüm denetimleri sade hap düğmeler oldu; araç çubuğunda zaten bulunan "Hazır araçlar" kopyası kaldırıldı. Kapatma düğmesi önizlemeyi büyütmek için duruyor.
+
+**Paneller alanı kullanıyor.** Telefonda araçlar ekranın altından yükselen bir sayfa olarak açılır (büyütme düğmesi korunur). Tablet ve bilgisayarda panel solda açılır; spektrum, şablon, altyazı ve animasyon galerileri yan kaydırma yerine ızgara olarak gösterilir. Araç kapalıyken panel yer kaplamaz, önizleme genişler.
+
+**Yeni başlangıç ekranı.** Büyük editoryal başlık, canlı bir sahne görseli, üç başlangıç kartı ve açık proje / son oturum kartı.
+
+Tüm özellikler ve proje dosyaları aynen korunur; bu sürüm düzen, gezinme ve görünümü değiştirir.
+
+### 2.0.0 doğrulaması
+
+TypeScript ve 110 AURA birim testi geçti. Tarayıcıda telefon 390×844 ve 320×600, tablet 768×1024 ve masaüstü 1280×800 boyutlarında, koyu ve açık görünümde başlangıç ekranı, kurgu ekranı, Spektrum, Kesme, Medya, Ses, Yazı, Hareket, Renk ve Altyazı panelleri, Video şablonları ve Hazır araçlar pencereleri ile Dışa aktar ekranı açıldı; sayfa hatası ve yatay taşma bulunmadı. Önceki sürümlerin aralık düzenleme ve altyazı animasyonu senaryoları (proje yedeği kaydet/aç dahil) yeni gezinmeyle yeniden geçti. Fiziksel Android cihaz ve ekran okuyucu testi yapılmadı. Eski sürümlere ait bazı geliştirici QA betikleri (1.33/1.34 yerleşim ölçümleri) önceki düzeni ölçtüğü için güncel değildir.
+
 ## 1.36.0 — CapCut tarzı altyazı animasyon sistemi
 
 **Katmanlı animasyon: Giriş · Çıkış · Döngü.** Altyazılar → Animasyonlar bölümünde dört sekme vardır. **Giriş** (20 seçenek: Belirme, Büyüyerek, Küçülerek, Zıpla, Aşağıdan, Yukarıdan, Sağdan, Soldan, Sekerek, Dönerek, Netleş, Silme, Daktilo, Ortadan aç, Perde, Çevir, Esnet, Sarkaç, Dijital), **Çıkış** (18 seçenek: Sönme, Büyüyerek, Küçülerek, Patla, Yukarı, Aşağı, Sola, Sağa, Dönerek, Bulanıklaş, Silinme, Geri sil, Ortaya kapan, Perdeye in, Çevir, Esnet, Dijital) ve **Döngü** (12 seçenek: Nabız, Süzül, Salınım, Zıplama, Titreşim, Kalp atışı, Jöle, Kıpırtı, Titrek ışık, Parıltı, Yakınlaş) ayrı ayrı seçilir ve aynı altyazıda birlikte oynar. Her kart kendi hareketini canlı olarak gösterir. Giriş ve çıkış için **süre** (0,1–2 sn), döngü için **hız** (0,25–3×) ve ortak **Hareket gücü** ayarı vardır. Sekme başlıkları seçili animasyonun adını gösterir.

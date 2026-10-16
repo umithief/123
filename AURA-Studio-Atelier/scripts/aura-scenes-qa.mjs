@@ -50,7 +50,7 @@ try {
     await p.getByLabel("Kurgu yedek dosyası", { exact: true }).setInputFiles(`/workspace/screenshots/scenes-${tag}-${width}-redo.aura.zip`);
     await p.waitForFunction(() => document.querySelector(".aura-studio")?.getAttribute("data-tool") === "none");
     await p.locator('.atelier-navigation [data-workspace="edit"]').click();
-    await p.locator('.library-tools [data-tool="cuts"]').click();
+    await p.locator('.aura-toolbar [data-tool="cuts"]').click();
     if (!await panel.evaluate((node) => node.open)) await panel.locator("summary").click();
     await p.waitForFunction(() => document.querySelectorAll(".timeline-clip").length === 3);
     assert.deepEqual((await save("restored")).editor.clips.map((c) => [c.in, c.out]), [[0,2],[2,4],[4,6]]);
@@ -71,7 +71,7 @@ try {
     await p.getByRole("button", { name: "Switch to English", exact: true }).click();
     await p.getByRole("button", { name: "Continue", exact: true }).click();
     await p.getByRole("navigation", { name: "Workspaces", exact: true }).locator('[data-workspace="edit"]').click();
-    await p.locator('.library-tools [data-tool="cuts"]').click();
+    await p.locator('.aura-toolbar [data-tool="cuts"]').click();
     await panel.getByText("Automatic scene splitting", { exact: true }).waitFor();
     if (!await panel.evaluate((node) => node.open)) await panel.locator("summary").click();
     const replace = p.waitForEvent("filechooser");
@@ -79,7 +79,7 @@ try {
     await (await replace).setFiles("/workspace/screenshots/aura-easy-track.mp3");
     await p.waitForFunction(() => document.querySelector(".source-name span")?.textContent?.includes("aura-easy-track.mp3"));
     await p.getByRole("navigation", { name: "Workspaces", exact: true }).locator('[data-workspace="edit"]').click();
-    await p.locator('.library-tools [data-tool="cuts"]').click();
+    await p.locator('.aura-toolbar [data-tool="cuts"]').click();
     if (!await panel.evaluate((node) => node.open)) await panel.locator("summary").click();
     await panel.getByText("Load a video as the main source to detect scenes.", { exact: true }).waitFor();
     assert.equal(await panel.getByRole("button", { name: "Find scenes", exact: true }).isDisabled(), true);

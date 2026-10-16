@@ -150,6 +150,9 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Araçlardan yazı, görüntü veya altyazı ekle.|Add text, media or captions with the tools.
+Açık görünüm|Light appearance
+Koyu görünüm|Dark appearance
 Döngü|Loop
 Kombo|Combo
 Kelime|Word
