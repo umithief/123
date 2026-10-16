@@ -44,8 +44,20 @@ export function ChoiceStrip({
   useEffect(() => {
     const strip = ref.current;
     if (!strip) return;
+    // A vertical wheel belongs to the panel or page around the strip while
+    // that can still scroll; only then does it move the strip sideways.
+    const outerCanScroll = (down: boolean) => {
+      for (let node = strip.parentElement; node; node = node.parentElement) {
+        if (!/(auto|scroll)/.test(getComputedStyle(node).overflowY)) continue;
+        if (node.scrollHeight <= node.clientHeight + 1) continue;
+        if (down ? node.scrollTop + node.clientHeight < node.scrollHeight - 1 : node.scrollTop > 0)
+          return true;
+      }
+      return false;
+    };
     const wheel = (event: WheelEvent) => {
       if (event.ctrlKey || event.deltaX || !event.deltaY) return;
+      if (outerCanScroll(event.deltaY > 0)) return;
       const step =
         event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? strip.clientWidth : 1);
       const next = Math.max(

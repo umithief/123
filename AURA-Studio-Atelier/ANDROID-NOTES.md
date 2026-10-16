@@ -1,5 +1,15 @@
 # AURA Studio Android
 
+## 2.0.1 — kaydırma düzeltmesi
+
+**Dokunmatik kaydırma.** Araç panellerinde ve pencerelerde parmak bir sekme, çip, kart veya galeri satırının üzerinden başlatıldığında yukarı/aşağı kaydırma çalışmıyordu; yalnızca boş alandan kaydırınca panel ilerliyordu. Bu yatay satırlar artık her iki yöne izin verir: tarayıcı hareketin yönüne göre karar verir, yukarı/aşağı hareket paneli, sağa/sola hareket satırı kaydırır. Spektrum ve hareket galerileri, Ses/Altyazı/Kes panellerindeki sekmeler ve çipler, şablon penceresi kategori çipleri düzeldi.
+
+**Fare tekerleği.** Bilgisayarda tekerlek, imleç yatay bir satırın üzerindeyken önce o satırı yana kaydırıyor, panel ancak satırın sonuna gelince ilerliyordu. Artık panel (veya sayfa) yukarı/aşağı kayabildiği sürece tekerlek paneli kaydırır; satır yalnızca etrafında kaydırılacak bir şey kalmadığında yana kayar. Shift+tekerlek ve dokunmatik yüzey ile yatay kaydırma her zamanki gibi çalışır.
+
+### 2.0.1 doğrulaması
+
+Telefon 390×844'te gerçek dokunma olaylarıyla: düzeltmeden önce sekme, çip ve kart üzerinden başlayan 8 kaydırmanın hepsi takılıyordu; düzeltmeden sonra Ses, Altyazı, Kes panelleri ve şablon penceresinde hepsi ilerledi. Yatay kaydırma (alt araç çubuğu, zaman çizelgesi, Spektrum ve Hareket galerileri) çalışmaya devam ediyor. Bilgisayarda tekerlek testi: önce satır 301 px yana kayıp panel bekliyordu, şimdi panel doğrudan sonuna kadar kayıyor. 110 birim test ve önceki ekran turları geçti. Fiziksel cihazda denenmedi.
+
 ## 2.0.0 — AURA 2.0: yeniden tasarlanan arayüz
 
 **Yeni görünüm.** Uygulama baştan sona yeni bir tasarım sistemine geçti: videoyu öne çıkaran koyu grafit yüzeyler, tek bir şampanya altını vurgu rengi, tek yazı ölçeği ve her yerde aynı düğme, seçim, kart ve kaydırıcı biçimi. Başlıktaki güneş/ay düğmesi **açık görünüme** geçirir; seçim cihazda hatırlanır. Pencereler, uyarılar ve tüm araç panelleri aynı görünümü kullanır.
