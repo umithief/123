@@ -10,6 +10,112 @@ export function ui(value: string | undefined): string | undefined {
 }
 const english: Record<string, string> = Object.fromEntries(
   `
+İmza|Signature
+şablonu|template
+Altyazı yazı efekti|Caption text finish
+Orijinal|Original
+Altın folyo|Gold foil
+Prizma cam|Prism glass
+Kadife plaka|Velvet plaque
+İpek şerit|Silk ribbon
+Platin çerçeve|Platinum frame
+Krom yansıma|Chrome reflection
+İnci noktası|Pearl bead
+Yıldız hattı|Constellation
+Mimari köşe|Architectural corners
+Lazer çizgi|Laser line
+Folyo açılışı|Foil reveal
+Prizma dönüşü|Prism turn
+Kadife perde|Velvet unfold
+İpek salınım|Silk flow
+Platin yayılım|Platinum spread
+Krom süzülme|Chrome drift
+İnci vurgusu|Pearl emphasis
+Yıldız örgüsü|Star weave
+Mimari kurulum|Architectural build
+Lazer taraması|Laser trace
+Ortadan açılan, eğimi azalarak yerleşen kelimeler|Words reveal from the center and settle into place
+Çapraz perspektiften net bir satıra dönüşür|A diagonal perspective settles into a clear line
+Her kelime yatay bir perdeden açılır|Each word unfolds from a horizontal curtain
+Satır boyunca sakin, sürekli bir ipek hareketi|A soft, continuous flow along the line
+Kelimeler satırın merkezinden yerlerine yayılır|Words spread outward from the center of the line
+Diyagonal iz bırakarak dengeli biçimde yerleşir|A diagonal drift settles into place
+Söylenen kelime yatayda genişler, dikeyde sıkışır|The spoken word widens with a gentle vertical squash
+Kelimeler sırayla hafifçe dönerek bir araya gelir|Words rotate gently into place in sequence
+Dört ölçülü adımda çizgiden başlığa açılır|Four measured steps build the title from a line
+İnce bir tarama kenarı kelimeleri ortaya çıkarır|A fine scanning edge reveals the words
+Aurum Çizgisi|Aurum Line
+Kristal Prizma|Crystal Prism
+Kadife Perde|Velvet Curtain
+İpek İz|Silk Trail
+Platin Monogram|Platinum Monogram
+Gece Kromu|Midnight Chrome
+İnci Noktası|Pearl Point
+Galaksi Hattı|Galaxy Line
+Mimari Başlık|Architectural Title
+Lazer İmza|Laser Signature
+Altın folyo · merkezden açılan kelimeler|Gold foil · words reveal from the center
+Prizma cam · çapraz perspektif dönüşü|Prism glass · diagonal perspective turn
+Kadife plaka · yatay perde açılışı|Velvet plaque · horizontal curtain reveal
+İpek şerit · satır boyunca sakin salınım|Silk ribbon · gentle motion along the line
+Platin köşeler · merkezden yayılan tipografi|Platinum corners · type spreads from the center
+Krom yansıma · diyagonal izli giriş|Chrome reflection · diagonal trailing entrance
+İnci malzeme · söylenen kelimede zarif vurgu|Pearl finish · a subtle emphasis on the spoken word
+Yıldız hattı · sırayla birleşen kelimeler|Constellation · words assemble in sequence
+Ölçülü köşeler · dört adımlı kurulum|Measured corners · a four-step build
+İnce lazer çizgi · kelimeleri tarayarak açar|Fine laser line · scans to reveal the words
+Hazır araç bölümleri|Quick tool sections
+Son dokunuş|Finishing touches
+Ses dosyası hazırlanıyor…|Preparing audio file…
+Klip ayarı bölümleri|Clip setting sections
+Kırpma|Trim
+Klip sesi|Clip audio
+Sahne ayırma|Scene detection
+Klip işlemleri|Clip actions
+Medya ayarı bölümleri|Media setting sections
+Medya|Media
+Geçiş|Transition
+Ek ses bölümleri|Additional audio sections
+Ses ekle|Add audio
+Sesleri düzenle|Edit audio
+Zamanlama ve ses geçişi|Timing and fades
+Kapak ve başlık bölümleri|Artwork and title sections
+Başlık|Title
+Kısa açıklama|More information
+Ekolayzır ince ayarı|Fine-tune equalizer
+Çıktı türü|Output type
+Ses / fotoğraf|Audio / image
+Proje|Project
+Video sahnelerinin kendi sesi kapalıdır; projenin müziği kullanılır.|Video layers are muted; the project soundtrack is used.
+Giriş, çıkış ve karma hareketlerini seç.|Choose entrance, exit and looping motion.
+Parçaları kısalt, sırala veya hızını değiştir.|Trim, reorder or change the speed of clips.
+Ekolayzır, yankı, bas ve ritim ayarları.|Adjust the equalizer, echo, bass and rhythm.
+İkinci bir ses dosyası veya mikrofon kaydı ekle.|Add another audio track or a microphone recording.
+Müziğine uyumlu bir görünüm seç.|Choose a visual to match your music.
+Görüntüleri sırala ve geçiş ekle.|Arrange your media and add transitions.
+Yazıları ve şekilleri sahnede taşı.|Place text and shapes in the scene.
+Renk, ışık ve video efektlerini ayarla.|Adjust color, lighting and video effects.
+Kapak fotoğrafı ve parça adı ekle.|Add cover art and a track title.
+Sözleri yapıştır, SRT yükle veya sesinden oluştur.|Paste lyrics, import SRT or transcribe audio.
+Boyut ve kaliteyi seç, MP4 veya WAV hazırla.|Choose size and quality, then export MP4 or WAV.
+Daha sonra düzenlemek için dosyalarını birlikte sakla.|Save your project with its media to edit later.
+Araç bul · Ctrl/⌘ K|Find a tool · Ctrl/⌘ K
+Araçlara dön|Back to tools
+Son kullanılanlar|Recently used
+Hazır bir görünümle başla, kendine göre düzenle.|Start with a ready-made look and make it your own.
+Sessizlikleri temizle, ritme göre kes veya geçiş ekle.|Remove silence, cut to the beat or add transitions.
+Araç adı veya yapmak istediğin işlemi yaz. İlk sonucu Enter ile açabilirsin.|Type a tool or a task. Press Enter to open the first result.
+Zaman çizelgesi araç grupları|Timeline tool groups
+Klip araçları|Clip tools
+Görünüm araçları|View tools
+Klip|Clip
+Aralık|Range
+Görünüm|View
+Klip ayarları|Clip settings
+Tümünü göster|Fit all
+Başlığa git|Go to playhead
+Mıknatıs|Snapping
+Klibe dokun: seç · Kenarı sürükle: kırp · Ok simgesi: geçiş|Tap clip: select · Drag edge: trim · Arrow: transition
 Sahne geçişi|Scene transition
 Sahne aralıkları|Scene boundaries
 Geçiş kategorileri|Transition categories

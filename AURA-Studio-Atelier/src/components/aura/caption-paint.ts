@@ -1,4 +1,11 @@
 import {
+  moveSignatureWord,
+  paintSignatureLine,
+  paintSignatureWord,
+  signatureInk,
+  type SignatureWord,
+} from "./caption-signatures";
+import {
   activeCaption,
   timedCaptionWords,
   CAPTION_FONTS,
@@ -204,7 +211,19 @@ export function paintCaptions(
       );
       ctx.fill();
     }
-    for (const word of line) {
+    const signaturePhase = reducedMotion ? 0 : Math.max(0, at - cue.start) * options.speed;
+    paintSignatureLine(
+      ctx,
+      options.textEffect,
+      x,
+      y,
+      total,
+      size,
+      accent,
+      signaturePhase,
+      options.intensity,
+    );
+    for (const [lineIndex, word] of line.entries()) {
       const progress = Math.max(
         0,
         Math.min(1, (at - word.start) / Math.max(0.01, word.end - word.start)),
@@ -223,6 +242,21 @@ export function paintCaptions(
           (at - word.start) / Math.min(0.25 / options.speed, Math.max(0.01, word.end - word.start)),
         ),
       );
+      const signatureWord: SignatureWord = {
+        x,
+        y,
+        width: word.width,
+        size,
+        elapsed: at - cue.start,
+        cueDuration: cue.end - cue.start,
+        sequence: lineIndex,
+        count: line.length,
+        speed: options.speed,
+        intensity: options.intensity,
+        active,
+        progress: reducedMotion ? 0.5 : progress,
+      };
+      moveSignatureWord(ctx, animation, signatureWord);
       if (animation === "orbit") {
         ctx.globalAlpha *= wordEnter;
         ctx.translate(
@@ -391,6 +425,7 @@ export function paintCaptions(
         ctx.fillStyle = "#ff4f9a";
         ctx.fillText(text, x + split, y);
       }
+      paintSignatureWord(ctx, options.textEffect, text, signatureWord, accent, signaturePhase);
       ctx.lineJoin = "round";
       ctx.fillStyle =
         active &&
@@ -403,6 +438,17 @@ export function paintCaptions(
           ? accent
           : options.textColor;
       if (flow) ctx.fillStyle = flow;
+      ctx.fillStyle = signatureInk(
+        ctx,
+        options.textEffect,
+        x,
+        y,
+        word.width,
+        size,
+        ctx.fillStyle,
+        accent,
+        signaturePhase,
+      );
       if (animation === "cascade") {
         // Letters fall into place one after another across the whole cue.
         const step = Math.min(0.035 / options.speed, ((cue.end - cue.start) * 0.45) / 60);

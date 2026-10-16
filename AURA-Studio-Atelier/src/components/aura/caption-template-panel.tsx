@@ -1,3 +1,4 @@
+import { CAPTION_FINISHES } from "./caption-signatures";
 import { ui } from "./interface-copy";
 import { Search, X } from "lucide-react";
 import { ChoiceStrip, ChoicePicker } from "./choice-strip";
@@ -13,8 +14,14 @@ import { paintCaptions } from "./caption-paint";
 function TemplateThumbnail({ preset }: { preset: CaptionTemplate }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    let alive = true;
-    const draw = () => {
+    let alive = true,
+      visible = false,
+      raf = 0,
+      last = -Infinity;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const start = performance.now();
+    const animated = preset.category === "İmza";
+    const draw = (now = performance.now()) => {
       const canvas = canvasRef.current,
         ctx = canvas?.getContext("2d");
       if (!alive || !canvas || !ctx) return;
@@ -26,22 +33,49 @@ function TemplateThumbnail({ preset }: { preset: CaptionTemplate }) {
         0,
         [{ id: "sample", text: "Ritmi hisset", start: 0, end: 3 }],
         { ...DEFAULT_CAPTIONS, ...preset.options, place: "center" },
-        1.25,
-        "#ff6a2a",
-        false,
+        animated && !reduced.matches ? 0.05 + (((now - start) / 1000) % 2.9) : 1.25,
+        "#dfb76a",
+        reduced.matches,
         1.6,
       );
     };
-    draw();
+    const loop = (now: number) => {
+      if (!alive || !visible || document.hidden || reduced.matches) return;
+      raf = requestAnimationFrame(loop);
+      if (visible && !document.hidden && now - last > 1000 / 24) {
+        draw(now);
+        last = now;
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      motion();
+    });
+    if (canvasRef.current) observer.observe(canvasRef.current);
+    const motion = () => {
+      cancelAnimationFrame(raf);
+      draw();
+      if (animated && !reduced.matches && visible && !document.hidden)
+        raf = requestAnimationFrame(loop);
+    };
+    reduced.addEventListener("change", motion);
+    document.addEventListener("visibilitychange", motion);
+    motion();
     void loadCaptionFont(
       preset.options.font ?? "sans",
       preset.options.weight,
       preset.options.italic,
     )
-      .then(draw)
+      .then(() => {
+        if (alive) draw();
+      })
       .catch(() => {});
     return () => {
       alive = false;
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      reduced.removeEventListener("change", motion);
+      document.removeEventListener("visibilitychange", motion);
     };
   }, [preset]);
   return (
@@ -70,12 +104,18 @@ export function CaptionTemplateGallery({
   const [searching, setSearching] = useState(false);
   const [previous, setPrevious] = useState<Partial<CaptionOptions> | null>(null);
   const selected = matchingCaptionTemplate(options);
+  const normalize = (value: string) =>
+    value
+      .toLocaleLowerCase("tr")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ı/g, "i");
   const shown = CAPTION_TEMPLATES.filter(
     (preset) =>
       (category === "Tümü" || preset.category === category) &&
-      `${preset.name} ${preset.description}`
-        .toLocaleLowerCase("tr")
-        .includes(search.toLocaleLowerCase("tr")),
+      normalize(
+        `${preset.name} ${ui(preset.name)} ${preset.description} ${ui(preset.description)}`,
+      ).includes(normalize(search)),
   );
   function apply(patch: Partial<CaptionOptions>) {
     const { enabled: _enabled, offset: _offset, place: _place, ...appearance } = options;
@@ -101,7 +141,7 @@ export function CaptionTemplateGallery({
           aria-label={ui("Şablon kategorisi")}
           value={category}
         >
-          {["Tümü", "Türler", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
+          {["Tümü", "İmza", "Türler", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
             <button
               type="button"
               key={name}
@@ -135,13 +175,13 @@ export function CaptionTemplateGallery({
             key={preset.id}
             type="button"
             title={ui(preset.description)}
-            aria-label={ui(`${preset.name} şablonu`)}
+            aria-label={`${ui(preset.name)} ${ui("şablonu")}`}
             aria-pressed={selected?.id === preset.id}
             onClick={() => apply(preset.options)}
             className={`min-w-0 rounded-xl border p-2 text-left ${selected?.id === preset.id ? "border-accent bg-glass" : "border-line"}`}
           >
             <TemplateThumbnail preset={preset} />
-            <span className="mt-2 block text-xs font-medium text-ink">{preset.name}</span>
+            <span className="mt-2 block text-xs font-medium text-ink">{ui(preset.name)}</span>
             <span className="mt-1 block text-xs leading-relaxed text-mute">
               {ui(preset.description)}
             </span>
@@ -150,7 +190,7 @@ export function CaptionTemplateGallery({
       </ChoiceStrip>
       <div className="caption-template-status flex items-center justify-between gap-2 text-xs">
         <span role="status" className="text-mute">
-          {selected?.name ?? "Özel görünüm"}
+          {ui(selected?.name ?? "Özel görünüm")}
         </span>
         <button
           type="button"
@@ -180,7 +220,7 @@ export function CaptionAppearancePanel({
   return (
     <div className="space-y-2">
       <ChoiceStrip aria-label={ui("Altyazı görünümü")} value={page} className="studio-segments">
-        {["Yazı tipi", "Stil", "Renkler"].map((name) => (
+        {["Yazı tipi", "Stil", "Efekt", "Renkler"].map((name) => (
           <button
             type="button"
             key={name}
@@ -191,6 +231,16 @@ export function CaptionAppearancePanel({
           </button>
         ))}
       </ChoiceStrip>
+      <div hidden={page !== "Efekt"}>
+        <ChoicePicker
+          label={ui("Altyazı yazı efekti")}
+          value={options.textEffect}
+          options={CAPTION_FINISHES}
+          onChange={(textEffect) =>
+            onChange({ textEffect: textEffect as CaptionOptions["textEffect"] })
+          }
+        />
+      </div>
       <div hidden={page !== "Yazı tipi"}>
         <ChoicePicker
           label={ui("Altyazı yazı tipi")}

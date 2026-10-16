@@ -1,3 +1,4 @@
+import { PanelTabs, PanelPage } from "./panel-layout";
 import { ui } from "./interface-copy";
 import { createId } from "./id.ts";
 import { ChoiceStrip } from "./choice-strip";
@@ -345,173 +346,187 @@ export function ArtworkPanel({
   onPlace: (v: TitlePlace) => void;
   onStyle: (v: TitleStyle) => void;
 }) {
+  const [view, setView] = useState("cover");
   return (
-    <div className="space-y-6">
-      <section className="studio-section">
-        <h3>{ui("Kapak fotoğrafı")}</h3>
-        <div className="artwork-upload">
-          {url ? (
-            <img src={url} alt="Yüklenen kapak" />
-          ) : (
-            <div className="artwork-placeholder">
-              <ImagePlus className="size-6" />
+    <div className="artwork-panel">
+      <PanelTabs
+        label="Kapak ve başlık bölümleri"
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "cover", label: "Kapak" },
+          { id: "title", label: "Başlık" },
+        ]}
+      />
+      <PanelPage active={view === "cover"}>
+        <section className="studio-section">
+          <h3>{ui("Kapak fotoğrafı")}</h3>
+          <div className="artwork-upload">
+            {url ? (
+              <img src={url} alt="Yüklenen kapak" />
+            ) : (
+              <div className="artwork-placeholder">
+                <ImagePlus className="size-6" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <button className="studio-button" type="button" disabled={busy} onClick={onUpload}>
+                {busy ? ui("Hazırlanıyor…") : url ? ui("Fotoğrafı değiştir") : ui("Fotoğraf yükle")}
+              </button>
+              <p className="mt-2 text-xs text-mute">{ui("JPG, PNG, WebP · 20 MB’a kadar")}</p>
             </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <button className="studio-button" type="button" disabled={busy} onClick={onUpload}>
-              {busy ? ui("Hazırlanıyor…") : url ? ui("Fotoğrafı değiştir") : ui("Fotoğraf yükle")}
-            </button>
-            <p className="mt-2 text-xs text-mute">{ui("JPG, PNG, WebP · 20 MB’a kadar")}</p>
+            {url && (
+              <button
+                className="studio-icon"
+                type="button"
+                aria-label={ui("Kapağı kaldır")}
+                onClick={onRemove}
+              >
+                <Trash2 className="size-4" />
+              </button>
+            )}
           </div>
-          {url && (
-            <button
-              className="studio-icon"
-              type="button"
-              aria-label={ui("Kapağı kaldır")}
-              onClick={onRemove}
-            >
-              <Trash2 className="size-4" />
-            </button>
+          {error && (
+            <p role="alert" className="text-xs text-ink">
+              {error}
+            </p>
           )}
-        </div>
-        {error && (
-          <p role="alert" className="text-xs text-ink">
-            {error}
-          </p>
-        )}
-        {url && (
+          {url && (
+            <details open={!simple || undefined} className="easy-details">
+              <summary>{ui("Kapak konumu ve görünümü")}</summary>
+              <ChoiceStrip
+                className="studio-segments"
+                aria-label={ui("Kapak konumu")}
+                value={options.placement}
+              >
+                {(
+                  [
+                    { id: "center", label: "Merkez" },
+                    { id: "background", label: "Arka plan" },
+                    { id: "both", label: "İkisi" },
+                  ] as const
+                ).map((i) => (
+                  <button
+                    key={i.id}
+                    type="button"
+                    aria-pressed={options.placement === i.id}
+                    onClick={() => onOptions({ placement: i.id })}
+                  >
+                    {ui(i.label)}
+                  </button>
+                ))}
+              </ChoiceStrip>
+              {options.placement !== "background" && (
+                <>
+                  <ChoiceStrip
+                    className="studio-segments"
+                    aria-label={ui("Kapak biçimi")}
+                    value={options.shape}
+                  >
+                    {(
+                      [
+                        { id: "circle", label: "Daire" },
+                        { id: "square", label: "Kare" },
+                      ] as const
+                    ).map((i) => (
+                      <button
+                        key={i.id}
+                        type="button"
+                        aria-pressed={options.shape === i.id}
+                        onClick={() => onOptions({ shape: i.id })}
+                      >
+                        {ui(i.label)}
+                      </button>
+                    ))}
+                  </ChoiceStrip>
+                  <label className="studio-range-row">
+                    <span>{ui("Boyut")}</span>
+                    <input
+                      className="aura-range"
+                      type="range"
+                      min={0.2}
+                      max={0.7}
+                      step={0.01}
+                      value={options.size}
+                      aria-label={ui("Kapak boyutu")}
+                      onChange={(e) => onOptions({ size: Number(e.target.value) })}
+                    />
+                    <output>{Math.round(options.size * 100)}%</output>
+                  </label>
+                  <label className="studio-check-row">
+                    {ui("Basla hareket et")}
+                    <input
+                      type="checkbox"
+                      checked={options.pulse}
+                      onChange={(e) => onOptions({ pulse: e.target.checked })}
+                    />
+                  </label>
+                </>
+              )}
+              {options.placement !== "center" && (
+                <label className="studio-range-row">
+                  <span>{ui("Görünürlük")}</span>
+                  <input
+                    className="aura-range"
+                    type="range"
+                    min={0.1}
+                    max={0.7}
+                    step={0.01}
+                    value={options.opacity}
+                    aria-label={ui("Arka plan görünürlüğü")}
+                    onChange={(e) => onOptions({ opacity: Number(e.target.value) })}
+                  />
+                  <output>{Math.round(options.opacity * 100)}%</output>
+                </label>
+              )}
+            </details>
+          )}
+          <p className="studio-note">{ui("Kapak bu tarayıcıda saklanır ve videoya eklenir.")}</p>
+        </section>
+      </PanelPage>
+      <PanelPage active={view === "title"}>
+        <section className="studio-section">
+          <h3>{ui("Sahne başlığı")}</h3>
+          <input
+            className="studio-input"
+            value={title}
+            maxLength={64}
+            placeholder={ui("Parça veya sanatçı adı")}
+            aria-label={ui("Parça adı")}
+            onChange={(e) => onTitle(e.target.value)}
+          />
           <details open={!simple || undefined} className="easy-details">
-            <summary>{ui("Kapak konumu ve görünümü")}</summary>
-            <ChoiceStrip
-              className="studio-segments"
-              aria-label={ui("Kapak konumu")}
-              value={options.placement}
-            >
-              {(
-                [
-                  { id: "center", label: "Merkez" },
-                  { id: "background", label: "Arka plan" },
-                  { id: "both", label: "İkisi" },
-                ] as const
-              ).map((i) => (
+            <summary>{ui("Başlık konumu ve yazı stili")}</summary>
+            <ChoiceStrip className="studio-segments" value={place} aria-label={ui("Yazı konumu")}>
+              {TITLE_PLACES.map((i) => (
                 <button
                   key={i.id}
                   type="button"
-                  aria-pressed={options.placement === i.id}
-                  onClick={() => onOptions({ placement: i.id })}
+                  aria-pressed={place === i.id}
+                  onClick={() => onPlace(i.id)}
                 >
                   {ui(i.label)}
                 </button>
               ))}
             </ChoiceStrip>
-            {options.placement !== "background" && (
-              <>
-                <ChoiceStrip
-                  className="studio-segments"
-                  aria-label={ui("Kapak biçimi")}
-                  value={options.shape}
+            <ChoiceStrip className="studio-segments" value={style} aria-label={ui("Yazı stili")}>
+              {TITLE_STYLES.map((i) => (
+                <button
+                  key={i.id}
+                  type="button"
+                  aria-pressed={style === i.id}
+                  onClick={() => onStyle(i.id)}
                 >
-                  {(
-                    [
-                      { id: "circle", label: "Daire" },
-                      { id: "square", label: "Kare" },
-                    ] as const
-                  ).map((i) => (
-                    <button
-                      key={i.id}
-                      type="button"
-                      aria-pressed={options.shape === i.id}
-                      onClick={() => onOptions({ shape: i.id })}
-                    >
-                      {ui(i.label)}
-                    </button>
-                  ))}
-                </ChoiceStrip>
-                <label className="studio-range-row">
-                  <span>{ui("Boyut")}</span>
-                  <input
-                    className="aura-range"
-                    type="range"
-                    min={0.2}
-                    max={0.7}
-                    step={0.01}
-                    value={options.size}
-                    aria-label={ui("Kapak boyutu")}
-                    onChange={(e) => onOptions({ size: Number(e.target.value) })}
-                  />
-                  <output>{Math.round(options.size * 100)}%</output>
-                </label>
-                <label className="studio-check-row">
-                  {ui("Basla hareket et")}
-                  <input
-                    type="checkbox"
-                    checked={options.pulse}
-                    onChange={(e) => onOptions({ pulse: e.target.checked })}
-                  />
-                </label>
-              </>
-            )}
-            {options.placement !== "center" && (
-              <label className="studio-range-row">
-                <span>{ui("Görünürlük")}</span>
-                <input
-                  className="aura-range"
-                  type="range"
-                  min={0.1}
-                  max={0.7}
-                  step={0.01}
-                  value={options.opacity}
-                  aria-label={ui("Arka plan görünürlüğü")}
-                  onChange={(e) => onOptions({ opacity: Number(e.target.value) })}
-                />
-                <output>{Math.round(options.opacity * 100)}%</output>
-              </label>
-            )}
+                  {ui(i.label)}
+                </button>
+              ))}
+            </ChoiceStrip>
           </details>
-        )}
-        <p className="studio-note">{ui("Kapak bu tarayıcıda saklanır ve videoya eklenir.")}</p>
-      </section>
-      <section className="studio-section">
-        <h3>{ui("Sahne başlığı")}</h3>
-        <input
-          className="studio-input"
-          value={title}
-          maxLength={64}
-          placeholder={ui("Parça veya sanatçı adı")}
-          aria-label={ui("Parça adı")}
-          onChange={(e) => onTitle(e.target.value)}
-        />
-        <details open={!simple || undefined} className="easy-details">
-          <summary>{ui("Başlık konumu ve yazı stili")}</summary>
-          <div className="studio-segments" role="group" aria-label={ui("Yazı konumu")}>
-            {TITLE_PLACES.map((i) => (
-              <button
-                key={i.id}
-                type="button"
-                aria-pressed={place === i.id}
-                onClick={() => onPlace(i.id)}
-              >
-                {ui(i.label)}
-              </button>
-            ))}
-          </div>
-          <div className="studio-segments" role="group" aria-label={ui("Yazı stili")}>
-            {TITLE_STYLES.map((i) => (
-              <button
-                key={i.id}
-                type="button"
-                aria-pressed={style === i.id}
-                onClick={() => onStyle(i.id)}
-              >
-                {ui(i.label)}
-              </button>
-            ))}
-          </div>
-        </details>
-        <p className="studio-note">
-          {ui("Başlığı, altyazıdan farklı bir konuma yerleştirebilirsiniz.")}
-        </p>
-      </section>
+          <p className="studio-note">
+            {ui("Başlığı, altyazıdan farklı bir konuma yerleştirebilirsiniz.")}
+          </p>
+        </section>
+      </PanelPage>
     </div>
   );
 }

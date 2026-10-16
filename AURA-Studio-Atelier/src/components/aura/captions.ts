@@ -1,3 +1,8 @@
+import {
+  CAPTION_FINISHES,
+  SIGNATURE_ANIMATIONS,
+  type CaptionFinish,
+} from "./caption-signatures.ts";
 export type CaptionWord = { text: string; start: number; end: number };
 export type CaptionCue = {
   id: string;
@@ -13,6 +18,7 @@ export type CaptionOptions = {
   size: number;
   offset: number;
   animation: CaptionAnimation;
+  textEffect: CaptionFinish;
   speed: number;
   intensity: number;
   font: CaptionFont;
@@ -29,6 +35,7 @@ export type CaptionOptions = {
   shadow: boolean;
 };
 export const CAPTION_ANIMATIONS = [
+  ...SIGNATURE_ANIMATIONS,
   { id: "none", label: "Sabit", description: "Sade ve okunaklı" },
   { id: "fade", label: "Sinema", description: "Yumuşak giriş ve çıkış" },
   { id: "pop", label: "Pop", description: "Esnek büyüme" },
@@ -92,9 +99,10 @@ export async function loadCaptionFont(font: CaptionFont, weight = 600, italic = 
   );
 }
 export function captionAnimationGroup(id: CaptionAnimation): "Giriş" | "Kelime" | "Döngü" {
-  if (["wave", "pulse", "float", "shimmer", "gradient"].includes(id)) return "Döngü";
+  if (["silk-flow", "wave", "pulse", "float", "shimmer", "gradient"].includes(id)) return "Döngü";
   if (
     [
+      "pearl-step",
       "typewriter",
       "bounce",
       "spotlight",
@@ -125,6 +133,7 @@ export const DEFAULT_CAPTIONS: CaptionOptions = {
   size: 30,
   offset: 0,
   animation: "fade",
+  textEffect: "none",
   speed: 1,
   intensity: 0.7,
   font: "sans",
@@ -154,6 +163,9 @@ export function restoreCaptionOptions(raw: string | null): CaptionOptions {
       size: Number.isFinite(v?.size) ? Math.max(20, Math.min(48, v.size)) : 30,
       offset: Number.isFinite(v?.offset) ? Math.max(-5, Math.min(5, v.offset)) : 0,
       animation: CAPTION_ANIMATIONS.some((a) => a.id === v?.animation) ? v.animation : "fade",
+      textEffect: CAPTION_FINISHES.some((effect) => effect.id === v?.textEffect)
+        ? v.textEffect
+        : "none",
       speed: Number.isFinite(v?.speed) ? Math.max(0.5, Math.min(2, v.speed)) : 1,
       intensity: Number.isFinite(v?.intensity) ? Math.max(0.2, Math.min(1, v.intensity)) : 0.7,
       font: Object.hasOwn(CAPTION_FONTS, v?.font) ? v.font : "sans",

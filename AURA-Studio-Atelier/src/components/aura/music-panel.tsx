@@ -34,7 +34,10 @@ export function MusicPanel({
 }) {
   const [section, setSection] = useState("Ekolayzır");
   return (
-    <details open={embedded || undefined} className="aura-settings mt-2 border-t border-line">
+    <details
+      open={embedded || undefined}
+      className={`aura-settings mt-2 border-t border-line ${embedded ? "is-embedded" : ""}`}
+    >
       <summary className="flex min-h-11 items-center justify-between px-2 text-sm text-ink">
         <span className="inline-flex items-center gap-2">
           <SlidersHorizontal className="size-4 text-mute" />
@@ -191,38 +194,41 @@ export function MusicPanel({
               </button>
             ))}
           </ChoiceStrip>
-          {(
-            [
-              { id: "bass", label: "Bas kazancı", hz: "180 Hz" },
-              { id: "mid", label: "Orta frekans kazancı", hz: "1 kHz" },
-              { id: "treble", label: "Tiz kazancı", hz: "4.2 kHz" },
-            ] as const
-          ).map((band) => (
-            <label
-              key={band.id}
-              className={`flex min-h-11 items-center gap-3 text-xs ${music.eq ? "text-ink" : "text-mute"}`}
-            >
-              <span className="w-16 shrink-0">
-                {band.id === "bass" ? ui("Bas") : band.id === "mid" ? ui("Orta") : ui("Tiz")}
-                <span className="block text-mute">{band.hz}</span>
-              </span>
-              <input
-                aria-label={ui(band.label)}
-                className="aura-range min-w-0 flex-1 disabled:opacity-40"
-                type="range"
-                min={-6}
-                max={6}
-                step={0.5}
-                disabled={!music.eq}
-                value={music[band.id]}
-                onChange={(event) => onMusic({ [band.id]: Number(event.target.value) })}
-              />
-              <span className="w-12 text-right tabular-nums">
-                {music[band.id] > 0 ? ui("+") : ui("")}
-                {music[band.id]} {ui("dB")}
-              </span>
-            </label>
-          ))}
+          <details className="easy-details panel-disclosure">
+            <summary>{ui("Ekolayzır ince ayarı")}</summary>
+            {(
+              [
+                { id: "bass", label: "Bas kazancı", hz: "180 Hz" },
+                { id: "mid", label: "Orta frekans kazancı", hz: "1 kHz" },
+                { id: "treble", label: "Tiz kazancı", hz: "4.2 kHz" },
+              ] as const
+            ).map((band) => (
+              <label
+                key={band.id}
+                className={`flex min-h-11 items-center gap-3 text-xs ${music.eq ? "text-ink" : "text-mute"}`}
+              >
+                <span className="w-16 shrink-0">
+                  {band.id === "bass" ? ui("Bas") : band.id === "mid" ? ui("Orta") : ui("Tiz")}
+                  <span className="block text-mute">{band.hz}</span>
+                </span>
+                <input
+                  aria-label={ui(band.label)}
+                  className="aura-range min-w-0 flex-1 disabled:opacity-40"
+                  type="range"
+                  min={-6}
+                  max={6}
+                  step={0.5}
+                  disabled={!music.eq}
+                  value={music[band.id]}
+                  onChange={(event) => onMusic({ [band.id]: Number(event.target.value) })}
+                />
+                <span className="w-12 text-right tabular-nums">
+                  {music[band.id] > 0 ? ui("+") : ui("")}
+                  {music[band.id]} {ui("dB")}
+                </span>
+              </label>
+            ))}
+          </details>
         </div>
         <div hidden={section !== "Efektler"} className="space-y-2">
           <label className="flex min-h-11 items-center justify-between gap-3 text-xs text-ink">

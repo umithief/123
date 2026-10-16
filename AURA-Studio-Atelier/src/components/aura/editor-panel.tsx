@@ -1,3 +1,4 @@
+import { PanelTabs, PanelPage, PanelHelp } from "./panel-layout";
 import { ui } from "./interface-copy";
 import { createId } from "./id.ts";
 import { ChoiceStrip, ChoicePicker } from "./choice-strip";
@@ -137,6 +138,7 @@ export function CutPanel({
   onMotion?: () => void;
   onPause?: () => void;
 }) {
+  const [view, setView] = useState("trim");
   const clip = e.project.clips.find((c) => c.id === e.selected) ?? e.project.clips[0],
     index = e.project.clips.findIndex((c) => c.id === clip?.id);
   function move(delta: number) {
@@ -148,6 +150,16 @@ export function CutPanel({
   }
   return (
     <fieldset disabled={disabled} className="editor-panel">
+      <PanelTabs
+        label="Klip ayarı bölümleri"
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "trim", label: "Kırpma" },
+          { id: "audio", label: "Klip sesi" },
+          { id: "scenes", label: "Sahne ayırma" },
+        ]}
+      />
       {!contextual && (
         <div className="editor-heading">
           <h3>{ui("Zaman çizelgesi")}</h3>
@@ -160,7 +172,9 @@ export function CutPanel({
         <p className="editor-note">{ui("Kurguya başlamak için müzik seç.")}</p>
       ) : (
         <>
-          <ScenePanel editor={e} file={file} disabled={disabled} onPause={onPause} />
+          {view === "scenes" && (
+            <ScenePanel embedded editor={e} file={file} disabled={disabled} onPause={onPause} />
+          )}
           {!contextual && (
             <>
               <Waveform file={file} />
@@ -223,12 +237,15 @@ export function CutPanel({
               </div>
             </>
           )}
-          {clip && (
+          {clip && view !== "scenes" && (
             <>
               <div className={`editor-heading ${contextual ? "contextual-clip-heading" : ""}`}>
                 <h3>
                   {contextual ? ui("Klip") : ui("Kesim")} {index + 1}
                 </h3>
+              </div>
+              <details className="clip-operation-menu easy-details">
+                <summary>{ui("Klip işlemleri")}</summary>
                 <div className="editor-actions">
                   {contextual && (
                     <button
@@ -287,8 +304,8 @@ export function CutPanel({
                     <Trash2 className="size-4" />
                   </button>
                 </div>
-              </div>
-              {onMotion && (
+              </details>
+              {view === "trim" && onMotion && (
                 <button
                   type="button"
                   className="studio-button"
@@ -301,67 +318,73 @@ export function CutPanel({
                   {ui("Animasyon")}
                 </button>
               )}
-              <div className="editor-two">
-                <NumberField
-                  label={ui("Kesim başlangıcı (sn)")}
-                  value={clip.in}
-                  max={duration}
-                  onChange={(value) => e.changeClip(clip.id, { in: value })}
-                />
-                <NumberField
-                  label={ui("Kesim bitişi (sn)")}
-                  value={clip.out}
-                  max={duration}
-                  onChange={(value) => e.changeClip(clip.id, { out: value })}
-                />
-              </div>
-              <Field label={ui("Oynatma hızı")}>
-                <select
-                  aria-label={ui("Oynatma hızı")}
-                  value={clip.rate}
-                  onChange={(event) => e.changeClip(clip.id, { rate: Number(event.target.value) })}
-                >
-                  {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map((v) => (
-                    <option key={v} value={v}>
-                      {v}×{v === 1 ? ui(" · Normal") : ui("")}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label={ui("Kesim ses düzeyi")}>
-                <input
-                  aria-label={ui("Kesim ses düzeyi")}
-                  type="range"
-                  className="aura-range"
-                  min={0}
-                  max={2}
-                  step={0.05}
-                  value={clip.volume}
-                  onChange={(event) =>
-                    e.changeClip(clip.id, { volume: Number(event.target.value) })
-                  }
-                />
-                <output>%{Math.round(clip.volume * 100)}</output>
-              </Field>
-              <div className="editor-two">
-                <NumberField
-                  label={ui("Ses girişi (sn)")}
-                  value={clip.fadeIn}
-                  max={Math.min(10, clipDuration(clip) / 2)}
-                  onChange={(value) => e.changeClip(clip.id, { fadeIn: value })}
-                />
-                <NumberField
-                  label={ui("Ses çıkışı (sn)")}
-                  value={clip.fadeOut}
-                  max={Math.min(10, clipDuration(clip) / 2)}
-                  onChange={(value) => e.changeClip(clip.id, { fadeOut: value })}
-                />
-              </div>
-              <p className="editor-note">
-                {ui(
-                  "Kesim zamanları kaynak parçaya aittir. Altyazılar kesimleri ve hızı takip eder. Hız değişirken ses perdesi korunur.",
-                )}
-              </p>
+              <PanelPage active={view === "trim"}>
+                <div className="editor-two">
+                  <NumberField
+                    label={ui("Kesim başlangıcı (sn)")}
+                    value={clip.in}
+                    max={duration}
+                    onChange={(value) => e.changeClip(clip.id, { in: value })}
+                  />
+                  <NumberField
+                    label={ui("Kesim bitişi (sn)")}
+                    value={clip.out}
+                    max={duration}
+                    onChange={(value) => e.changeClip(clip.id, { out: value })}
+                  />
+                </div>
+                <Field label={ui("Oynatma hızı")}>
+                  <select
+                    aria-label={ui("Oynatma hızı")}
+                    value={clip.rate}
+                    onChange={(event) =>
+                      e.changeClip(clip.id, { rate: Number(event.target.value) })
+                    }
+                  >
+                    {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4].map((v) => (
+                      <option key={v} value={v}>
+                        {v}×{v === 1 ? ui(" · Normal") : ui("")}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </PanelPage>
+              <PanelPage active={view === "audio"}>
+                <Field label={ui("Kesim ses düzeyi")}>
+                  <input
+                    aria-label={ui("Kesim ses düzeyi")}
+                    type="range"
+                    className="aura-range"
+                    min={0}
+                    max={2}
+                    step={0.05}
+                    value={clip.volume}
+                    onChange={(event) =>
+                      e.changeClip(clip.id, { volume: Number(event.target.value) })
+                    }
+                  />
+                  <output>%{Math.round(clip.volume * 100)}</output>
+                </Field>
+                <div className="editor-two">
+                  <NumberField
+                    label={ui("Ses girişi (sn)")}
+                    value={clip.fadeIn}
+                    max={Math.min(10, clipDuration(clip) / 2)}
+                    onChange={(value) => e.changeClip(clip.id, { fadeIn: value })}
+                  />
+                  <NumberField
+                    label={ui("Ses çıkışı (sn)")}
+                    value={clip.fadeOut}
+                    max={Math.min(10, clipDuration(clip) / 2)}
+                    onChange={(value) => e.changeClip(clip.id, { fadeOut: value })}
+                  />
+                </div>
+              </PanelPage>
+              <PanelHelp>
+                {
+                  "Kesim zamanları kaynak parçaya aittir. Altyazılar kesimleri ve hızı takip eder. Hız değişirken ses perdesi korunur."
+                }
+              </PanelHelp>
             </>
           )}
         </>
@@ -383,239 +406,265 @@ export function MediaPanel({
   disabled: boolean;
   onMotion?: () => void;
 }) {
+  const [view, setView] = useState("media");
   const input = useRef<HTMLInputElement>(null),
     media = e.project.media.find((c) => c.id === e.selected) ?? e.project.media.at(-1);
+  useEffect(() => {
+    if (!media) setView("media");
+  }, [media?.id]);
   return (
     <fieldset disabled={disabled || e.busy} className="editor-panel">
-      <div className="editor-heading">
-        <h3>{ui("Fotoğraf ve video sahneleri")}</h3>
-        <span>
-          {e.project.media.length} {ui("sahne")}
-        </span>
-      </div>
-      <p className="editor-note">
-        {ui(
-          "Müziğin üzerine kendi görüntülerini yerleştir. Video sahnelerinin kendi sesi kapalıdır; projenin müziği kullanılır.",
-        )}
-      </p>
-      <button
-        type="button"
-        className="studio-primary"
-        disabled={!e.total}
-        onClick={() => input.current?.click()}
-      >
-        <Film className="size-4" />
-        {ui("Fotoğraf / video ekle")}
-      </button>
-      <input
-        ref={input}
-        type="file"
-        className="sr-only"
-        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
-        multiple
-        aria-label={ui("Sahne medya dosyaları")}
-        onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          event.target.value = "";
-          void e.upload(files);
-        }}
+      <PanelTabs
+        label="Medya ayarı bölümleri"
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "media", label: "Medya" },
+          { id: "frame", label: "Kadraj", disabled: !media },
+          { id: "transition", label: "Geçiş", disabled: !media },
+        ]}
       />
-      <Field label={ui("Spektrumu görüntülerin üzerinde göster")}>
+      {media && view !== "media" && <p className="panel-selection">{media.name}</p>}
+      <PanelPage active={view === "media"}>
+        <div className="editor-heading">
+          <h3>{ui("Fotoğraf ve video sahneleri")}</h3>
+          <span>
+            {e.project.media.length} {ui("sahne")}
+          </span>
+        </div>
+        <PanelHelp>
+          {"Video sahnelerinin kendi sesi kapalıdır; projenin müziği kullanılır."}
+        </PanelHelp>
+        <button
+          type="button"
+          className="studio-primary"
+          disabled={!e.total}
+          onClick={() => input.current?.click()}
+        >
+          <Film className="size-4" />
+          {ui("Fotoğraf / video ekle")}
+        </button>
         <input
-          type="checkbox"
-          checked={e.project.showSpectrum}
-          onChange={(event) => e.commit({ ...e.project, showSpectrum: event.target.checked })}
+          ref={input}
+          type="file"
+          className="sr-only"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
+          multiple
+          aria-label={ui("Sahne medya dosyaları")}
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = "";
+            void e.upload(files);
+          }}
         />
-      </Field>
-      <ChoiceStrip className="editor-list" aria-label={ui("Medya sahneleri")} value={media?.id}>
-        {e.project.media.map((c, i) => (
-          <button
-            className="editor-list-item"
-            type="button"
-            key={c.id}
-            aria-pressed={media?.id === c.id}
-            onClick={() => {
-              e.setSelected(c.id);
-              e.seek(c.start);
-            }}
-          >
-            <span>
-              {i + 1}. {c.name}
-            </span>
-            <small>
-              {formatTime(c.start)}–{formatTime(c.end)}
-              {!e.assets.has(c.asset) ? ui(" · dosya eksik") : ui("")}
-            </small>
-          </button>
-        ))}
-      </ChoiceStrip>
-      {media && (
-        <>
-          {onMotion && (
+        <Field label={ui("Spektrumu görüntülerin üzerinde göster")}>
+          <input
+            type="checkbox"
+            checked={e.project.showSpectrum}
+            onChange={(event) => e.commit({ ...e.project, showSpectrum: event.target.checked })}
+          />
+        </Field>
+        <ChoiceStrip className="editor-list" aria-label={ui("Medya sahneleri")} value={media?.id}>
+          {e.project.media.map((c, i) => (
             <button
+              className="editor-list-item"
               type="button"
-              className="studio-button"
+              key={c.id}
+              aria-pressed={media?.id === c.id}
               onClick={() => {
-                e.setSelected(media.id);
-                onMotion();
+                e.setSelected(c.id);
+                e.seek(c.start);
               }}
             >
-              <Sparkles className="size-4" />
-              {ui("Animasyon")}
+              <span>
+                {i + 1}. {c.name}
+              </span>
+              <small>
+                {formatTime(c.start)}–{formatTime(c.end)}
+                {!e.assets.has(c.asset) ? ui(" · dosya eksik") : ui("")}
+              </small>
             </button>
-          )}
-          {media.kind === "video" && (
-            <button
-              type="button"
-              className="studio-button"
-              onClick={() => void e.freezeFrame(media.id)}
-            >
-              {ui("Kareyi dondur")}
-            </button>
-          )}
-          <div className="editor-actions">
-            <button
-              className="studio-button"
-              type="button"
-              onClick={() =>
-                e.commit({
-                  ...e.project,
-                  media: [
-                    ...e.project.media,
-                    {
-                      ...media,
-                      id: createId(),
-                      start: media.end,
-                      end: Math.min(e.total, media.end + (media.end - media.start)),
-                    },
-                  ],
-                })
-              }
-              disabled={media.end >= e.total}
-            >
-              {ui("Sahneyi çoğalt")}
-            </button>
-            <button
-              className="studio-icon"
-              type="button"
-              aria-label={ui("Sahneyi sil")}
-              onClick={() =>
-                e.commit({ ...e.project, media: e.project.media.filter((c) => c.id !== media.id) })
-              }
-            >
-              <Trash2 className="size-4" />
-            </button>
-          </div>
-          {media.sourceVideo ? (
-            <p className="editor-note">
-              {ui(
-                "Ana videonun kesimleri ve hızı Müzik bölümündeki zaman çizelgesinden düzenlenir.",
-              )}
-            </p>
-          ) : (
-            <>
-              <div className="editor-two">
-                <NumberField
-                  label={ui("Sahne başlangıcı (sn)")}
-                  value={media.start}
-                  max={media.end - 0.1}
-                  onChange={(start) => e.changeMedia(media.id, { start })}
-                />
-                <NumberField
-                  label={ui("Sahne bitişi (sn)")}
-                  value={media.end}
-                  min={media.start + 0.1}
-                  max={e.total}
-                  onChange={(end) => e.changeMedia(media.id, { end })}
-                />
-              </div>
-              {media.kind === "video" && (
+          ))}
+        </ChoiceStrip>
+      </PanelPage>
+      {media && (
+        <>
+          <PanelPage active={view === "transition"}>
+            {onMotion && (
+              <button
+                type="button"
+                className="studio-button"
+                onClick={() => {
+                  e.setSelected(media.id);
+                  onMotion();
+                }}
+              >
+                <Sparkles className="size-4" />
+                {ui("Animasyon")}
+              </button>
+            )}
+          </PanelPage>
+          <PanelPage active={view === "media"}>
+            {media.kind === "video" && (
+              <button
+                type="button"
+                className="studio-button"
+                onClick={() => void e.freezeFrame(media.id)}
+              >
+                {ui("Kareyi dondur")}
+              </button>
+            )}
+            <div className="editor-actions">
+              <button
+                className="studio-button"
+                type="button"
+                onClick={() =>
+                  e.commit({
+                    ...e.project,
+                    media: [
+                      ...e.project.media,
+                      {
+                        ...media,
+                        id: createId(),
+                        start: media.end,
+                        end: Math.min(e.total, media.end + (media.end - media.start)),
+                      },
+                    ],
+                  })
+                }
+                disabled={media.end >= e.total}
+              >
+                {ui("Sahneyi çoğalt")}
+              </button>
+              <button
+                className="studio-icon"
+                type="button"
+                aria-label={ui("Sahneyi sil")}
+                onClick={() =>
+                  e.commit({
+                    ...e.project,
+                    media: e.project.media.filter((c) => c.id !== media.id),
+                  })
+                }
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+            {media.sourceVideo ? (
+              <p className="editor-note">
+                {ui(
+                  "Ana videonun kesimleri ve hızı Müzik bölümündeki zaman çizelgesinden düzenlenir.",
+                )}
+              </p>
+            ) : (
+              <>
                 <div className="editor-two">
                   <NumberField
-                    label={ui("Videodan başlat (sn)")}
-                    value={media.offset}
-                    max={(e.assets.get(media.asset)?.duration ?? 3600) - 0.1}
-                    onChange={(offset) => e.changeMedia(media.id, { offset })}
+                    label={ui("Sahne başlangıcı (sn)")}
+                    value={media.start}
+                    max={media.end - 0.1}
+                    onChange={(start) => e.changeMedia(media.id, { start })}
                   />
                   <NumberField
-                    label={ui("Video hızı")}
-                    value={media.rate}
-                    min={0.25}
-                    max={4}
-                    onChange={(rate) => e.changeMedia(media.id, { rate })}
+                    label={ui("Sahne bitişi (sn)")}
+                    value={media.end}
+                    min={media.start + 0.1}
+                    max={e.total}
+                    onChange={(end) => e.changeMedia(media.id, { end })}
                   />
                 </div>
-              )}
-            </>
-          )}
-          <ChoicePicker
-            label={ui("Görüntü kadrajı")}
-            value={media.fit}
-            options={[
-              { id: "cover", label: "Doldur / kırp" },
-              { id: "contain", label: "Tam görüntü" },
-            ]}
-            onChange={(fit) => e.changeMedia(media.id, { fit: fit as typeof media.fit })}
-          />
-          <ChoicePicker
-            label={ui("Sahne geçişi")}
-            value={media.transition}
-            options={[
-              { id: "none", label: "Kesme" },
-              { id: "fade", label: "Yumuşak geçiş" },
-              { id: "slide", label: "Kaydır" },
-              { id: "zoom", label: "Yakınlaş" },
-            ]}
-            onChange={(transition) =>
-              e.changeMedia(media.id, { transition: transition as typeof media.transition })
-            }
-          />
-          <NumberField
-            label={ui("Geçiş süresi (sn)")}
-            value={media.transitionDuration}
-            min={0.1}
-            max={3}
-            onChange={(transitionDuration) => e.changeMedia(media.id, { transitionDuration })}
-          />
-          <details className="easy-details">
-            <summary>{ui("Maske ve renk anahtarı")}</summary>
+                {media.kind === "video" && (
+                  <div className="editor-two">
+                    <NumberField
+                      label={ui("Videodan başlat (sn)")}
+                      value={media.offset}
+                      max={(e.assets.get(media.asset)?.duration ?? 3600) - 0.1}
+                      onChange={(offset) => e.changeMedia(media.id, { offset })}
+                    />
+                    <NumberField
+                      label={ui("Video hızı")}
+                      value={media.rate}
+                      min={0.25}
+                      max={4}
+                      onChange={(rate) => e.changeMedia(media.id, { rate })}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </PanelPage>
+          <PanelPage active={view === "frame"}>
             <ChoicePicker
-              label={ui("Görüntü maskesi")}
-              value={media.mask}
+              label={ui("Görüntü kadrajı")}
+              value={media.fit}
               options={[
-                { id: "none", label: "Yok" },
-                { id: "circle", label: "Oval" },
-                { id: "rounded", label: "Yuvarlak köşe" },
+                { id: "cover", label: "Doldur / kırp" },
+                { id: "contain", label: "Tam görüntü" },
               ]}
-              onChange={(mask) => e.changeMedia(media.id, { mask: mask as typeof media.mask })}
+              onChange={(fit) => e.changeMedia(media.id, { fit: fit as typeof media.fit })}
             />
-            <Field label={ui("Silinecek renk")}>
-              <input
-                type="color"
-                aria-label={ui("Silinecek renk")}
-                value={media.keyColor}
-                onChange={(event) => e.changeMedia(media.id, { keyColor: event.target.value })}
+            <details className="easy-details">
+              <summary>{ui("Maske ve renk anahtarı")}</summary>
+              <ChoicePicker
+                label={ui("Görüntü maskesi")}
+                value={media.mask}
+                options={[
+                  { id: "none", label: "Yok" },
+                  { id: "circle", label: "Oval" },
+                  { id: "rounded", label: "Yuvarlak köşe" },
+                ]}
+                onChange={(mask) => e.changeMedia(media.id, { mask: mask as typeof media.mask })}
               />
-            </Field>
-            <Field label={ui("Renk silme toleransı")}>
-              <input
-                className="aura-range"
-                aria-label={ui("Renk silme toleransı")}
-                type="range"
-                min={0}
-                max={150}
-                value={media.keyTolerance}
-                onChange={(event) =>
-                  e.changeMedia(media.id, { keyTolerance: Number(event.target.value) })
-                }
-              />
-            </Field>
-            <p className="editor-note">
-              {ui(
-                "0 renk silmeyi kapatır. Yeşil ekran gibi düz bir rengi kaldırmak için artır. Yüksek değer ayrıntıları da silebilir.",
-              )}
-            </p>
-          </details>
+              <Field label={ui("Silinecek renk")}>
+                <input
+                  type="color"
+                  aria-label={ui("Silinecek renk")}
+                  value={media.keyColor}
+                  onChange={(event) => e.changeMedia(media.id, { keyColor: event.target.value })}
+                />
+              </Field>
+              <Field label={ui("Renk silme toleransı")}>
+                <input
+                  className="aura-range"
+                  aria-label={ui("Renk silme toleransı")}
+                  type="range"
+                  min={0}
+                  max={150}
+                  value={media.keyTolerance}
+                  onChange={(event) =>
+                    e.changeMedia(media.id, { keyTolerance: Number(event.target.value) })
+                  }
+                />
+              </Field>
+              <p className="editor-note">
+                {ui(
+                  "0 renk silmeyi kapatır. Yeşil ekran gibi düz bir rengi kaldırmak için artır. Yüksek değer ayrıntıları da silebilir.",
+                )}
+              </p>
+            </details>
+          </PanelPage>
+          <PanelPage active={view === "transition"}>
+            <ChoicePicker
+              label={ui("Sahne geçişi")}
+              value={media.transition}
+              options={[
+                { id: "none", label: "Kesme" },
+                { id: "fade", label: "Yumuşak geçiş" },
+                { id: "slide", label: "Kaydır" },
+                { id: "zoom", label: "Yakınlaş" },
+              ]}
+              onChange={(transition) =>
+                e.changeMedia(media.id, { transition: transition as typeof media.transition })
+              }
+            />
+            <NumberField
+              label={ui("Geçiş süresi (sn)")}
+              value={media.transitionDuration}
+              min={0.1}
+              max={3}
+              onChange={(transitionDuration) => e.changeMedia(media.id, { transitionDuration })}
+            />
+          </PanelPage>
         </>
       )}
       {e.busy && (
@@ -642,7 +691,7 @@ export function LayerPanel({ editor: e, disabled }: { editor: Editor; disabled: 
     if (layer) {
       setSection(layer.kind === "text" ? "İçerik" : "Görünüm");
       setAppearance(layer.kind === "text" ? "Yazı tipi" : "Renkler");
-    }
+    } else setSection("Katmanlar");
   }, [layer?.id]);
   return (
     <fieldset disabled={disabled || e.busy} className="editor-panel" data-layer-view={section}>
@@ -656,6 +705,9 @@ export function LayerPanel({ editor: e, disabled }: { editor: Editor; disabled: 
             type="button"
             key={name}
             aria-pressed={section === name}
+            disabled={
+              name !== "Katmanlar" && (!layer || (name === "İçerik" && layer.kind !== "text"))
+            }
             onClick={() => setSection(name)}
           >
             {ui(name)}
@@ -1217,137 +1269,178 @@ export function AdjustmentPanel({ editor: e, disabled }: { editor: Editor; disab
 }
 
 export function SoundPanel({ editor: e, disabled }: { editor: Editor; disabled: boolean }) {
+  const [view, setView] = useState("add");
   const input = useRef<HTMLInputElement>(null),
     sound = e.project.sounds.find((s) => s.id === e.selected) ?? e.project.sounds.at(-1);
+  useEffect(() => {
+    setView(sound ? "edit" : "add");
+  }, [sound?.id]);
   return (
     <fieldset disabled={disabled || e.busy} className="editor-panel">
-      <h3>{ui("Ek ses ve seslendirme")}</h3>
-      <p className="editor-note">
-        {ui(
-          "Müziğe ikinci bir ses dosyası veya mikrofon kaydı ekle. Seslendirmede kulaklık kullanarak müziğin mikrofona karışmasını azalt.",
-        )}
-      </p>
-      <div className="editor-actions">
-        <button
-          type="button"
-          className="studio-button"
-          disabled={!e.total || e.voiceRecording}
-          onClick={() => input.current?.click()}
-        >
-          {ui("Ses dosyası ekle")}
-        </button>
-        {e.voiceRecording ? (
-          <button className="studio-primary" type="button" onClick={e.stopVoiceover}>
-            {ui("Ses kaydını bitir")}
-          </button>
-        ) : (
-          <button
-            className="studio-button"
-            type="button"
-            disabled={!e.total}
-            onClick={() => void e.startVoiceover()}
-          >
-            {ui("Seslendirme kaydet")}
-          </button>
-        )}
-      </div>
-      <input
-        ref={input}
-        className="sr-only"
-        type="file"
-        aria-label={ui("Ek ses dosyası")}
-        accept="audio/*,.mp3,.wav,.m4a,.webm"
-        onChange={(event) => {
-          const f = event.target.files?.[0];
-          event.target.value = "";
-          if (f) void e.uploadSound(f);
-        }}
+      <PanelTabs
+        label="Ek ses bölümleri"
+        value={view}
+        onChange={setView}
+        items={[
+          { id: "add", label: "Ses ekle" },
+          { id: "edit", label: "Sesleri düzenle", disabled: !sound },
+        ]}
       />
-      {e.voiceRecording && (
+      <PanelPage active={view === "add"}>
+        <h3>{ui("Ek ses ve seslendirme")}</h3>
+        <p className="editor-note">
+          {ui(
+            "Müziğe ikinci bir ses dosyası veya mikrofon kaydı ekle. Seslendirmede kulaklık kullanarak müziğin mikrofona karışmasını azalt.",
+          )}
+        </p>
+        <div className="editor-actions">
+          <button
+            type="button"
+            className="studio-button"
+            disabled={!e.total || e.voiceRecording}
+            onClick={() => input.current?.click()}
+          >
+            {ui("Ses dosyası ekle")}
+          </button>
+          {e.voiceRecording ? (
+            <button className="studio-primary" type="button" onClick={e.stopVoiceover}>
+              {ui("Ses kaydını bitir")}
+            </button>
+          ) : (
+            <button
+              className="studio-button"
+              type="button"
+              disabled={!e.total}
+              onClick={() => void e.startVoiceover()}
+            >
+              {ui("Seslendirme kaydet")}
+            </button>
+          )}
+        </div>
+        <input
+          ref={input}
+          className="sr-only"
+          type="file"
+          aria-label={ui("Ek ses dosyası")}
+          accept="audio/*,.mp3,.wav,.m4a,.webm"
+          onChange={(event) => {
+            const f = event.target.files?.[0];
+            event.target.value = "";
+            if (f) void e.uploadSound(f);
+          }}
+        />
+        {e.voiceRecording && (
+          <p className="editor-note" role="status">
+            {ui("Mikrofon kaydediliyor · en fazla 2 dakika")}
+          </p>
+        )}
+      </PanelPage>
+      {e.voiceRecording && view !== "add" && (
+        <button type="button" className="studio-primary" onClick={e.stopVoiceover}>
+          {ui("Ses kaydını bitir")}
+        </button>
+      )}
+      <PanelPage active={view === "edit"}>
+        <ChoiceStrip className="editor-list" aria-label={ui("Ek sesler")} value={sound?.id}>
+          {e.project.sounds.map((s, i) => (
+            <button
+              className="editor-list-item"
+              key={s.id}
+              type="button"
+              aria-pressed={s.id === sound?.id}
+              onClick={() => {
+                e.setSelected(s.id);
+                e.seek(s.start);
+              }}
+            >
+              <span>
+                {i + 1}. {s.name}
+              </span>
+              <small>
+                {formatTime(s.start)}–{formatTime(s.end)}
+              </small>
+            </button>
+          ))}
+        </ChoiceStrip>
+        {sound && (
+          <>
+            <button
+              type="button"
+              className="studio-button"
+              onClick={() =>
+                e.commit({
+                  ...e.project,
+                  sounds: e.project.sounds.filter((s) => s.id !== sound.id),
+                })
+              }
+            >
+              {ui("Ek sesi sil")}
+            </button>
+            <Field label={ui("Ek ses düzeyi")}>
+              <input
+                aria-label={ui("Ek ses düzeyi")}
+                type="range"
+                className="aura-range"
+                min={0}
+                max={2}
+                step={0.05}
+                value={sound.volume}
+                onChange={(event) =>
+                  e.changeSound(sound.id, { volume: Number(event.target.value) })
+                }
+              />
+            </Field>
+            <details className="easy-details panel-disclosure">
+              <summary>{ui("Zamanlama ve ses geçişi")}</summary>
+              <div className="editor-two">
+                <NumberField
+                  label={ui("Ek ses başlangıcı (sn)")}
+                  value={sound.start}
+                  max={sound.end - 0.1}
+                  onChange={(start) => e.changeSound(sound.id, { start })}
+                />
+                <NumberField
+                  label={ui("Ek ses bitişi (sn)")}
+                  value={sound.end}
+                  min={sound.start + 0.1}
+                  max={e.total}
+                  onChange={(end) => e.changeSound(sound.id, { end })}
+                />
+              </div>
+              <NumberField
+                label={ui("Ek ses kaynağından başlat (sn)")}
+                value={sound.offset}
+                max={(e.soundAssets.get(sound.asset)?.duration ?? 3600) - 0.1}
+                onChange={(offset) => e.changeSound(sound.id, { offset })}
+              />
+
+              <div className="editor-two">
+                <NumberField
+                  label={ui("Ek ses girişi (sn)")}
+                  value={sound.fadeIn}
+                  max={10}
+                  onChange={(fadeIn) => e.changeSound(sound.id, { fadeIn })}
+                />
+                <NumberField
+                  label={ui("Ek ses çıkışı (sn)")}
+                  value={sound.fadeOut}
+                  max={10}
+                  onChange={(fadeOut) => e.changeSound(sound.id, { fadeOut })}
+                />
+              </div>
+            </details>
+          </>
+        )}
+      </PanelPage>
+      {e.busy && (
         <p className="editor-note" role="status">
-          {ui("Mikrofon kaydediliyor · en fazla 2 dakika")}
+          {ui("Ses dosyası hazırlanıyor…")}
         </p>
       )}
-      <ChoiceStrip className="editor-list" aria-label={ui("Ek sesler")} value={sound?.id}>
-        {e.project.sounds.map((s, i) => (
-          <button
-            className="editor-list-item"
-            key={s.id}
-            type="button"
-            aria-pressed={s.id === sound?.id}
-            onClick={() => {
-              e.setSelected(s.id);
-              e.seek(s.start);
-            }}
-          >
-            <span>
-              {i + 1}. {s.name}
-            </span>
-            <small>
-              {formatTime(s.start)}–{formatTime(s.end)}
-            </small>
-          </button>
-        ))}
-      </ChoiceStrip>
-      {sound && (
-        <>
-          <button
-            type="button"
-            className="studio-button"
-            onClick={() =>
-              e.commit({ ...e.project, sounds: e.project.sounds.filter((s) => s.id !== sound.id) })
-            }
-          >
-            {ui("Ek sesi sil")}
-          </button>
-          <div className="editor-two">
-            <NumberField
-              label={ui("Ek ses başlangıcı (sn)")}
-              value={sound.start}
-              max={sound.end - 0.1}
-              onChange={(start) => e.changeSound(sound.id, { start })}
-            />
-            <NumberField
-              label={ui("Ek ses bitişi (sn)")}
-              value={sound.end}
-              min={sound.start + 0.1}
-              max={e.total}
-              onChange={(end) => e.changeSound(sound.id, { end })}
-            />
-          </div>
-          <NumberField
-            label={ui("Ek ses kaynağından başlat (sn)")}
-            value={sound.offset}
-            max={(e.soundAssets.get(sound.asset)?.duration ?? 3600) - 0.1}
-            onChange={(offset) => e.changeSound(sound.id, { offset })}
-          />
-          <Field label={ui("Ek ses düzeyi")}>
-            <input
-              aria-label={ui("Ek ses düzeyi")}
-              type="range"
-              className="aura-range"
-              min={0}
-              max={2}
-              step={0.05}
-              value={sound.volume}
-              onChange={(event) => e.changeSound(sound.id, { volume: Number(event.target.value) })}
-            />
-          </Field>
-          <div className="editor-two">
-            <NumberField
-              label={ui("Ek ses girişi (sn)")}
-              value={sound.fadeIn}
-              max={10}
-              onChange={(fadeIn) => e.changeSound(sound.id, { fadeIn })}
-            />
-            <NumberField
-              label={ui("Ek ses çıkışı (sn)")}
-              value={sound.fadeOut}
-              max={10}
-              onChange={(fadeOut) => e.changeSound(sound.id, { fadeOut })}
-            />
-          </div>
-        </>
+      {e.error && (
+        <p className="editor-note" role="alert">
+          {e.error}
+        </p>
       )}
     </fieldset>
   );

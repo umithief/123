@@ -26,6 +26,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { ChoiceStrip } from "./choice-strip";
 import { ModePreview } from "./studio-panels";
 import { themeById, type ModeId } from "./palette";
 import type { StudioTool } from "./studio-guide";
@@ -93,7 +94,7 @@ const ACTIONS = [
   {
     id: "scenes",
     group: "design",
-    tr: "Spektrum & sahneler",
+    tr: "Spektrumlar",
     en: "Visualizers & scenes",
     detail: "Müzikle hareket eden 42 görünüm",
     english: "42 visuals that move with your music",
@@ -102,7 +103,7 @@ const ACTIONS = [
   {
     id: "artwork",
     group: "design",
-    tr: "Kapak & başlık",
+    tr: "Kapak ve başlık",
     en: "Artwork & title",
     detail: "Fotoğrafın, parçan ve imzan",
     english: "Your image, track and signature",
@@ -111,7 +112,7 @@ const ACTIONS = [
   {
     id: "adjust",
     group: "design",
-    tr: "Renk & efektler",
+    tr: "Renk ve efekt",
     en: "Color & effects",
     detail: "Görüntüne son dokunuş",
     english: "The finishing touch for your visuals",
@@ -129,7 +130,7 @@ const ACTIONS = [
   {
     id: "cuts",
     group: "edit",
-    tr: "Kes & sahnelere ayır",
+    tr: "Kesme ve hız",
     en: "Trim & split scenes",
     detail: "Otomatik sahne kesimi, kırpma ve hız",
     english: "Automatic scene cuts, trimming and speed",
@@ -138,7 +139,7 @@ const ACTIONS = [
   {
     id: "motion",
     group: "edit",
-    tr: "Hareket & geçişler",
+    tr: "Animasyonlar",
     en: "Motion & transitions",
     detail: "34 giriş, çıkış ve karma animasyon",
     english: "34 entrance, exit and loop animations",
@@ -147,7 +148,7 @@ const ACTIONS = [
   {
     id: "sound",
     group: "audio",
-    tr: "Ses tasarımı",
+    tr: "Ses ayarları",
     en: "Sound design",
     detail: "Ekolayzır, efektler ve ritim",
     english: "Equalizer, effects and rhythm",
@@ -156,7 +157,7 @@ const ACTIONS = [
   {
     id: "voice",
     group: "audio",
-    tr: "Seslendirme & ek ses",
+    tr: "Ses ekle",
     en: "Voiceover & tracks",
     detail: "Sesini kaydet veya ikinci parça ekle",
     english: "Record your voice or add another track",
@@ -165,7 +166,7 @@ const ACTIONS = [
   {
     id: "layers",
     group: "text",
-    tr: "Yazı & şekiller",
+    tr: "Yazı ve şekil",
     en: "Type & shapes",
     detail: "Başlıklar, yazı tipleri ve animasyon",
     english: "Titles, typography and animation",
@@ -248,54 +249,28 @@ export function ToolLibrary({
   return (
     <section className="atelier-library" aria-label={en ? `${w.en} tools` : `${w.tr} araçları`}>
       <div className="library-heading">
-        <span className="atelier-eyebrow">{en ? "YOUR WORKSPACE" : "ÇALIŞMA ALANIN"}</span>
         <h2>{en ? w.en : w.tr}</h2>
+        <span className="library-swipe-hint">
+          {en ? "Swipe for tools" : "Araçlar için kaydır"}
+          <ArrowRight size={13} />
+        </span>
         <p>{en ? w.english : w.description}</p>
       </div>
-      {(workspace === "design" || workspace === "edit") && (
-        <button
-          type="button"
-          className="library-primary library-templates"
-          disabled={disabled}
-          onClick={onTemplates}
-        >
-          <LayoutTemplate size={17} />
-          {en ? "Video templates" : "Video şablonları"}
-        </button>
-      )}
-      {workspace === "edit" && (
-        <button
-          type="button"
-          className="library-primary"
-          disabled={disabled}
-          onClick={onQuickTools}
-        >
-          <Wand2 size={17} />
-          {en ? "Ready-made tools" : "Hazır araçlar"}
-        </button>
-      )}
-      {(workspace === "text" || workspace === "design" || workspace === "audio") && (
-        <button
-          type="button"
-          className="library-primary"
-          disabled={disabled}
-          onClick={workspace === "text" ? onAddText : workspace === "design" ? onCover : onUpload}
-        >
-          <Plus size={17} />
-          {workspace === "text"
-            ? en
-              ? "Add text"
-              : "Yazı ekle"
-            : workspace === "design"
-              ? en
-                ? "Add cover image"
-                : "Kapak fotoğrafı ekle"
-              : en
-                ? "Change music"
-                : "Müziği değiştir"}
-        </button>
-      )}
-      <div className="library-tools">
+      <ChoiceStrip
+        className="library-tools"
+        aria-label={en ? `${w.en} tool list` : `${w.tr} araç listesi`}
+      >
+        {workspace === "text" && (
+          <button type="button" disabled={disabled} onClick={onAddText}>
+            <span className="library-tool-icon">
+              <Plus size={21} />
+            </span>
+            <span>
+              <strong>{en ? "Add text" : "Yazı ekle"}</strong>
+              <small>{en ? "Place a new title" : "Yeni başlık yerleştir"}</small>
+            </span>
+          </button>
+        )}
         {ACTIONS.filter((a) => a.group === workspace).map((a) => (
           <button
             type="button"
@@ -314,7 +289,45 @@ export function ToolLibrary({
             <ChevronRight size={16} />
           </button>
         ))}
-      </div>
+        {(workspace === "design" || workspace === "edit") && (
+          <button
+            type="button"
+            className="library-templates"
+            disabled={disabled}
+            onClick={onTemplates}
+          >
+            <span className="library-tool-icon">
+              <LayoutTemplate size={21} />
+            </span>
+            <span>
+              <strong>{en ? "Video templates" : "Video şablonları"}</strong>
+              <small>{en ? "Start with a complete look" : "Hazır bir görünümle başla"}</small>
+            </span>
+          </button>
+        )}
+        {workspace === "edit" && (
+          <button type="button" disabled={disabled} onClick={onQuickTools}>
+            <span className="library-tool-icon">
+              <Wand2 size={21} />
+            </span>
+            <span>
+              <strong>{en ? "Ready-made tools" : "Hazır araçlar"}</strong>
+              <small>{en ? "Quick cuts and transitions" : "Hızlı kesim ve geçişler"}</small>
+            </span>
+          </button>
+        )}
+        {workspace === "audio" && (
+          <button type="button" disabled={disabled} onClick={onUpload}>
+            <span className="library-tool-icon">
+              <Upload size={21} />
+            </span>
+            <span>
+              <strong>{en ? "Change source" : "Parçayı değiştir"}</strong>
+              <small>{en ? "Choose a different track" : "Başka bir parça seç"}</small>
+            </span>
+          </button>
+        )}
+      </ChoiceStrip>
       <div className="library-note">
         <Check size={15} />
         <span>
@@ -519,7 +532,9 @@ export function AtelierHome({
             <Dialog.Portal>
               <Dialog.Overlay className="atelier-dialog-overlay" />
               <Dialog.Content className="atelier-dialog">
-                <Dialog.Title>{en ? "Discard last session?" : "Son oturum silinsin mi?"}</Dialog.Title>
+                <Dialog.Title>
+                  {en ? "Discard last session?" : "Son oturum silinsin mi?"}
+                </Dialog.Title>
                 <Dialog.Description>
                   {en
                     ? "The automatically kept copy on this device will be deleted. Project files you saved are not affected."
@@ -552,10 +567,6 @@ export function AtelierHome({
       <section className="home-create">
         <div className="home-section-heading">
           <h2>{en ? "What will you create?" : "Ne yaratmak istersin?"}</h2>
-          <button type="button" disabled={busy} onClick={onOpen}>
-            <FolderOpen size={17} />
-            {en ? "Open project" : "Proje aç"}
-          </button>
         </div>
         <div className="creation-grid">
           {tasks.map((task) => (
@@ -587,30 +598,36 @@ export function AtelierHome({
           {error}
         </p>
       )}
-      <section className="home-collection">
-        <div className="home-section-heading">
-          <div>
-            <span className="atelier-eyebrow">THE SIGNATURE COLLECTION</span>
-            <h2>{en ? "A starting point for your sound." : "Sesine yakışan bir başlangıç."}</h2>
-          </div>
-          <button type="button" onClick={onDemo} disabled={busy}>
-            <Play size={16} />
-            {en ? "Explore with sound" : "Örnek sesle keşfet"}
-          </button>
-        </div>
-        <div className="home-look-strip">
-          {LOOKS.map(([mode, tr, english, theme], index) => (
-            <button type="button" key={mode} disabled={busy} onClick={() => onLook(mode, theme)}>
-              <ModePreview mode={mode} theme={themeById(theme)} />
-              <span>
-                <strong>{en ? english : tr}</strong>
-                <small>0{index + 1}</small>
-                <ArrowRight size={16} />
-              </span>
+      <details className="home-explore">
+        <summary>
+          {en ? "Explore ready-made visuals" : "Hazır görünümleri keşfet"}
+          <ChevronRight size={18} />
+        </summary>
+        <section className="home-collection">
+          <div className="home-section-heading">
+            <div>
+              <span className="atelier-eyebrow">THE SIGNATURE COLLECTION</span>
+              <h2>{en ? "A starting point for your sound." : "Sesine yakışan bir başlangıç."}</h2>
+            </div>
+            <button type="button" onClick={onDemo} disabled={busy}>
+              <Play size={16} />
+              {en ? "Explore with sound" : "Örnek sesle keşfet"}
             </button>
-          ))}
-        </div>
-      </section>
+          </div>
+          <div className="home-look-strip">
+            {LOOKS.map(([mode, tr, english, theme], index) => (
+              <button type="button" key={mode} disabled={busy} onClick={() => onLook(mode, theme)}>
+                <ModePreview mode={mode} theme={themeById(theme)} />
+                <span>
+                  <strong>{en ? english : tr}</strong>
+                  <small>0{index + 1}</small>
+                  <ArrowRight size={16} />
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </details>
       <footer className="home-footer">
         <span>AURA STUDIO</span>
         <span>{en ? "Made for your creative rhythm." : "Yaratıcı ritmine alan aç."}</span>

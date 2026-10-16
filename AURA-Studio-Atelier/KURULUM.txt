@@ -1,3 +1,39 @@
+AURA Studio Atelier 1.35.0
+
+## 1.35.0 — İmza altyazı koleksiyonu
+
+10 yeni hazır şablon, birbirinden farklı 10 animasyon ve bağımsız seçilebilen 10 yazı efekti eklendi. Şablonlar → İmza kategorisinden tek dokunuşla uygulanır. Animasyonlar ile hareket, Özelleştir → Efekt ile malzeme görünümü ayrı ayrı değiştirilebilir. Yatay galeride görünür kartlar hareketli önizlenir; hareketi azalt tercihi desteklenir. Türkçe ve İngilizce yeni etiketler bulunur. Şablonlar metni, zamanlamayı ve altyazı konumunu korur. Eski projelerde efekt Orijinal olarak açılır; yeni seçimler proje yedeğinde saklanır. Ayrıntılar: IMZA-KOLEKSIYONU.md.
+
+AURA Studio Atelier 1.34.0
+
+## 1.34.0 — tüm çalışma alanlarında sade yerleşim
+
+Ana ekrandaki üç başlangıç işlemi öne çıkarıldı; hazır görünümler isteğe bağlı açılan bir bölümde toplanır. Çalışma alanları telefonda kısa adları ve simgeleri olan tek bir yatay araç sırası gösterir. Sağdaki araçlar için kaydırma ipucu vardır. Masaüstü ve tablette aynı araçlar okunaklı bir listede sunulur. Yinelenen ana düğmeler ve uzun kart açıklamaları azaltıldı.
+
+Araç panellerinde aynı yatay bölüm seçimi kullanılır. **Kesme ve hız:** Kırpma / Klip sesi / Sahne ayırma. Klip sıralama, çoğaltma ve silme işlemleri ayrı açılır. Sahne ayırma bölümünde tarama doğrudan görünür; bölümden çıkınca süren tarama iptal edilir. **Medya:** Medya / Kadraj / Geçiş. **Kapak ve başlık:** Kapak / Başlık. **Ek ses:** Ses ekle / Sesleri düzenle; zamanlama ve ses geçişleri ayrıntı bölümündedir. **Ekolayzır:** hazır ayarlar önde, ince ayar gerektiğinde açılır. Mevcut spektrum, renk, yazı ve altyazı bölümleriyle ortak boşluk, düğme ve etiket düzeni kullanılır.
+
+**Dışa aktar:** Video / Ses-fotoğraf / Proje ayrı ekranlardır. Videoyu hazırla düğmesi yalnız Video bölümünde görünür; WAV, PNG ve proje yedeği kendi bölümlerindedir. **Hazır araçlar:** Kesim / Ritim / Son dokunuş grupları aynı anda görünen komut sayısını azaltır. Ayrıntılar ve açıklamalar açılabilir; seçenekler kaldırılmadı. Telefonun normal ayar paneli en fazla ekran yüksekliğinin %40'ını kullanır; büyütme seçeneği korunur.
+
+Ek ses hazırlanırken ilerleme ve hatalar gösterilir. Son ek ses veya yazı kaldırıldığında boş ve seçilemeyen bir ayar sayfasında kalınmaz. Kullanıcının sahne başlığı arayüz dili değiştiğinde çevrilmez. Önceki sürümün araç araması, son kullanılanlar ve odaklı zaman çizelgesi korunur.
+
+### Doğrulama ve sınırlar
+
+97 AURA birim testi, TypeScript ve web/Android derlemeleri geçti. Telefon 390×844 ve 320×600; tablet 768×1024; masaüstü 1280×800 ve yatay 844×390 görünümleri kontrol edildi. Üretim masaüstü/mobil kontrolleri ve APK içindeki arayüz testleri geçti. Kesme/ses, sahne algılama, spektrum, kapak başlığı, medya kadrajı/geçiş, yazı konumu, renk, ekolayzır, ek ses, video animasyonu, SRT içe aktarma/düzenleme, dört araç listesi ve üç çıktı bölümü denendi. Test kurgusundaki hız, ses, metin ve renk değişikliklerinin medya dahil proje yedeğinde korunduğu doğrulandı. Sayfa taşması veya bu akışlarda çalışma hatası bulunmadı. APK'nın 61 web varlığı derlemeyle byte düzeyinde aynı; ZIP CRC ve önceki APK imzası doğrulandı.
+
+Fiziksel Android cihaz, sanal klavye ve ekran okuyucu testi yapılmadı. Video kodlayıcı ve otomatik altyazı tanıma algoritması değiştirilmedi; bu sürümde ses tanıma doğruluğu veya fiziksel cihaz performansı için yeni bir doğrulama yapılmadı.
+
+AURA Studio Atelier 1.33.0
+
+## 1.33.0 — daha kolay araç erişimi ve odaklı zaman çizelgesi
+
+**Araç bul:** Düzenleyicinin başlık çubuğundaki büyüteç, tüm çalışma alanlarındaki 12 temel aracı, video şablonlarını ve hazır araçları tek pencerede arar. Türkçe harfler olmadan yazılan aramalar desteklenir. Araç adındaki eşleşmeler açıklama/anahtar kelime eşleşmelerinden önce gelir. Son kullanılan dört araç cihazda hatırlanır; depolama kapalıysa oturum içinde çalışır. Ctrl/Cmd+K pencereyi açar, Enter ilk sonucu açar, aşağı ok sonuçlara geçer, Escape kapatır ve odağı arama düğmesine döndürür. Türkçe ve İngilizce araç adları, açıklamalar ve arama terimleri desteklenir.
+
+**Düzenleme kontrolleri:** Zaman çizelgesinde Klip, Aralık ve Görünüm grupları bulunur. Klip grubunda bölme, hazır araçlar, çoğaltma, silme ve açıkça adlandırılmış klip ayarları vardır. Aralık grubunda giriş/çıkış işaretleme, aralığı çıkarma/tutma ve kenarı başlığa çekme kontrolleri yatay kaydırılır; sayısal aralık bilgisi ayrı satırdadır. Görünüm grubunda başlığa gitme, önceki/sonraki kesim, mıknatıs, yakınlaştırma ve tümünü gösterme bulunur. Yeni kontrollerin dokunma alanı en az 44 pikseldir.
+
+**Telefonda odak:** Çizelgeyi açınca mevcut ayar paneli kapanır ve video ile çizelgeye yer açılır. Alt çalışma alanlarından herhangi birine dokunmak araçları yeniden açar. Klibe dokunmak onu seçer ve başlığı taşır; çizelgeyi kapatmaz. Klip ayarlarını açıp Tamam ile kapatınca önceki çizelge görünümüne dönülür. Ayar panelindeki geri düğmesi artık Araçlara dön olarak adlandırılır. Çok dar ekranlarda başlıktaki marka yazısı yerine işlem düğmelerine alan verilir.
+
+**Doğrulama:** TypeScript, web ve Android derlemeleri; mevcut 97 AURA birim testi; geliştirme ve üretimde masaüstü/mobil görüntü kontrolleri geçti. APK içindeki web arayüzü 390×844, 320×600 ve 1280×844 boyutlarında kontrol edildi. Bölme, aralık tutma (6 saniyeden tam 1 saniyeye), geri al/yinele, seçimin çizelgeyi açık tutması, ayardan çizelgeye dönüş, arama/sıralama, son kullanılanlar, klavye, şablon ve hazır araçlara geçiş çalıştı. İngilizce equalizer araması doğru aracı açtı. 61 APK varlığı derlemeyle byte düzeyinde eşit; imza önceki AURA sürümüyle aynı. Fiziksel Android telefon, gerçek dokunmatik klavye ve ekran okuyucu testi yapılmadı; tam erişilebilirlik uyumu iddiası yoktur. Bu sürümde video kodlayıcı veya otomatik altyazı tanıma değiştirilmedi.
+
 AURA Studio Atelier 1.32.0 — Android
 
 ## 1.32.0 — kesim araçları: aralık seç, çıkar ya da tut

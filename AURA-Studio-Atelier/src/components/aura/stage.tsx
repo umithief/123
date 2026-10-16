@@ -1,3 +1,5 @@
+import { PanelTabs, PanelPage } from "./panel-layout";
+import { StudioGuide } from "./studio-guide";
 import { VideoTemplatesPanel } from "./video-templates-panel";
 import { templateAdjust, templateClips, type VideoTemplate } from "./video-templates";
 import { CAPTION_TEMPLATES } from "./caption-templates";
@@ -201,11 +203,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
 
   const [ready, setReady] = useState(false);
   const [easy, setEasy] = useState(true);
+  const [exportView, setExportView] = useState("video");
   const [activeTool, setActiveTool] = useState<StudioTool | null>(null);
   const [captionFocus, setCaptionFocus] = useState<{ id: string; serial: number } | null>(null);
   const motionPreviewEnd = useRef<number | null>(null);
   const [compactPreview, setCompactPreview] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const returnToTimeline = useRef(false);
   // Phones: the open tool can take most of the screen, remembered on the device.
   const [panelTall, setPanelTall] = useState(() => readSetting("aura-panel-tall") === "1");
   function togglePanelTall() {
@@ -315,6 +319,9 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const voiceDetailsRef = useRef<HTMLDetailsElement>(null);
   const backupDetailsRef = useRef<HTMLDetailsElement>(null);
   function openTool(tool: StudioTool) {
+    if (tool === "project" || tool === "backup")
+      setExportView(tool === "backup" ? "project" : "video");
+    if (!activeTool) returnToTimeline.current = timelineExpanded;
     if (tool !== "motion") pauseMotionPreview();
     setHomeView(false);
     setWorkspace(workspaceForTool(tool));
@@ -346,7 +353,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   function closeTool() {
     pauseMotionPreview();
     setActiveTool(null);
-    setTimelineExpanded(workspace === "edit" && !window.matchMedia("(max-width: 700px)").matches);
+    setTimelineExpanded(
+      returnToTimeline.current ||
+        (workspace === "edit" && !window.matchMedia("(max-width: 700px)").matches),
+    );
+    returnToTimeline.current = false;
     requestAnimationFrame(() =>
       document
         .querySelector<HTMLButtonElement>(`.atelier-navigation [data-workspace="${workspace}"]`)
@@ -354,6 +365,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     );
   }
   function selectWorkspace(next: Workspace) {
+    returnToTimeline.current = false;
     pauseMotionPreview();
     setWorkspace(next);
     setActiveTool(null);
@@ -1808,7 +1820,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           closeTool();
         }
       }}
-      className={`aura-studio atelier-studio ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${easy && activeTool && panelTall ? "panel-tall" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
+      className={`aura-studio atelier-studio calm-layout ${homeView ? "at-home" : ""} ${easy ? "easy-editor timeline-editor" : "advanced-editor"} ${easy && activeTool ? "tool-open" : ""} ${easy && activeTool && panelTall ? "panel-tall" : ""} ${timelineExpanded && !activeTool ? "timeline-focused" : ""} ${compactPreview ? "preview-compact" : ""} ${easy && source === "idle" ? "is-empty" : ""} ${hud ? "" : "is-presenting"}`}
     >
       <audio ref={audioRef} className="hidden" playsInline />
       <header className="studio-header atelier-header">
@@ -1862,6 +1874,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             </button>
           ) : (
             <>
+              <StudioGuide
+                disabled={locked || loading}
+                easy={easy}
+                onTool={openTool}
+                onTemplates={openTemplates}
+                onQuickTools={() => {
+                  setTimelineExpanded(true);
+                  setQuickToolsSignal((n) => n + 1);
+                }}
+              />
               <button
                 type="button"
                 aria-label={en ? "Save project" : "Projeyi kaydet"}
@@ -2126,7 +2148,14 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 className="timeline-toggle"
                 aria-expanded={timelineExpanded}
                 aria-controls="project-timeline-content"
-                onClick={() => setTimelineExpanded(!timelineExpanded)}
+                onClick={() => {
+                  if (!timelineExpanded && window.matchMedia("(max-width: 700px)").matches) {
+                    pauseMotionPreview();
+                    setActiveTool(null);
+                    returnToTimeline.current = false;
+                  }
+                  setTimelineExpanded(!timelineExpanded);
+                }}
               >
                 <AudioLines className="size-5" />
                 <span>{en ? ui("Timeline") : ui("Zaman çizelgesi")}</span>
@@ -2239,10 +2268,15 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           />
           {easy && activeTool && activeTool !== "motion" && (
             <div className="editor-tool-heading">
-              <Button variant="ghost" aria-label={ui("Zaman çizelgesine dön")} onClick={closeTool}>
+              <Button
+                variant="ghost"
+                aria-label={ui("Araçlara dön")}
+                title={ui("Araçlara dön")}
+                onClick={closeTool}
+              >
                 <ChevronLeft className="size-5" />
               </Button>
-              <h2>{activeTool && toolName(activeTool, language)}</h2>
+              <h2 tabIndex={-1}>{activeTool && toolName(activeTool, language)}</h2>
               <Button
                 variant="ghost"
                 className="panel-size"
@@ -2258,7 +2292,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 }
                 onClick={togglePanelTall}
               >
-                {panelTall ? <ChevronsDown className="size-5" /> : <ChevronsUp className="size-5" />}
+                {panelTall ? (
+                  <ChevronsDown className="size-5" />
+                ) : (
+                  <ChevronsUp className="size-5" />
+                )}
               </Button>
               <Button onClick={closeTool} className="editor-done">
                 <Check className="size-4" />
@@ -2431,7 +2469,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   options={coverOptions}
                   busy={coverBusy}
                   error={coverError}
-                  title={ui(title)}
+                  title={title}
                   place={titlePlace}
                   style={titleStyle}
                   onUpload={() => coverFileRef.current?.click()}
@@ -2524,92 +2562,124 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
               aria-labelledby="tab-project"
               hidden={tab !== "project"}
             >
-              {easy && activeTool !== "backup" && (
-                <EasyExportPanel
-                  showAction={false}
-                  format={format}
-                  resolution={resolution}
-                  duration={editor.total}
-                  available={source === "file" && editor.total > 0}
-                  busy={locked}
-                  onFormat={changeFormat}
-                  onResolution={changeResolution}
-                  onUpload={() => fileRef.current?.click()}
-                  onExport={() => void exportVideo()}
-                  onAudio={() => void exportVideo(true)}
+              {easy && (
+                <PanelTabs
+                  label="Çıktı türü"
+                  value={exportView}
+                  onChange={setExportView}
+                  items={[
+                    { id: "video", label: "Video" },
+                    { id: "other", label: "Ses / fotoğraf" },
+                    { id: "project", label: "Proje" },
+                  ]}
                 />
               )}
-              <button
-                type="button"
-                className="studio-button w-full mb-3"
-                disabled={locked}
-                onClick={snapshotImage}
-              >
-                <Camera size={16} />
-                {en ? "Save current frame · PNG" : "Bu kareyi kaydet · PNG"}
-              </button>
-              <details ref={backupDetailsRef} className="easy-details">
-                <summary>{ui("Kurgu yedeği · medya dahil")}</summary>
-                <p className="editor-note">
-                  {ui(
-                    "Müzik, fotoğraf/video dosyaları, kesimler, katmanlar, altyazılar ve görünüm tek dosyada saklanır. Üst sınır 200 MB.",
-                  )}
-                </p>
-                <div className="editor-actions">
-                  <button
-                    className="studio-button"
-                    type="button"
-                    disabled={!captions.file || locked || archiveBusy}
-                    onClick={() => void saveEditingProject()}
-                  >
-                    {ui("Kurguyu yedekle")}
-                  </button>
-                  <button
-                    className="studio-button"
-                    type="button"
-                    disabled={locked || archiveBusy}
-                    onClick={() => archiveInputRef.current?.click()}
-                  >
-                    {ui("Kurgu yedeği aç")}
-                  </button>
-                </div>
-                {archiveBusy && (
-                  <p role="status" className="editor-note">
-                    {ui("Kurgu dosyası işleniyor…")}
-                  </p>
+              <PanelPage active={!easy || exportView === "video"}>
+                {easy && (
+                  <EasyExportPanel
+                    showAction={false}
+                    format={format}
+                    resolution={resolution}
+                    duration={editor.total}
+                    available={source === "file" && editor.total > 0}
+                    busy={locked}
+                    onFormat={changeFormat}
+                    onResolution={changeResolution}
+                    onUpload={() => fileRef.current?.click()}
+                    onExport={() => void exportVideo()}
+                  />
                 )}
-              </details>
-              <details open={!easy || undefined} className="easy-details">
-                <summary>{ui("Proje ayarları ve yedekler")}</summary>
-                <ProjectPanel
-                  snapshot={snapshot}
-                  locked={locked}
-                  onApply={applySnapshot}
-                  onFormat={changeFormat}
-                  onResolution={changeResolution}
-                  onReset={resetStudio}
-                />
-              </details>
+              </PanelPage>
+              <PanelPage active={!easy || exportView === "other"}>
+                <button
+                  type="button"
+                  className="studio-button"
+                  disabled={locked || source !== "file" || editor.total <= 0}
+                  onClick={() => void exportVideo(true)}
+                >
+                  <Download size={16} />
+                  {ui("Yalnızca sesi kaydet · WAV")}
+                </button>
+                <button
+                  type="button"
+                  className="studio-button w-full mb-3"
+                  disabled={locked}
+                  onClick={snapshotImage}
+                >
+                  <Camera size={16} />
+                  {en ? "Save current frame · PNG" : "Bu kareyi kaydet · PNG"}
+                </button>
+              </PanelPage>
+              <PanelPage active={!easy || exportView === "project"}>
+                <details
+                  open={easy || undefined}
+                  ref={backupDetailsRef}
+                  className={`easy-details ${easy ? "export-backup-content" : ""}`}
+                >
+                  <summary>{ui("Kurgu yedeği · medya dahil")}</summary>
+                  <p className="editor-note">
+                    {ui(
+                      "Müzik, fotoğraf/video dosyaları, kesimler, katmanlar, altyazılar ve görünüm tek dosyada saklanır. Üst sınır 200 MB.",
+                    )}
+                  </p>
+                  <div className="editor-actions">
+                    <button
+                      className="studio-button"
+                      type="button"
+                      disabled={!captions.file || locked || archiveBusy}
+                      onClick={() => void saveEditingProject()}
+                    >
+                      {ui("Kurguyu yedekle")}
+                    </button>
+                    <button
+                      className="studio-button"
+                      type="button"
+                      disabled={locked || archiveBusy}
+                      onClick={() => archiveInputRef.current?.click()}
+                    >
+                      {ui("Kurgu yedeği aç")}
+                    </button>
+                  </div>
+                  {archiveBusy && (
+                    <p role="status" className="editor-note">
+                      {ui("Kurgu dosyası işleniyor…")}
+                    </p>
+                  )}
+                </details>
+                <details open={!easy || undefined} className="easy-details">
+                  <summary>{ui("Proje ayarları ve yedekler")}</summary>
+                  <ProjectPanel
+                    snapshot={snapshot}
+                    locked={locked}
+                    onApply={applySnapshot}
+                    onFormat={changeFormat}
+                    onResolution={changeResolution}
+                    onReset={resetStudio}
+                  />
+                </details>
+              </PanelPage>
             </div>
           </div>
-          {easy && (activeTool === "project" || activeTool === "backup") && (
-            <div className="easy-step-footer">
-              <span>
-                {activeFormat.ratio} · {resolution}
-                {ui("p ·")}
-                {formatTime(Math.min(editor.total, 180))}
-              </span>
-              <Button
-                variant="default"
-                disabled={locked || source !== "file" || editor.total <= 0}
-                onClick={() => void exportVideo()}
-              >
-                <Download className="size-4" />
-                {ui("Videoyu hazırla")}
-                <ArrowRight className="size-4" />
-              </Button>
-            </div>
-          )}
+          {easy &&
+            (activeTool === "project" || activeTool === "backup") &&
+            exportView === "video" && (
+              <div className="easy-step-footer">
+                <span>
+                  {activeFormat.ratio} · {resolution}
+                  {ui("p ·")}
+                  {formatTime(Math.min(editor.total, 180))}
+                </span>
+                <Button
+                  variant="default"
+                  disabled={locked || source !== "file" || editor.total <= 0}
+                  onClick={() => void exportVideo()}
+                >
+                  <Download className="size-4" />
+                  {ui("Videoyu hazırla")}
+                  <ArrowRight className="size-4" />
+                </Button>
+              </div>
+            )}
           <div className="inspector-footer">
             <span>{ui("Sadece bu cihazda")}</span>
             <span>{ui("Ses dosyanız sunucuya yüklenmez")}</span>

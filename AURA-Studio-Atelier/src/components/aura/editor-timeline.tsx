@@ -35,6 +35,7 @@ import {
   ArrowRightToLine,
   ArrowLeftToLine,
   X,
+  Settings2,
 } from "lucide-react";
 import { orderedSpan, extractRange, keepRange, trimToPlayhead } from "./clip-edits";
 import { useClipThumbnails } from "./video-frames";
@@ -161,6 +162,7 @@ export function EditorTimeline({
 }) {
   const scroll = useRef<HTMLDivElement>(null);
   const thumbnails = useClipThumbnails(file, e.project.clips);
+  const [toolGroup, setToolGroup] = useState<"clip" | "range" | "view">("clip");
   const [transitionId, setTransitionId] = useState<string | null>(null);
   const [viewport, setViewport] = useState(360),
     [zoom, setZoom] = useState(1);
@@ -751,127 +753,173 @@ export function EditorTimeline({
   }
   return (
     <section
-      className={`edit-timeline ${compact ? "is-compact" : ""}`}
+      className={`edit-timeline focused-timeline ${compact ? "is-compact" : ""}`}
+      data-controls={toolGroup}
       aria-label={ui("Proje zaman çizelgesi")}
     >
-      <div className="timeline-actions">
+      <div className="timeline-mode-bar">
+        <div role="group" aria-label={ui("Zaman çizelgesi araç grupları")}>
+          {(
+            [
+              ["clip", "Klip"],
+              ["range", "Aralık"],
+              ["view", "Görünüm"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={toolGroup === id}
+              onClick={() => setToolGroup(id)}
+            >
+              {ui(label)}
+            </button>
+          ))}
+        </div>
         <strong>
-          {formatTime(e.time)} <span>/ {formatTime(e.total)}</span>
+          {preciseTime(e.time)} <span>/ {formatTime(e.total)}</span>
         </strong>
-        <div>
-          <Button
-            variant="ghost"
-            aria-label={ui("Oynatma başlığına git")}
-            disabled={!file}
-            onClick={() => {
-              if (scroll.current)
-                scroll.current.scrollLeft = Math.max(
-                  0,
-                  e.time * scale - scroll.current.clientWidth / 2,
-                );
-            }}
-          >
-            <LocateFixed className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            aria-label={ui("Önceki kesim noktası")}
-            title={ui("Önceki kesim noktası")}
-            disabled={!file}
-            onClick={() => jump(-1)}
-          >
-            <SkipBack className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            aria-label={ui("Sonraki kesim noktası")}
-            title={ui("Sonraki kesim noktası")}
-            disabled={!file}
-            onClick={() => jump(1)}
-          >
-            <SkipForward className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="timeline-snap"
-            aria-label={ui("Mıknatıs: kenarları ve vuruşları yakala")}
-            title={ui("Mıknatıs: kenarları ve vuruşları yakala")}
-            aria-pressed={snap}
-            disabled={!file}
-            onClick={toggleSnap}
-          >
-            <Magnet className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="timeline-zoom-button"
-            aria-label={ui("Zaman çizelgesini uzaklaştır")}
-            disabled={zoom <= 1}
-            onClick={() => zoomTo(zoom / 1.5)}
-          >
-            <Minus className="size-4" />
-          </Button>
-          <span className="timeline-zoom">{zoom.toFixed(1)}×</span>
-          <Button
-            variant="ghost"
-            className="timeline-zoom-button"
-            aria-label={ui("Zaman çizelgesini yakınlaştır")}
-            disabled={zoom >= 8}
-            onClick={() => zoomTo(zoom * 1.5)}
-          >
-            <Plus className="size-4" />
-          </Button>
-          <Button
-            disabled={disabled || !file || e.project.clips.length >= 60}
-            className="timeline-split"
-            onClick={e.split}
-          >
-            <Scissors className="size-4" />
-            {ui("Böl")}
-          </Button>
-          <Button
-            variant="ghost"
-            className="timeline-quick-tools"
-            aria-label={ui("Hazır araçlar")}
-            title={ui("Hazır araçlar")}
-            disabled={disabled || !file}
-            onClick={() => {
-              onPause();
-              setQuickToolsOpen(true);
-            }}
-          >
-            <Wand2 className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            aria-label={ui("Seçili klibi çoğalt")}
-            disabled={disabled || !selected || e.project.clips.length >= 60}
-            onClick={() => {
-              if (!selected) return;
-              const next = [...e.project.clips],
-                index = next.indexOf(selected);
-              next.splice(index + 1, 0, { ...selected, id: createId() });
-              e.commit({ ...e.project, clips: next });
-            }}
-          >
-            <Copy className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            aria-label={ui("Seçili klibi sil")}
-            disabled={disabled || !selected || e.project.clips.length <= 1}
-            onClick={() =>
-              e.commit({
-                ...e.project,
-                clips: e.project.clips.filter((c) => c.id !== selected?.id),
-              })
-            }
-          >
-            <Trash2 className="size-4" />
-          </Button>
+      </div>
+      <div className="timeline-actions" hidden={toolGroup === "range"}>
+        <div
+          className={`timeline-command-strip ${toolGroup === "view" ? "is-view" : "is-clip"}`}
+          role="group"
+          aria-label={ui(toolGroup === "view" ? "Görünüm araçları" : "Klip araçları")}
+        >
+          <span className="timeline-view-commands" hidden={toolGroup !== "view"}>
+            <Button
+              variant="ghost"
+              aria-label={ui("Oynatma başlığına git")}
+              disabled={!file}
+              onClick={() => {
+                if (scroll.current)
+                  scroll.current.scrollLeft = Math.max(
+                    0,
+                    e.time * scale - scroll.current.clientWidth / 2,
+                  );
+              }}
+            >
+              <LocateFixed className="size-4" />
+              {ui("Başlığa git")}
+            </Button>
+            <Button
+              variant="ghost"
+              aria-label={ui("Önceki kesim noktası")}
+              title={ui("Önceki kesim noktası")}
+              disabled={!file}
+              onClick={() => jump(-1)}
+            >
+              <SkipBack className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              aria-label={ui("Sonraki kesim noktası")}
+              title={ui("Sonraki kesim noktası")}
+              disabled={!file}
+              onClick={() => jump(1)}
+            >
+              <SkipForward className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="timeline-snap"
+              aria-label={ui("Mıknatıs: kenarları ve vuruşları yakala")}
+              title={ui("Mıknatıs: kenarları ve vuruşları yakala")}
+              aria-pressed={snap}
+              disabled={!file}
+              onClick={toggleSnap}
+            >
+              <Magnet className="size-4" />
+              {ui("Mıknatıs")}
+            </Button>
+            <Button
+              variant="ghost"
+              className="timeline-zoom-button"
+              aria-label={ui("Zaman çizelgesini uzaklaştır")}
+              disabled={zoom <= 1}
+              onClick={() => zoomTo(zoom / 1.5)}
+            >
+              <Minus className="size-4" />
+            </Button>
+            <span className="timeline-zoom">{zoom.toFixed(1)}×</span>
+            <Button
+              variant="ghost"
+              className="timeline-zoom-button"
+              aria-label={ui("Zaman çizelgesini yakınlaştır")}
+              disabled={zoom >= 8}
+              onClick={() => zoomTo(zoom * 1.5)}
+            >
+              <Plus className="size-4" />
+            </Button>
+            <Button className="timeline-fit" onClick={() => zoomTo(1)} disabled={!file}>
+              {ui("Tümünü göster")}
+            </Button>
+          </span>
+          <span className="timeline-clip-commands" hidden={toolGroup !== "clip"}>
+            <Button
+              disabled={disabled || !file || e.project.clips.length >= 60}
+              className="timeline-split"
+              onClick={e.split}
+            >
+              <Scissors className="size-4" />
+              {ui("Böl")}
+            </Button>
+            <Button
+              variant="ghost"
+              className="timeline-quick-tools"
+              aria-label={ui("Hazır araçlar")}
+              title={ui("Hazır araçlar")}
+              disabled={disabled || !file}
+              onClick={() => {
+                onPause();
+                setQuickToolsOpen(true);
+              }}
+            >
+              <Wand2 className="size-4" />
+              {ui("Hazır araçlar")}
+            </Button>
+            <Button
+              variant="ghost"
+              aria-label={ui("Seçili klibi çoğalt")}
+              disabled={disabled || !selected || e.project.clips.length >= 60}
+              onClick={() => {
+                if (!selected) return;
+                const next = [...e.project.clips],
+                  index = next.indexOf(selected);
+                next.splice(index + 1, 0, { ...selected, id: createId() });
+                e.commit({ ...e.project, clips: next });
+              }}
+            >
+              <Copy className="size-4" />
+              {ui("Çoğalt")}
+            </Button>
+            <Button
+              variant="ghost"
+              aria-label={ui("Seçili klibi sil")}
+              disabled={disabled || !selected || e.project.clips.length <= 1}
+              onClick={() =>
+                e.commit({
+                  ...e.project,
+                  clips: e.project.clips.filter((c) => c.id !== selected?.id),
+                })
+              }
+            >
+              <Trash2 className="size-4" />
+              {ui("Sil")}
+            </Button>
+            <Button disabled={disabled || !selected} onClick={() => onTool("cuts")}>
+              <Settings2 className="size-4" />
+              {ui("Klip ayarları")}
+            </Button>
+          </span>
         </div>
       </div>
-      <div className="timeline-range" role="group" aria-label={ui("Aralık ve kırpma araçları")}>
+      <div
+        className="timeline-range"
+        hidden={toolGroup !== "range"}
+        role="group"
+        aria-label={ui("Aralık ve kırpma araçları")}
+      >
         <Button
           variant="ghost"
           className="timeline-range-mark"
@@ -898,11 +946,7 @@ export function EditorTimeline({
           <BetweenVerticalEnd className="size-4" />
           {ui("Çıkış")}
         </Button>
-        <span className="timeline-range-info" role="status">
-          {span
-            ? `${preciseTime(span[0])} – ${preciseTime(span[1])} · ${(span[1] - span[0]).toFixed(1)} ${ui("sn")}`
-            : ui("Giriş ve çıkış işaretleyin")}
-        </span>
+
         <Button
           variant="ghost"
           className="timeline-range-act"
@@ -957,6 +1001,16 @@ export function EditorTimeline({
           {ui("Sonu çek")}
         </Button>
       </div>
+      {toolGroup === "range" && (
+        <div className="timeline-range-guidance">
+          {" "}
+          <span className="timeline-range-info" role="status">
+            {span
+              ? `${preciseTime(span[0])} – ${preciseTime(span[1])} · ${(span[1] - span[0]).toFixed(1)} ${ui("sn")}`
+              : ui("Giriş ve çıkış işaretleyin")}
+          </span>
+        </div>
+      )}
       <div
         ref={scroll}
         className="timeline-scroll"
@@ -1063,7 +1117,6 @@ export function EditorTimeline({
                     e.setSelected(clip.id);
                     onPause();
                     e.seek(start);
-                    onTool("cuts");
                   }}
                 >
                   {thumbnails[clip.id]?.length ? (
@@ -1273,7 +1326,9 @@ export function EditorTimeline({
       </div>
       {!compact && file && (
         <p className="timeline-hint">
-          {ui("Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı")}
+          {ui(
+            "Klip: seç · Kenarlar: kırp · Aradaki simge: geçiş · Katman ve altyazıları sürükleyerek taşı",
+          )}
         </p>
       )}
       <QuickToolsPanel

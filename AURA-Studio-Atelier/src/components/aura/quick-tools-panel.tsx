@@ -1,5 +1,6 @@
+import { PanelTabs } from "./panel-layout";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightLeft,
   AudioWaveform,
@@ -81,6 +82,7 @@ export function QuickToolsPanel({
   onBeatImages: () => void;
   onTemplates: () => void;
 }) {
+  const [section, setSection] = useState("edit");
   const ranges = useMemo(() => soundRanges(peaks, duration), [peaks, duration]);
   const silences = useMemo(() => withoutSilences(clips, ranges), [clips, ranges]);
   const edges = useMemo(() => {
@@ -117,141 +119,165 @@ export function QuickToolsPanel({
               </Button>
             </Dialog.Close>
           </div>
-          <Card
-            icon={<LayoutTemplate className="size-5" />}
-            title={ui("Video şablonları")}
-            text={ui("Boyut, sahne, renk, altyazı ve kurgu tek dokunuşla hazır.")}
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled}
-              onClick={() => {
-                onClose();
-                onTemplates();
-              }}
-            >
-              {ui("Aç")}
-            </Button>
-          </Card>
-          <Card
-            icon={<Flame className="size-5" />}
-            title={ui("En iyi bölüm")}
-            text={ui(
-              "Şarkının en güçlü kısmını Reels, TikTok veya Shorts için seçer; mevcut kesimlerin yerini alır.",
-            )}
-          >
-            {SPANS.map((span) => {
-              const start = heard ? loudestWindow(peaks, duration, span, beats) : null;
-              return (
+          <PanelTabs
+            label="Hazır araç bölümleri"
+            value={section}
+            onChange={setSection}
+            items={[
+              { id: "edit", label: "Kesim" },
+              { id: "rhythm", label: "Ritim" },
+              { id: "finish", label: "Son dokunuş" },
+            ]}
+          />
+          {section === "edit" && (
+            <div className="panel-page">
+              <Card
+                icon={<Flame className="size-5" />}
+                title={ui("En iyi bölüm")}
+                text={ui(
+                  "Şarkının en güçlü kısmını Reels, TikTok veya Shorts için seçer; mevcut kesimlerin yerini alır.",
+                )}
+              >
+                {SPANS.map((span) => {
+                  const start = heard ? loudestWindow(peaks, duration, span, beats) : null;
+                  return (
+                    <Button
+                      key={span}
+                      variant="ghost"
+                      disabled={disabled || start === null}
+                      onClick={() => start !== null && apply(sectionClips(clips, start, span))}
+                    >
+                      {span} {ui("sn")}
+                    </Button>
+                  );
+                })}
+              </Card>
+              <Card
+                icon={<ScissorsLineDashed className="size-5" />}
+                title={ui("Sessiz yerleri kes")}
+                text={
+                  !heard
+                    ? ui("Ses okunamadığı için kullanılamıyor.")
+                    : silences.removed >= 0.2
+                      ? `${ui("Konuşma ve vlog için:")} ${seconds(silences.removed)} ${ui("sessizlik çıkarılır.")}`
+                      : ui("Çıkarılacak sessizlik bulunamadı.")
+                }
+              >
                 <Button
-                  key={span}
                   variant="ghost"
-                  disabled={disabled || start === null}
-                  onClick={() => start !== null && apply(sectionClips(clips, start, span))}
+                  disabled={disabled || silences.removed < 0.2}
+                  onClick={() => apply(silences.clips)}
                 >
-                  {span} {ui("sn")}
+                  {ui("Kes")}
                 </Button>
-              );
-            })}
-          </Card>
-          <Card
-            icon={<Drum className="size-5" />}
-            title={ui("Vuruşlara böl")}
-            text={ui("Videoyu müziğin vuruşlarından keser.")}
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || !beats.length}
-              onClick={() => {
-                onClose();
-                onBeatSplit();
-              }}
-            >
-              {ui("Aç")}
-            </Button>
-          </Card>
-          <Card
-            icon={<Images className="size-5" />}
-            title={ui("Görüntüleri vuruşlara yerleştir")}
-            text={ui("Fotoğraflar müziğin vuruşunda sırayla değişir.")}
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || !beats.length}
-              onClick={() => {
-                onClose();
-                onBeatImages();
-              }}
-            >
-              {ui("Aç")}
-            </Button>
-          </Card>
-          <Card
-            icon={<ScissorsLineDashed className="size-5" />}
-            title={ui("Sessiz yerleri kes")}
-            text={
-              !heard
-                ? ui("Ses okunamadığı için kullanılamıyor.")
-                : silences.removed >= 0.2
-                  ? `${ui("Konuşma ve vlog için:")} ${seconds(silences.removed)} ${ui("sessizlik çıkarılır.")}`
-                  : ui("Çıkarılacak sessizlik bulunamadı.")
-            }
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || silences.removed < 0.2}
-              onClick={() => apply(silences.clips)}
-            >
-              {ui("Kes")}
-            </Button>
-          </Card>
-          <Card
-            icon={<AudioWaveform className="size-5" />}
-            title={ui("Baştaki ve sondaki boşluğu kırp")}
-            text={
-              edges.head + edges.tail >= 0.1
-                ? `${ui("Baştan")} ${seconds(edges.head)}, ${ui("sondan")} ${seconds(edges.tail)} ${ui("sessizlik kırpılır.")}`
-                : ui("Başta ve sonda sessizlik yok.")
-            }
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || edges.head + edges.tail < 0.1}
-              onClick={() => apply(edges.clips)}
-            >
-              {ui("Kırp")}
-            </Button>
-          </Card>
-          <Card
-            icon={<Sunrise className="size-5" />}
-            title={ui("Yumuşak giriş ve çıkış")}
-            text={ui("Video sessizce açılır, sonunda yavaşça kısılarak biter.")}
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || !clips.length}
-              onClick={() => apply(softEdges(clips))}
-            >
-              {ui("Uygula")}
-            </Button>
-          </Card>
-          <Card
-            icon={<ArrowRightLeft className="size-5" />}
-            title={ui("Tüm kesimlere geçiş")}
-            text={
-              clips.length > 1
-                ? `${clips.length - 1} ${ui("kesime çapraz çözülme eklenir.")}`
-                : ui("Önce videoyu bölün; tek parçada geçiş olmaz.")
-            }
-          >
-            <Button
-              variant="ghost"
-              disabled={disabled || clips.length < 2}
-              onClick={() => apply(transitionEverywhere(clips, { id: "dissolve", duration: 0.4 }))}
-            >
-              {ui("Ekle")}
-            </Button>
-          </Card>
+              </Card>
+              <Card
+                icon={<AudioWaveform className="size-5" />}
+                title={ui("Baştaki ve sondaki boşluğu kırp")}
+                text={
+                  edges.head + edges.tail >= 0.1
+                    ? `${ui("Baştan")} ${seconds(edges.head)}, ${ui("sondan")} ${seconds(edges.tail)} ${ui("sessizlik kırpılır.")}`
+                    : ui("Başta ve sonda sessizlik yok.")
+                }
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled || edges.head + edges.tail < 0.1}
+                  onClick={() => apply(edges.clips)}
+                >
+                  {ui("Kırp")}
+                </Button>
+              </Card>
+            </div>
+          )}
+          {section === "rhythm" && (
+            <div className="panel-page">
+              <Card
+                icon={<Drum className="size-5" />}
+                title={ui("Vuruşlara böl")}
+                text={ui("Videoyu müziğin vuruşlarından keser.")}
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled || !beats.length}
+                  onClick={() => {
+                    onClose();
+                    onBeatSplit();
+                  }}
+                >
+                  {ui("Aç")}
+                </Button>
+              </Card>
+              <Card
+                icon={<Images className="size-5" />}
+                title={ui("Görüntüleri vuruşlara yerleştir")}
+                text={ui("Fotoğraflar müziğin vuruşunda sırayla değişir.")}
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled || !beats.length}
+                  onClick={() => {
+                    onClose();
+                    onBeatImages();
+                  }}
+                >
+                  {ui("Aç")}
+                </Button>
+              </Card>
+            </div>
+          )}
+          {section === "finish" && (
+            <div className="panel-page">
+              <Card
+                icon={<LayoutTemplate className="size-5" />}
+                title={ui("Video şablonları")}
+                text={ui("Boyut, sahne, renk, altyazı ve kurgu tek dokunuşla hazır.")}
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={() => {
+                    onClose();
+                    onTemplates();
+                  }}
+                >
+                  {ui("Aç")}
+                </Button>
+              </Card>
+              <Card
+                icon={<Sunrise className="size-5" />}
+                title={ui("Yumuşak giriş ve çıkış")}
+                text={ui("Video sessizce açılır, sonunda yavaşça kısılarak biter.")}
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled || !clips.length}
+                  onClick={() => apply(softEdges(clips))}
+                >
+                  {ui("Uygula")}
+                </Button>
+              </Card>
+              <Card
+                icon={<ArrowRightLeft className="size-5" />}
+                title={ui("Tüm kesimlere geçiş")}
+                text={
+                  clips.length > 1
+                    ? `${clips.length - 1} ${ui("kesime çapraz çözülme eklenir.")}`
+                    : ui("Önce videoyu bölün; tek parçada geçiş olmaz.")
+                }
+              >
+                <Button
+                  variant="ghost"
+                  disabled={disabled || clips.length < 2}
+                  onClick={() =>
+                    apply(transitionEverywhere(clips, { id: "dissolve", duration: 0.4 }))
+                  }
+                >
+                  {ui("Ekle")}
+                </Button>
+              </Card>
+            </div>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
