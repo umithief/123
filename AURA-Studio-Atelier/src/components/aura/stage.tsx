@@ -111,6 +111,7 @@ import { createRhythmState } from "./rhythm";
 import { useCaptions } from "./use-captions";
 import { CaptionPanel } from "./caption-panel";
 import { paintCaptions } from "./caption-paint";
+import { parseCaptionMotion } from "./caption-motion";
 import { useEditor } from "./use-editor";
 import { CutPanel, MediaPanel, LayerPanel, AdjustmentPanel, SoundPanel } from "./editor-panel";
 import { paintEditorBase, paintEditorLayers } from "./editor-paint";
@@ -1589,6 +1590,9 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       if (Array.isArray(data.wordCues) && data.wordCues.length === nextCues.length) {
         nextCues.forEach((cue, index) => {
           const original = data.wordCues[index];
+          if (original?.text !== cue.text) return;
+          const motion = parseCaptionMotion(original.motion);
+          if (motion) cue.motion = motion;
           if (
             original?.text !== cue.text ||
             !Array.isArray(original.words) ||

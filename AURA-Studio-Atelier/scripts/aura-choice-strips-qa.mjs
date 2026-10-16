@@ -166,6 +166,7 @@ try {
       .waitFor({ state: "visible" });
     await strip("Altyazı şablonları", true);
     await choose("Altyazı tasarım bölümleri", "Animasyonlar");
+    await p.getByRole("group", { name: "Animasyon türü", exact: true }).getByRole("button", { name: /^Kombo/ }).click();
     await strip("Altyazı animasyonları", true);
     await choose("Altyazı animasyonları", "İris");
     await choose("Altyazı tasarım bölümleri", "Özelleştir");

@@ -14,6 +14,7 @@ import { readSetting, writeSetting } from "./storage";
 import { audioForRecognition } from "./transcription";
 import type { SourceKind } from "./engine";
 import { editStamp, isLatestStamp, redoable, stepStamp } from "./history-clock";
+import type { CaptionMotion } from "./caption-motion";
 
 // `at` orders caption steps against the project history (see history-clock);
 // `key` and `when` merge rapid typing in one line into a single step.
@@ -317,6 +318,29 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     changeOptions,
     edit,
     importFile,
+    /** Gives one caption its own In/Out/Loop motion, or (undefined) returns
+     *  it to the shared one. Quick changes to the same caption undo together. */
+    cueMotion: (id: string, motion: CaptionMotion | undefined) => {
+      record(draw.current.cues, `motion:${id}`);
+      setCues((current) =>
+        current.map((c) => {
+          if (c.id !== id) return c;
+          const { motion: _old, ...rest } = c;
+          return motion ? { ...rest, motion: { ...motion } } : rest;
+        }),
+      );
+    },
+    /** Drops every caption's own motion so they all use the shared one. */
+    clearCueMotions: () => {
+      if (!draw.current.cues.some((c) => c.motion)) return;
+      record(draw.current.cues);
+      setCues((current) =>
+        current.map((c) => {
+          const { motion: _old, ...rest } = c;
+          return rest;
+        }),
+      );
+    },
     /** Live update while a caption is dragged on the timeline. */
     previewCues: (next: CaptionCue[]) => {
       draw.current = { ...draw.current, cues: next };

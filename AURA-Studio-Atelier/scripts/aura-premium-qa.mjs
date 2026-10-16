@@ -114,6 +114,7 @@ try {
     });
     await page.getByRole("button", { name: "Görünüm", exact: true }).click();
     await page.getByRole("button", { name: "Animasyonlar", exact: true }).click();
+    await page.getByRole("group", { name: "Animasyon türü", exact: true }).getByRole("button", { name: /^Kombo/ }).click();
     const animations = page.getByRole("group", { name: "Altyazı animasyonları", exact: true });
     assert.equal(await animations.getByRole("button").count(), 32);
     for (let i = 0; i < 32; i++) {

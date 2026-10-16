@@ -5,8 +5,10 @@ import {
   signatureInk,
   type SignatureWord,
 } from "./caption-signatures";
+import { motionFrame, REST } from "./caption-motion";
 import {
   activeCaption,
+  captionAnimationGroup,
   timedCaptionWords,
   CAPTION_FONTS,
   type CaptionCue,
@@ -29,7 +31,20 @@ export function paintCaptions(
   const cue = activeCaption(cues, time, options.offset);
   if (!cue) return;
   const at = time - options.offset;
-  const animation = reducedMotion ? "none" : options.animation;
+  // Layered In/Out/Loop motion: the caption's own, else the shared one. A
+  // chosen entrance or exit replaces the combo's block entrance, and a chosen
+  // loop replaces a combo loop, so the two never fight.
+  const motion = cue.motion ?? options.motion;
+  const frame = reducedMotion
+    ? REST
+    : motionFrame(motion, at - cue.start, cue.end - cue.start, options.intensity);
+  const group = captionAnimationGroup(options.animation);
+  const animation =
+    reducedMotion ||
+    (group === "Giriş" && (motion.in !== "none" || motion.out !== "none")) ||
+    (group === "Döngü" && motion.loop !== "none")
+      ? "none"
+      : options.animation;
   accent = options.highlightColor === "theme" ? accent : options.highlightColor;
   const duration = Math.min(0.3 / options.speed, (cue.end - cue.start) * 0.35);
   const enter = Math.max(0, Math.min(1, (at - cue.start) / Math.max(0.01, duration)));
@@ -38,7 +53,12 @@ export function paintCaptions(
   ctx.save();
   ctx.shadowBlur = 0;
   if (animation !== "none" && animation !== "typewriter")
-    ctx.globalAlpha *= Math.min(1, enter * 3, exit * 3);
+    ctx.globalAlpha *= Math.min(
+      1,
+      motion.in === "none" ? enter * 3 : 1,
+      motion.out === "none" ? exit * 3 : 1,
+    );
+  ctx.globalAlpha *= frame.alpha;
   if (animation === "fade") ctx.globalAlpha *= ease * exit;
   const size = Math.min(options.size, width * 0.068) * previewScale;
   const font = `${options.italic ? "italic " : ""}${options.weight} ${size}px ${CAPTION_FONTS[options.font].family}`;
@@ -111,6 +131,15 @@ export function paintCaptions(
         ? Math.min(height * 0.48, safeBottom - blockHeight / 2)
         : safeBottom - blockHeight / 2;
   ctx.translate(width / 2, center);
+  if (frame !== REST) {
+    ctx.translate(frame.x * size, frame.y * size);
+    if (frame.rotate) ctx.rotate(frame.rotate);
+    if (frame.skew) ctx.transform(1, 0, frame.skew, 1, 0, 0);
+    ctx.scale(
+      Math.max(0.001, frame.scale * frame.scaleX),
+      Math.max(0.001, frame.scale * frame.scaleY),
+    );
+  }
   if (animation === "pop") {
     const back = 1 + 2.7 * Math.pow(enter - 1, 3) + 1.7 * Math.pow(enter - 1, 2);
     const scale = 1 + (back - 1) * 0.3 * options.intensity;
@@ -151,7 +180,30 @@ export function paintCaptions(
     const scale = 1 + (1 - ease) * 0.06 * options.intensity;
     ctx.scale(scale, scale);
   }
+  if (frame.blur > 0)
+    ctx.filter = `${ctx.filter && ctx.filter !== "none" ? `${ctx.filter} ` : ""}blur(${frame.blur * size}px)`;
   ctx.translate(-width / 2, -center);
+  if (frame.revealMode !== "none" && frame.reveal < 1) {
+    // Uncover the block itself (not the whole frame) so the reveal is visible
+    // on short lines too; the margin keeps outlines and glow inside.
+    const blockWidth = Math.max(
+        1,
+        ...shown.map(
+          (line) => line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1),
+        ),
+      ),
+      pad = size * 0.4,
+      left = (width - blockWidth) / 2 - pad,
+      full = blockWidth + pad * 2,
+      top = center - blockHeight / 2 - pad,
+      tall = blockHeight + pad * 2;
+    ctx.beginPath();
+    if (frame.revealMode === "left") ctx.rect(left, -height, full * frame.reveal, height * 3);
+    else if (frame.revealMode === "center")
+      ctx.rect(left + (full * (1 - frame.reveal)) / 2, -height, full * frame.reveal, height * 3);
+    else ctx.rect(-width, top + tall * (1 - frame.reveal), width * 3, tall * frame.reveal);
+    ctx.clip();
+  }
   if (animation === "wipe") {
     ctx.beginPath();
     ctx.rect(0, 0, width * ease, height);
@@ -392,6 +444,11 @@ export function paintCaptions(
         ctx.shadowColor = "#000000";
         ctx.shadowBlur = size * 0.18;
         ctx.shadowOffsetY = size * 0.08;
+      }
+      if (frame.glow > 0) {
+        ctx.shadowColor = accent;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = Math.max(ctx.shadowBlur, size * (0.25 + 1.1 * frame.glow));
       }
       if (animation === "glow-in") {
         ctx.shadowColor = accent;

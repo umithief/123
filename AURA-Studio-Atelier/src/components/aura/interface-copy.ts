@@ -150,6 +150,110 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Döngü|Loop
+Kombo|Combo
+Kelime|Word
+Animasyon türü|Animation type
+Animasyon önizlemesi|Animation preview
+Animasyonun uygulanacağı altyazılar|Captions to animate
+Tüm altyazılar|All captions
+Bu altyazı|This caption
+Oynatma başlığını bir altyazının üzerine getirin ya da çizelgede bir altyazıya dokunun.|Move the playhead onto a caption or tap a caption on the timeline.
+Kendi animasyonu var|Has its own animation
+Ortak animasyonu kullanıyor|Uses the shared animation
+Ortak animasyona dön|Use the shared animation
+Giriş animasyonları|In animations
+Çıkış animasyonları|Out animations
+Döngü animasyonları|Loop animations
+Giriş süresi|In duration
+Çıkış süresi|Out duration
+Döngü hızı|Loop speed
+Bu altyazıda kapat|Turn off for this caption
+Animasyonları kaldır|Remove animations
+Tüm altyazılara uygula|Apply to all captions
+altyazının kendi animasyonunu kaldır|captions: remove their own animation
+Giriş veya çıkış seçiliyken Kombo'nun kendi girişi yerine bunlar oynar.|With an In or Out chosen, they play instead of the combo's own entrance.
+Kombo, kelime vurguları ve hazır hareketler içerir; tüm altyazılara uygulanır ve Giriş/Çıkış/Döngü ile birlikte çalışır.|Combos hold word highlights and ready-made moves; they apply to all captions and work together with In/Out/Loop.
+Belirme|Fade in
+Büyüyerek|Grow
+Küçülerek|Shrink
+Zıpla|Pop
+Aşağıdan|From below
+Yukarıdan|From above
+Sağdan|From right
+Soldan|From left
+Sekerek|Bounce
+Dönerek|Spin
+Silme|Wipe
+Ortadan aç|Open from centre
+Esnet|Stretch
+Sarkaç|Pendulum
+Dijital|Glitch
+Sönme|Fade out
+Patla|Burst
+Yukarı|Up
+Aşağı|Down
+Sola|To left
+Sağa|To right
+Bulanıklaş|Blur out
+Silinme|Wipe out
+Geri sil|Backspace
+Ortaya kapan|Close to centre
+Perdeye in|Into curtain
+Zıplama|Hop
+Jöle|Jelly
+Kıpırtı|Wiggle
+Titrek ışık|Flicker
+Hareketsiz belirir|Appears without motion
+Yumuşakça görünür|Fades in softly
+Küçükten tam boya|From small to full size
+Büyükten yerine oturur|Settles from large
+Esneyerek fırlar|Springs out elastically
+Alttan yükselir|Rises from below
+Üstten iner|Drops from above
+Sağdan kayarak gelir|Slides in from the right
+Soldan kayarak gelir|Slides in from the left
+Düşüp sekerek durur|Drops and bounces to rest
+Dönüp büyüyerek gelir|Spins in while growing
+Bulanıktan netleşir|Sharpens from a blur
+Soldan sağa açılır|Opens left to right
+Adım adım yazılır|Types out step by step
+Ortadan iki yana açılır|Opens from the centre outwards
+Perdenin arkasından çıkar|Rises from behind a curtain
+Dikey dönerek açılır|Flips open vertically
+Yatay esneyip toplanır|Stretches wide then gathers
+Sallanarak yerleşir|Swings into place
+Bozulma ile gelir|Arrives with a glitch
+Hareketsiz kaybolur|Disappears without motion
+Yumuşakça kaybolur|Fades out softly
+Büyüyüp kaybolur|Grows and disappears
+Küçülüp kaybolur|Shrinks and disappears
+Toplanıp söner|Gathers and vanishes
+Yukarı çıkar|Leaves upwards
+Aşağı iner|Leaves downwards
+Sola kayar|Slides out left
+Sağa kayar|Slides out right
+Dönerek küçülür|Spins away shrinking
+Bulanıklaşıp söner|Blurs and fades
+Sağdan sola silinir|Wipes right to left
+Adım adım silinir|Erases step by step
+İki yandan kapanır|Closes from both sides
+Perdenin arkasına iner|Sinks behind a curtain
+Dikey dönerek kapanır|Flips shut vertically
+Yatay esneyip söner|Stretches wide and vanishes
+Bozularak kaybolur|Glitches away
+Sabit durur|Stays still
+Hafifçe büyüyüp küçülür|Gently grows and shrinks
+Yavaşça yukarı aşağı|Slowly up and down
+Sağa sola eğilir|Leans side to side
+Ritimle zıplar|Hops with the rhythm
+Hızlı ve küçük sarsıntı|Quick small shake
+Çift vuruşla atar|Beats with a double pulse
+Esneyip toplanır|Stretches and gathers
+Oynak küçük hareket|Playful small movement
+Neon gibi titrer|Flickers like neon
+Işıltısı nefes alır|Glow breathes
+Süre boyunca yavaşça büyür|Slowly grows over the caption
 Aralık ve kırpma araçları|Range and trim tools
 Giriş işaretini oynatma başlığına koy|Set the in point at the playhead
 Çıkış işaretini oynatma başlığına koy|Set the out point at the playhead

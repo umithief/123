@@ -7,7 +7,15 @@ export type CaptionTemplate = {
   description: string;
   options: Partial<CaptionOptions>;
 };
-const { enabled: _enabled, offset: _offset, place: _place, ...appearance } = DEFAULT_CAPTIONS;
+// Templates set the look and the combo; the layered In/Out/Loop motion stays
+// as the user chose it.
+const {
+  enabled: _enabled,
+  offset: _offset,
+  place: _place,
+  motion: _motion,
+  ...appearance
+} = DEFAULT_CAPTIONS;
 function template(
   id: string,
   name: string,

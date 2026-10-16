@@ -66,6 +66,7 @@ try {
     assert.equal(await gallery.getByRole("button", { name: "Neon Nane şablonu", exact: true }).getAttribute("aria-pressed"), "true");
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.getByRole("button", { name: "Animasyonlar", exact: true }).click();
+    await page.getByRole("group", { name: "Animasyon türü", exact: true }).getByRole("button", { name: /^Kombo/ }).click();
     await page.getByRole("group", { name: "Animasyon kategorisi", exact: true }).getByRole("button", { name: "Döngü", exact: true }).click();
     assert.equal(await page.getByRole("group", { name: "Altyazı animasyonları", exact: true }).getByRole("button").count(), 2);
     assert.deepEqual(errors, []);

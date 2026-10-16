@@ -69,6 +69,10 @@ export function CaptionPanel({
   const shown = filtered.slice(currentPage * 8, currentPage * 8 + 8);
   const busy = studio.status !== "idle";
   const active = activeCaption(studio.cues, time, studio.options.offset);
+  // "Bu altyazı" animates the caption under the playhead, else the one last
+  // opened from the timeline.
+  const motionTarget =
+    active ?? (focusCue ? studio.cues.find((cue) => cue.id === focusCue.id) : undefined) ?? null;
   const button =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line px-3 text-xs disabled:opacity-40 enabled:hover:brightness-110";
   function download() {
@@ -437,6 +441,10 @@ export function CaptionPanel({
             onChange={studio.changeOptions}
             onCreate={simple ? () => setView("create") : undefined}
             onEdit={simple ? () => setView("edit") : undefined}
+            target={hasCues ? motionTarget : null}
+            onCueMotion={hasCues ? studio.cueMotion : undefined}
+            onClearCueMotions={studio.clearCueMotions}
+            customCount={studio.cues.filter((cue) => cue.motion).length}
           />
         </div>
         {studio.cues.length > 0 && (

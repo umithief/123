@@ -3,6 +3,7 @@ import {
   SIGNATURE_ANIMATIONS,
   type CaptionFinish,
 } from "./caption-signatures.ts";
+import { NO_MOTION, parseCaptionMotion, type CaptionMotion } from "./caption-motion.ts";
 export type CaptionWord = { text: string; start: number; end: number };
 export type CaptionCue = {
   id: string;
@@ -10,6 +11,8 @@ export type CaptionCue = {
   start: number;
   end: number;
   words?: CaptionWord[];
+  /** This caption's own In/Out/Loop motion; replaces the shared one. */
+  motion?: CaptionMotion;
 };
 export type CaptionOptions = {
   enabled: boolean;
@@ -18,6 +21,8 @@ export type CaptionOptions = {
   size: number;
   offset: number;
   animation: CaptionAnimation;
+  /** Shared In/Out/Loop motion for every caption without its own. */
+  motion: CaptionMotion;
   textEffect: CaptionFinish;
   speed: number;
   intensity: number;
@@ -133,6 +138,7 @@ export const DEFAULT_CAPTIONS: CaptionOptions = {
   size: 30,
   offset: 0,
   animation: "fade",
+  motion: { ...NO_MOTION },
   textEffect: "none",
   speed: 1,
   intensity: 0.7,
@@ -163,6 +169,7 @@ export function restoreCaptionOptions(raw: string | null): CaptionOptions {
       size: Number.isFinite(v?.size) ? Math.max(20, Math.min(48, v.size)) : 30,
       offset: Number.isFinite(v?.offset) ? Math.max(-5, Math.min(5, v.offset)) : 0,
       animation: CAPTION_ANIMATIONS.some((a) => a.id === v?.animation) ? v.animation : "fade",
+      motion: parseCaptionMotion(v?.motion) ?? { ...NO_MOTION },
       textEffect: CAPTION_FINISHES.some((effect) => effect.id === v?.textEffect)
         ? v.textEffect
         : "none",

@@ -23,7 +23,7 @@ try{for(const size of (process.env.QA_SIZES||'390x844,1280x800,320x600').split('
   if(width===390){const c=gallery().locator('canvas').first();const a=await c.evaluate(c=>c.toDataURL());await p.waitForTimeout(220);assert.notEqual(await c.evaluate(c=>c.toDataURL()),a);await p.emulateMedia({reducedMotion:'reduce'});await p.waitForTimeout(150);const b=await c.evaluate(c=>c.toDataURL());await p.waitForTimeout(200);assert.equal(await c.evaluate(c=>c.toDataURL()),b);await p.emulateMedia({reducedMotion:'no-preference'});}
   for(const preset of presets){
    await choose(preset);
-   await sections().getByRole('button',{name:'Animasyonlar',exact:true}).click();
+   await sections().getByRole('button',{name:'Animasyonlar',exact:true}).click();await p.getByRole('group',{name:'Animasyon türü',exact:true}).getByRole('button',{name:/^Kombo/}).click();
    const anim=p.getByRole('group',{name:'Altyazı animasyonları',exact:true}).locator('button[aria-pressed="true"]');assert.ok((await anim.innerText()).startsWith(SIGNATURE_ANIMATIONS.find(a=>a.id===preset.options.animation).label));
    await sections().getByRole('button',{name:'Özelleştir',exact:true}).click();await p.getByRole('group',{name:'Altyazı görünümü',exact:true}).getByRole('button',{name:'Efekt',exact:true}).click();
    const finish=p.getByRole('group',{name:'Altyazı yazı efekti',exact:true}).locator('button[aria-pressed="true"]');assert.equal(await finish.innerText(),CAPTION_FINISHES.find(f=>f.id===preset.options.textEffect).label);
@@ -36,7 +36,7 @@ try{for(const size of (process.env.QA_SIZES||'390x844,1280x800,320x600').split('
   const download=p.waitForEvent('download');await p.getByRole('button',{name:'Projeyi kaydet',exact:true}).click();const path=`/workspace/screenshots/signature-135-${tag}-${size}.aura.zip`;await(await download).saveAs(path);
   const archive=await unpackProject(new Blob([readFileSync(path)])),data=JSON.parse(await archive.get('project.json').text());assert.equal(data.settings.captions.animation,'laser-trace');assert.equal(data.settings.captions.textEffect,'laser');assert.equal(data.wordCues[0].text,'Müziğin ışığını hisset');assert.equal(data.wordCues[1].end,6);
   await choose(presets[0]);await p.getByLabel('Kurgu yedek dosyası',{exact:true}).setInputFiles(path);await p.waitForFunction(()=>document.querySelector('.aura-studio')?.dataset.tool==='none'&&JSON.parse(localStorage.getItem('aura-captions-options')||'{}').animation==='laser-trace');await tool();
-  await sections().getByRole('button',{name:'Animasyonlar',exact:true}).click();assert.ok((await p.getByRole('group',{name:'Altyazı animasyonları',exact:true}).locator('button[aria-pressed="true"]').innerText()).startsWith('Lazer taraması'));
+  await sections().getByRole('button',{name:'Animasyonlar',exact:true}).click();await p.getByRole('group',{name:'Animasyon türü',exact:true}).getByRole('button',{name:/^Kombo/}).click();assert.ok((await p.getByRole('group',{name:'Altyazı animasyonları',exact:true}).locator('button[aria-pressed="true"]').innerText()).startsWith('Lazer taraması'));
   await sections().getByRole('button',{name:'Özelleştir',exact:true}).click();await p.getByRole('group',{name:'Altyazı görünümü',exact:true}).getByRole('button',{name:'Efekt',exact:true}).click();await p.getByRole('group',{name:'Altyazı yazı efekti',exact:true}).getByRole('button',{name:'Altın folyo',exact:true}).click();
   await p.screenshot({path:`/workspace/screenshots/signature-135-${tag}-${size}-effects.png`});
   if(process.env.QA_EXPORT==='1'){

@@ -1,4 +1,18 @@
-AURA Studio Atelier 1.35.0
+AURA Studio Atelier 1.36.0
+
+## 1.36.0 — CapCut tarzı altyazı animasyon sistemi
+
+**Katmanlı animasyon: Giriş · Çıkış · Döngü.** Altyazılar → Animasyonlar bölümünde dört sekme vardır. **Giriş** (20 seçenek: Belirme, Büyüyerek, Küçülerek, Zıpla, Aşağıdan, Yukarıdan, Sağdan, Soldan, Sekerek, Dönerek, Netleş, Silme, Daktilo, Ortadan aç, Perde, Çevir, Esnet, Sarkaç, Dijital), **Çıkış** (18 seçenek: Sönme, Büyüyerek, Küçülerek, Patla, Yukarı, Aşağı, Sola, Sağa, Dönerek, Bulanıklaş, Silinme, Geri sil, Ortaya kapan, Perdeye in, Çevir, Esnet, Dijital) ve **Döngü** (12 seçenek: Nabız, Süzül, Salınım, Zıplama, Titreşim, Kalp atışı, Jöle, Kıpırtı, Titrek ışık, Parıltı, Yakınlaş) ayrı ayrı seçilir ve aynı altyazıda birlikte oynar. Her kart kendi hareketini canlı olarak gösterir. Giriş ve çıkış için **süre** (0,1–2 sn), döngü için **hız** (0,25–3×) ve ortak **Hareket gücü** ayarı vardır. Sekme başlıkları seçili animasyonun adını gösterir.
+
+**Tüm altyazılar / Bu altyazı.** Animasyon ya tüm altyazılara ya da yalnızca oynatma başlığının üzerindeki (veya çizelgede dokunulan) altyazıya uygulanır. Kendi animasyonu olan altyazıda "Ortak animasyona dön", "Bu altyazıda kapat" ve "Tüm altyazılara uygula" düğmeleri bulunur. Altyazıya özel değişiklikler Geri al ile geri alınır; hızlı art arda değişiklikler tek adımda geri alınır.
+
+**Kombo.** Önceki animasyon listesi (kelime vurguları, imza animasyonları vb.) Kombo sekmesinde aynen durur ve Giriş/Çıkış/Döngü ile birlikte çalışır. Giriş veya çıkış seçiliyken Kombo'nun kendi girişi, döngü seçiliyken Kombo'nun döngüsü devre dışı kalır; böylece hareketler çakışmaz, karaoke vurgusu devam eder. Altyazı şablonları görünümü ve Kombo'yu değiştirir, seçilen Giriş/Çıkış/Döngü'ye dokunmaz.
+
+**Kısa altyazılar.** Giriş ve çıkış en fazla altyazının yarısı kadar sürer; ikisi birlikte altyazının en az %10'unu durağan bırakır. Hareketi azalt tercihinde altyazı hareketsiz çizilir. Önizleme, ekrandaki video ve dışa aktarılan video aynı çizim kodunu kullanır. Ortak ve altyazıya özel animasyonlar proje yedeğinde ve otomatik kayıtta saklanır; eski projeler animasyonsuz açılır.
+
+### 1.36.0 doğrulaması
+
+TypeScript ve 110 AURA birim testi geçti (9 yeni test: benzersiz kimlikler; her girişin durağan bitmesi ve her çıkışın durağan başlaması; girişlerin gizli/kaymış başlaması; çıkışların girişin tersi olması; döngülerin sabit başlayıp sınır içinde kalması; kısa altyazıda sürelerin sığması; giriş+döngü+çıkış birleşimi; güç ayarı; kayıtlı değerlerin doğrulanması). Tarayıcıda 30 sn'lik parça ve 3 satırlık SRT ile: kartlar 20/18/12; Zıpla + Aşağı + Nabız seçimi saklandı; sahnede altyazı giriş ve çıkış anında gizli, durağanken tam genişlikte çizildi (şeritte giriş taşması, döngü nabzı ve aşağı çıkış görülüyor); 2. altyazıya özel Dönerek yalnız onda uygulandı, 1. altyazı ortak Zıpla'da kaldı; Geri al özel animasyonu kaldırdı; proje yedeği kaydedilip temiz sayfada açıldığında ortak ve altyazıya özel animasyonlar aynen geri geldi. Kombo ve şablonlar çalışmaya devam etti. Masaüstü 1280 px ve telefon 390 px'te denendi; sayfa hatası yok. APK imzası önceki sürümle aynı. Fiziksel cihazda ve tam video dışa aktarımıyla deneme yapılmadı.
 
 ## 1.35.0 — İmza altyazı koleksiyonu
 
