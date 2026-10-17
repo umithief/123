@@ -1,5 +1,22 @@
 # AURA Studio Android
 
+## 2.2.0 — Oto Kurgu: tek dokunuşla profesyonel kısa editler
+
+Araç çubuğunda yeni **Oto kurgu** düğmesi (Hazır araçlar penceresinin başında da bulunur). Altı kurgu tarifinden birine dokununca uygulama şarkının yapısını okur — en güçlü bölüm, müziğin patladığı "drop" anı ve vuruş ızgarası — ve bitmiş bir kısa video kurgusu hazırlar: hangi bölüm kullanılacak, kesimler hangi vuruşa düşecek, kesimlerde hangi hareket ve geçiş olacak, nasıl açılıp nasıl bitecek. Sonuç hemen baştan oynar.
+
+- **Kancalı Reel (15 sn):** Drop'tan iki ölçülük bir kanca başta, ardından ışık çakmasıyla yükselişe dönüp her iki vuruşta değişen yakınlaşma/kaydırma vuruşlarıyla akış.
+- **Drop Anı (15 sn):** Yumuşak açılan sakin yükseliş, drop'ta ışık çakması ve güçlü vuruş, sonrasında her iki vuruşta kesim ve sarsıntı/zoom vuruşları.
+- **Hızlı Tanıtım (10 sn):** Şarkının en güçlü beş ayrı anı (her biri dört vuruş), sırasıyla ve ışık çakmalarıyla.
+- **Ritim Montajı (30 sn):** En güçlü 30 saniye, her iki vuruşta kesim, her kesimde farklı hareket.
+- **Sinematik Fragman (30 sn):** Sekiz vuruşluk uzun çekimler, siyaha kararan ve çözülen geçişler, yavaş uzaklaşma, ışıkla gelen uzun bir final ve yavaş kararma.
+- **Kusursuz Döngü (16 sn):** Ölçü başından başlayan tam 8 ölçü; geçiş/kararma yok, video başa sardığında ritim kesintisiz sürer (Reels/TikTok döngüsü için).
+
+Kartlarda her tarifin süresi, çekim sayısı ve kesim haritası (ışık çakmaları ve hareketli kesimler işaretli) görünür. Tarifleri art arda deneyebilirsin: her biri ilk tariften önceki kurgudan yeniden hesaplanır, birbirinin üzerine eklenmez. "Oto kurgudan önceki hâline dön" ve Geri al eski kurguyu getirir. Müziğin hızı ve perdesi hiçbir tarifte değiştirilmez; altyazılar ve görüntü katmanları kurguyu izler. Şarkı tarif süresinden kısaysa eldeki süre kullanılır.
+
+### 2.2.0 doğrulaması
+
+TypeScript ve 123 AURA birim testi geçti (9 yeni test: drop'un müziğin yükseldiği vuruşta bulunması; her tarifin süresi, ses düzeyi, müzik hızı ve sınırları; kesimlerin vuruşa düşmesi; Drop Anı'nın drop'ta ışık çakması ve sonrasında iki vuruşta kesim; Kancalı Reel'in drop ile açılıp yükselişe dönmesi; Hızlı Tanıtım'ın güçlü ve ayrı anları sırayla seçmesi; Ritim Montajı ile Fragman'ın farklı tempoda kesmesi; Döngü'nün ölçü başından tam 8 ölçü ve kararmasız olması; kısa şarkı ve sessiz kaynak). Tarayıcıda 70 sn'lik test parçasıyla masaüstü ve 390 px telefonda: kartlar 15/15/10/30/30/16 sn; Drop Anı 15 sn ve 11 çekim üretip pencereyi kapatarak oynatmayı başlattı; ardından Ritim Montajı üst üste binmeden 30 sn; geri dönüş ve Geri al tam 1:10'a döndürdü; Hazır araçlar kartından da açıldı. Önceki aralık, altyazı taşıma ve ekran turları yeniden geçti. Gerçek şarkılarla ve fiziksel cihazda denenmedi; drop algılama ses yüksekliğine dayanır, sakin ya da düz dinamikli şarkılarda en güçlü bölümü kullanır.
+
 ## 2.1.0 — altyazıyı önizlemede taşı ve düzenle
 
 **Dokun ve taşı.** Oynatılan videonun üzerindeki altyazıya dokununca video duraklar ve altyazı seçilir; etrafında kesik çizgili bir çerçeve ve "Sürükle · iki kez dokun: düzenle" ipucu görünür. Parmakla (veya fareyle) sürükleyerek altyazıyı videonun istediğin yerine bırakabilirsin. Yatay orta çizgi mıknatıslıdır: ortaya yaklaşınca altyazı tam ortaya oturur ve bir kılavuz çizgisi görünür. Altyazı ne kadar uzun olursa olsun her zaman kadrajın içinde kalır. Boş bir yere dokunmak seçimi kaldırır.

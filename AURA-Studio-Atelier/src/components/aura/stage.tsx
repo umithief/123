@@ -950,6 +950,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   // here so it never acts on state captured by the first render.
   // Project and caption edits share one undo/redo, in the order they were made.
   const [quickToolsSignal, setQuickToolsSignal] = useState(0);
+  const [autoEditSignal, setAutoEditSignal] = useState(0);
   const canUndoAny = editor.canUndo || captions.canUndo,
     canRedoAny = editor.canRedo || captions.canRedo;
   function undoLast() {
@@ -2152,6 +2153,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             setTimelineExpanded(true);
             setQuickToolsSignal((n) => n + 1);
           }}
+          onAutoEdit={() => {
+            setTimelineExpanded(true);
+            setAutoEditSignal((n) => n + 1);
+          }}
           disabled={locked || loading || source === "idle"}
         />
         <main className="studio-main">
@@ -2443,6 +2448,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   onCaptionsPreview={captions.previewCues}
                   onCaptionsCommit={captions.commitCues}
                   quickToolsSignal={quickToolsSignal}
+                  autoEditSignal={autoEditSignal}
+                  onPlayEdit={() => {
+                    void editor
+                      .waitForTransitions()
+                      .catch(() => {})
+                      .then(() => previewMotion(0, projectDuration(editor.draw.current.project)));
+                  }}
                   analysis={analysis}
                   onTemplates={openTemplates}
                   onCaption={(id) => {

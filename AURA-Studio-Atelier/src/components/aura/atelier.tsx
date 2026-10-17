@@ -7,6 +7,7 @@ import {
   LayoutTemplate,
   AudioLines,
   Captions,
+  Clapperboard,
   ChevronRight,
   Film,
   FolderOpen,
@@ -208,6 +209,7 @@ export function ToolBar({
   onTool,
   onTemplates,
   onQuickTools,
+  onAutoEdit,
   language,
   disabled,
 }: {
@@ -215,6 +217,7 @@ export function ToolBar({
   onTool: (tool: StudioTool) => void;
   onTemplates: () => void;
   onQuickTools: () => void;
+  onAutoEdit: () => void;
   language: InterfaceLanguage;
   disabled: boolean;
 }) {
@@ -231,6 +234,20 @@ export function ToolBar({
         >
           <LayoutTemplate size={20} />
           <span>{en ? "Templates" : "Şablonlar"}</span>
+        </button>
+        <button
+          type="button"
+          data-tool="auto-edit"
+          title={
+            en
+              ? "Auto edit: one-tap professional short edits"
+              : "Oto Kurgu: tek dokunuşla profesyonel kısa kurgu"
+          }
+          disabled={disabled}
+          onClick={onAutoEdit}
+        >
+          <Clapperboard size={20} />
+          <span>{en ? "Auto edit" : "Oto kurgu"}</span>
         </button>
         <button
           type="button"

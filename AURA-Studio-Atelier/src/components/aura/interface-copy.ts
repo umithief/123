@@ -150,6 +150,26 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Oto Kurgu|Auto Edit
+Oto kurgu|Auto edit
+Tek dokunuşla profesyonel kısa kurgu: doğru an, vuruşta kesimler, geçişler ve final. Sonuç hemen oynar.|Professional short edits in one tap: the right moment, cuts on the beat, transitions and an ending. The result plays straight away.
+Müzik çözümlenince kullanılabilir. Biraz bekleyip yeniden açın.|Available once the music has been read. Wait a moment and open it again.
+çekim|shots
+Hazırlanıyor|Preparing
+Oto kurgudan önceki hâline dön|Back to before the auto edit
+Tek dokunuşla profesyonel kısa kurgu: Drop Anı, Kancalı Reel, Fragman ve daha fazlası.|Professional short edits in one tap: Drop Moment, Hook Reel, Trailer and more.
+Kancalı Reel|Hook Reel
+En güçlü an başta, sonra yükselişten ritimle akış|The strongest moment first, then the build-up on the beat
+Drop Anı|Drop Moment
+Sakin yükseliş, ışıkla patlama, sonra her iki vuruşta kesim|A calm build-up, a flash on the drop, then cuts every two beats
+Hızlı Tanıtım|Quick Teaser
+Şarkının en güçlü beş anı, ışık çakmalarıyla|The song's five strongest moments, joined by light flashes
+Ritim Montajı|Beat Montage
+Her iki vuruşta kesim, her kesimde değişen hareket|A cut every two beats, a different move on every cut
+Sinematik Fragman|Cinematic Trailer
+Uzun kesimler, kararan geçişler ve güçlü bir final|Long shots, fades to black and a strong ending
+Kusursuz Döngü|Seamless Loop
+Tam 8 ölçü; başa sarınca ritim kesintisiz devam eder|Exactly 8 bars; when it replays the beat carries on
 Sürükle · iki kez dokun: düzenle|Drag · tap twice to edit
 Altyazı metni|Caption text
 Serbest (sürüklendi)|Free (dragged)

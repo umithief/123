@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRightLeft,
+  Clapperboard,
   AudioWaveform,
   Drum,
   Flame,
@@ -66,6 +67,7 @@ export function QuickToolsPanel({
   onBeatSplit,
   onBeatImages,
   onTemplates,
+  onAutoEdit,
 }: {
   open: boolean;
   onClose: () => void;
@@ -81,6 +83,7 @@ export function QuickToolsPanel({
   onBeatSplit: () => void;
   onBeatImages: () => void;
   onTemplates: () => void;
+  onAutoEdit: () => void;
 }) {
   const [section, setSection] = useState("edit");
   const ranges = useMemo(() => soundRanges(peaks, duration), [peaks, duration]);
@@ -118,6 +121,25 @@ export function QuickToolsPanel({
                 <X className="size-5" />
               </Button>
             </Dialog.Close>
+          </div>
+          <div className="quick-tool-feature">
+            <Card
+              icon={<Clapperboard className="size-5" />}
+              title={ui("Oto Kurgu")}
+              text={ui(
+                "Tek dokunuşla profesyonel kısa kurgu: Drop Anı, Kancalı Reel, Fragman ve daha fazlası.",
+              )}
+            >
+              <Button
+                disabled={disabled}
+                onClick={() => {
+                  onClose();
+                  onAutoEdit();
+                }}
+              >
+                {ui("Aç")}
+              </Button>
+            </Card>
           </div>
           <PanelTabs
             label="Hazır araç bölümleri"

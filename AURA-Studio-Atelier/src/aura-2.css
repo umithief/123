@@ -1350,3 +1350,105 @@ html[data-theme="light"]
   outline: none;
   box-shadow: var(--a2-shadow);
 }
+
+/* Oto Kurgu: one-tap professional edits. */
+.auto-edit-dialog {
+  width: min(44rem, calc(100% - 2rem));
+}
+.auto-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 0.625rem;
+}
+.auto-edit-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-height: 8.5rem;
+  padding: 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: linear-gradient(165deg, var(--color-raised), var(--color-panel) 75%);
+  color: var(--color-ink);
+  text-align: left;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+.auto-edit-card:not(:disabled):hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+.auto-edit-card[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.auto-edit-card:disabled {
+  opacity: 0.45;
+}
+.auto-edit-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.auto-edit-name svg {
+  color: var(--color-accent);
+}
+.auto-edit-card > small {
+  color: var(--color-mute);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.auto-edit-map {
+  display: flex;
+  gap: 2px;
+  height: 0.875rem;
+  margin-top: auto;
+}
+.auto-edit-map > i {
+  min-width: 2px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-ink) 22%, transparent);
+}
+.auto-edit-map > i[data-hit="motion"] {
+  background: color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+.auto-edit-map > i[data-hit="flash"] {
+  background: var(--color-accent);
+}
+.auto-edit-meta {
+  color: var(--color-mute);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+.quick-tool-feature .quick-tool {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+@media (max-width: 699.98px) {
+  .auto-edit-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .auto-edit-card {
+    min-height: 0;
+    padding: 0.75rem;
+  }
+  .auto-edit-card > small {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+.auto-edit-dialog .video-template-footer {
+  justify-content: flex-start;
+}
+.auto-edit-dialog .video-template-footer > button {
+  flex: none;
+  width: auto;
+  white-space: nowrap;
+}

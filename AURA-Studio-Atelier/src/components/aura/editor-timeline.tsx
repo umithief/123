@@ -55,6 +55,7 @@ import {
 import { BeatSplitPanel } from "./beat-split-panel";
 import { BeatImagesPanel } from "./beat-images-panel";
 import { QuickToolsPanel } from "./quick-tools-panel";
+import { AutoEditPanel } from "./auto-edit-panel";
 import type { AudioAnalysis } from "./use-audio-analysis";
 import {
   captionSegments,
@@ -135,8 +136,10 @@ export function EditorTimeline({
   onCaptionsPreview,
   onCaptionsCommit,
   quickToolsSignal = 0,
+  autoEditSignal = 0,
   analysis,
   onTemplates,
+  onPlayEdit,
 }: {
   editor: Editor;
   file: File | null;
@@ -155,6 +158,10 @@ export function EditorTimeline({
   onCaptionsCommit: (next: CaptionCue[], before: CaptionCue[]) => void;
   /** Incremented to open the ready-made tools from outside the timeline. */
   quickToolsSignal?: number;
+  /** Incremented to open the one-tap professional edits. */
+  autoEditSignal?: number;
+  /** Plays the whole edit from the start (after a one-tap edit). */
+  onPlayEdit: () => void;
   /** Shared decode of the source: waveform, onsets and the steady beat grid
    *  (marks, snapping and beat cuts use the grid rather than every onset). */
   analysis: AudioAnalysis;
@@ -173,11 +180,15 @@ export function EditorTimeline({
     [rangeOut, setRangeOut] = useState<number | null>(null);
   const [beatSplitOpen, setBeatSplitOpen] = useState(false),
     [beatImagesOpen, setBeatImagesOpen] = useState(false),
-    [quickToolsOpen, setQuickToolsOpen] = useState(false);
+    [quickToolsOpen, setQuickToolsOpen] = useState(false),
+    [autoEditOpen, setAutoEditOpen] = useState(false);
   // The Edit workspace's "Ready-made tools" button asks for the dialog.
   useEffect(() => {
     if (quickToolsSignal) setQuickToolsOpen(true);
   }, [quickToolsSignal]);
+  useEffect(() => {
+    if (autoEditSignal) setAutoEditOpen(true);
+  }, [autoEditSignal]);
   const [snap, setSnap] = useState(() => {
     try {
       return localStorage.getItem(SNAP_KEY) !== "off";
@@ -1346,6 +1357,21 @@ export function EditorTimeline({
         onBeatSplit={() => setBeatSplitOpen(true)}
         onBeatImages={() => setBeatImagesOpen(true)}
         onTemplates={onTemplates}
+        onAutoEdit={() => setAutoEditOpen(true)}
+      />
+      <AutoEditPanel
+        open={autoEditOpen}
+        onClose={() => setAutoEditOpen(false)}
+        clips={e.project.clips}
+        duration={duration}
+        peaks={peaks}
+        beats={grid.beats}
+        disabled={disabled || !file}
+        onApply={(next) => {
+          e.commit({ ...e.draw.current.project, clips: next });
+          e.setSelected(next[0]?.id ?? "");
+        }}
+        onPlay={onPlayEdit}
       />
       <BeatSplitPanel
         open={beatSplitOpen}
