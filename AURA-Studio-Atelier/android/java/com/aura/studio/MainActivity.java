@@ -352,7 +352,7 @@ public final class MainActivity extends Activity {
                 return;
             case "unsaved":
                 confirmLeave(en ? "Leave AURA Studio?" : "AURA Studio'dan çıkılsın mı?",
-                    en ? "You have not saved a project file. Your latest edit is kept on this device and can be restored from Last session on the home screen." : "Proje dosyası kaydetmedin. Son düzenlemen bu cihazda saklandı; Başlangıç ekranındaki Son oturum kartından geri yükleyebilirsin.", en);
+                    en ? "Your latest edit could not be kept in My projects (storage may be full). Save a project file first if you want to keep it." : "Son düzenlemen Projelerim'e kaydedilemedi (depolama dolu olabilir). Korumak istiyorsan önce proje dosyası kaydet.", en);
                 return;
             default:
                 if (web != null && web.canGoBack()) web.goBack(); else leave();

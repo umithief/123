@@ -40,7 +40,19 @@ import {
   SlidersHorizontal,
   Check,
   Sparkles,
+  Scan,
 } from "lucide-react";
+import * as Popover from "@radix-ui/react-popover";
+import {
+  SAFE_GUIDES,
+  coveredBy,
+  guideZones,
+  parseGuide,
+  safeSpot,
+  type GuideId,
+  type Rect,
+  type SafeZone,
+} from "./safe-zones";
 import { Button } from "../ui/button";
 import { type StudioTool } from "./studio-guide";
 import { EditorTimeline } from "./editor-timeline";
@@ -119,13 +131,19 @@ import { clipDuration } from "./editor";
 import { sceneTransitionDuration } from "./scene-transitions";
 import { packProject, unpackProject } from "./project-archive";
 import {
-  clearAutosave,
-  readAutosave,
-  readAutosaveInfo,
+  deleteProject,
+  duplicateProject,
+  listProjects,
+  projectLabel,
+  readProject,
+  renameProject,
   sameStoredBlob,
-  writeAutosave,
-  type AutosaveInfo,
+  storageUsed,
+  writeProject,
+  type ProjectInfo,
 } from "./autosave";
+import { ProjectLibrary } from "./project-library";
+import { createId } from "./id";
 import {
   exportSrt,
   importSrt,
@@ -146,6 +164,17 @@ type StudioTab = (typeof STUDIO_TABS)[number]["id"];
 // A file shared into AURA while a project is open starts a fresh editor
 // session; it is handed over to the new session here.
 let carriedFile: File | null = null;
+// Likewise a project picked from My projects while another one is open.
+let carriedProject: string | null = null;
+/** "Gece Klibi" → "Gece Klibi.aura.zip"; a source name loses its extension. */
+const projectFileName = (label: string) =>
+  `${
+    label
+      .replace(/\.[a-z0-9]{2,4}$/i, "")
+      .replace(/[^\p{L}\p{N} _-]+/gu, "")
+      .trim()
+      .slice(0, 60) || "aura-kurgu"
+  }.aura.zip`;
 
 export function AuraStage() {
   const [session, setSession] = useState(0);
@@ -352,6 +381,12 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const captionSelectedRef = useRef<string | null>(null);
   const captionEditingRef = useRef(false);
   const [captionSnap, setCaptionSnap] = useState(false);
+  // Platform safe-area guide over the preview, remembered on the device.
+  const [guide, setGuide] = useState<GuideId>(() => parseGuide(readSetting("aura-safe-guide")));
+  const safeZonesRef = useRef<SafeZone[]>([]),
+    safeHitRef = useRef<string | null>(null),
+    safeBoxRef = useRef<Rect | null>(null);
+  const [safeHit, setSafeHit] = useState<string | null>(null);
   const [captionEdit, setCaptionEdit] = useState<{
     id: string;
     text: string;
@@ -445,6 +480,38 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       editor.seek(0);
     engineRef.current?.togglePlay();
   }
+  // Aralık: the marked part plays over and over while it is judged; any
+  // pause ends the loop.
+  const loopSpanRef = useRef<readonly [number, number] | null>(null);
+  const [loopSpan, setLoopSpan] = useState<readonly [number, number] | null>(null);
+  function loopRange(span: readonly [number, number] | null) {
+    loopSpanRef.current = span;
+    setLoopSpan(span);
+    if (!span) {
+      engineRef.current?.pause();
+      return;
+    }
+    if (recStatusRef.current !== "idle" || sourceRef.current !== "file" || loading) return;
+    motionPreviewEnd.current = null;
+    editor.seek(span[0]);
+    void editor
+      .waitForTransitions()
+      .catch(() => {})
+      .then(() => engineRef.current?.playFile())
+      .catch(() => {
+        loopSpanRef.current = null;
+        setLoopSpan(null);
+        setError("Önizlemeyi başlatmak için Oynat düğmesine dokunun.");
+      });
+  }
+  const wasPlaying = useRef(false);
+  useEffect(() => {
+    if (wasPlaying.current && !playing && loopSpanRef.current) {
+      loopSpanRef.current = null;
+      setLoopSpan(null);
+    }
+    wasPlaying.current = playing;
+  }, [playing]);
   function pauseMotionPreview() {
     if (motionPreviewEnd.current !== null) engineRef.current?.pause();
     motionPreviewEnd.current = null;
@@ -664,6 +731,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         engineRef.current?.pause();
         motionPreviewEnd.current = null;
       }
+      // A looped range jumps back just before its end.
+      const looped = loopSpanRef.current;
+      if (looped && recStatusRef.current === "idle" && editor.draw.current.time >= looped[1] - 0.06)
+        editor.seek(looped[0]);
       if ((document.hidden || homeViewRef.current) && !recordingSceneRef.current) return;
       const frameDuration = 1000 / 30;
       if (now - paintedAt < frameDuration) return;
@@ -797,6 +868,21 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           outline.style.width = `${(box.w + 0.024) * 100}%`;
           outline.style.height = `${(box.h + 0.02) * 100}%`;
         }
+      }
+      // The safe-area warning follows the caption; between captions the
+      // last one counts.
+      const zones = safeZonesRef.current;
+      if (box && zones.length && recStatusRef.current === "idle") {
+        const rect = { x: box.x, y: box.y, w: box.w, h: box.h };
+        safeBoxRef.current = rect;
+        const hit = coveredBy(rect, zones)?.label ?? null;
+        if (hit !== safeHitRef.current) {
+          safeHitRef.current = hit;
+          setSafeHit(hit);
+        }
+      } else if (!zones.length && safeHitRef.current) {
+        safeHitRef.current = null;
+        setSafeHit(null);
       }
       paintEditorLayers(
         context,
@@ -996,8 +1082,12 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       event.preventDefault();
       event.returnValue = "";
     };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    const guard = (event: BeforeUnloadEvent) => {
+      // Edits already kept in My projects are safe.
+      if (!autosaveRef.current.saved) warn(event);
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
   }, [unsavedWork]);
 
   function persistCover(blob: Blob | null) {
@@ -1284,20 +1374,39 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   };
   const locked = recStatus !== "idle";
 
-  // The latest edit is kept on this device, so a closed app, a stopped
-  // WebView or a reload can be resumed from the home screen.
-  const [autosaved, setAutosaved] = useState<AutosaveInfo | null>(null);
-  useEffect(() => {
-    if (source === "idle") void readAutosaveInfo().then(setAutosaved);
-  }, [source]);
+  // Every project is kept on this device (My projects), so a closed app, a
+  // stopped WebView or a new project never loses an edit.
+  const projectIdRef = useRef<string | null>(null);
+  const [projectTitle, setProjectTitle] = useState("");
+  const [projects, setProjects] = useState<ProjectInfo[]>([]),
+    [storage, setStorage] = useState<number | null>(null);
   const autosaveRef = useRef({
     file: null as File | null,
     timer: 0,
     dirty: false,
     writing: 0,
     failed: false,
+    /** The latest edit is on the device. */
+    saved: false,
+    /** Store the next opened file right away (a project file was opened). */
+    keepOpened: false,
     queue: Promise.resolve(),
   });
+  /** A small picture of the preview for My projects. */
+  function thumbnail() {
+    const canvas = canvasRef.current;
+    if (!canvas?.width || !canvas.height) return undefined;
+    try {
+      const scale = Math.min(1, 240 / Math.max(canvas.width, canvas.height)),
+        small = document.createElement("canvas");
+      small.width = Math.max(1, Math.round(canvas.width * scale));
+      small.height = Math.max(1, Math.round(canvas.height * scale));
+      small.getContext("2d")?.drawImage(canvas, 0, 0, small.width, small.height);
+      return small.toDataURL("image/jpeg", 0.72);
+    } catch {
+      return undefined;
+    }
+  }
   const autosaveNowRef = useRef(() => {});
   autosaveNowRef.current = () => {
     const state = autosaveRef.current;
@@ -1317,11 +1426,22 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
     state.dirty = false;
     state.writing += 1;
-    const name = fileName || captions.file.name;
+    const name = fileName || captions.file.name,
+      id = (projectIdRef.current ??= createId()),
+      extras = {
+        thumb: thumbnail(),
+        duration: projectDuration(editor.draw.current.project),
+        format,
+      };
+    if (!state.saved) void navigator.storage?.persist?.().catch(() => false);
     state.queue = state.queue
-      .then(() => writeAutosave(name, entries))
+      .then(() => writeProject(id, name, entries, extras))
+      .then(() => {
+        if (!state.dirty) state.saved = true;
+      })
       .catch((err) => {
         state.dirty = true;
+        state.saved = false;
         // A full device is not retried on every edit.
         if (err instanceof DOMException && err.name === "QuotaExceededError") state.failed = true;
       })
@@ -1333,12 +1453,15 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   useEffect(() => {
     const state = autosaveRef.current;
     if (source !== "file" || !captions.file) return;
-    // A freshly opened file has nothing to recover yet.
+    // A freshly opened file joins My projects with its first edit; an opened
+    // project file is kept right away.
     if (state.file !== captions.file) {
       state.file = captions.file;
-      return;
+      if (!state.keepOpened) return;
+      state.keepOpened = false;
     }
     state.dirty = true;
+    state.saved = false;
     window.clearTimeout(state.timer);
     state.timer = window.setTimeout(() => autosaveNowRef.current(), 2500);
   }, [source, captions.file, editor.project, captions.cues, snapshotKey, coverBlob]);
@@ -1356,10 +1479,67 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       window.clearTimeout(state.timer);
     };
   }, []);
-  async function discardAutosave() {
-    setAutosaved(null);
-    await clearAutosave().catch(() => {});
+  async function refreshProjects() {
+    // The open project is written first so the list shows its latest state.
+    autosaveNowRef.current();
+    await autosaveRef.current.queue;
+    const [list, used] = await Promise.all([listProjects(), storageUsed()]);
+    setProjects(list);
+    setStorage(used);
   }
+  useEffect(() => {
+    if (homeView) void refreshProjects();
+  }, [homeView]);
+  async function openStoredProject(id: string) {
+    if (id === projectIdRef.current && source !== "idle") {
+      setHomeView(false);
+      return;
+    }
+    if (source !== "idle") {
+      await autosaveRef.current.queue;
+      void startNewProject(id);
+      return;
+    }
+    const known =
+      projects.find((p) => p.id === id) ?? (await listProjects()).find((p) => p.id === id);
+    await restoreProject(() => readProject(id), { id, title: known?.title || "" });
+  }
+  const openStoredRef = useRef(openStoredProject);
+  openStoredRef.current = openStoredProject;
+  async function libraryAction(work: () => Promise<unknown>, failure: string) {
+    setError(null);
+    try {
+      await work();
+    } catch {
+      setError(failure);
+    }
+    await refreshProjects();
+  }
+  const projectActions = {
+    rename: (id: string, title: string) =>
+      void libraryAction(async () => {
+        await renameProject(id, title);
+        if (id === projectIdRef.current) setProjectTitle(title);
+      }, ui("Proje adı değiştirilemedi.")),
+    duplicate: (id: string) => {
+      const original = projects.find((p) => p.id === id);
+      const name = original ? projectLabel(original, en) : "";
+      void libraryAction(
+        () => duplicateProject(id, createId(), `${name} (${en ? "copy" : "kopya"})`),
+        ui("Proje kopyalanamadı. Cihazda yer açıp yeniden deneyin."),
+      );
+    },
+    remove: (id: string) => void libraryAction(() => deleteProject(id), ui("Proje silinemedi.")),
+    download: (id: string) =>
+      void libraryAction(async () => {
+        const entries = await readProject(id),
+          original = projects.find((p) => p.id === id);
+        downloadBlob(
+          await packProject([...entries].map(([name, blob]) => ({ name, blob }))),
+          projectFileName(original ? projectLabel(original, en) : ""),
+        );
+      }, ui("Proje dosyası hazırlanamadı.")),
+  };
 
   // Android back button: close the innermost layer first and never leave
   // with an edit that is still being written to the device.
@@ -1393,7 +1573,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     const state = autosaveRef.current;
     if (state.dirty) autosaveNowRef.current();
     if (state.writing > 0) return "saving";
-    return unsavedWork ? "unsaved" : "exit";
+    return unsavedWork && !state.saved ? "unsaved" : "exit";
   };
   useEffect(() => {
     const target = window as Window & { auraBack?: () => string };
@@ -1461,6 +1641,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       const file = carriedFile;
       carriedFile = null;
       incomingRef.current(file, true);
+    } else if (carriedProject) {
+      const id = carriedProject;
+      carriedProject = null;
+      void openStoredRef.current(id);
     }
     pull();
     window.addEventListener("aura-incoming", pull);
@@ -1539,10 +1723,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     setTemplateBefore(null);
     setAppliedTemplate(null);
   }
-  async function startNewProject() {
+  async function startNewProject(open?: string) {
     if (archiveBusy) return;
-    // The closing project stays recoverable from the home screen.
+    // The closing project stays in My projects.
     autosaveNowRef.current();
+    carriedProject = open ?? null;
     setArchiveBusy(true);
     removeCover();
     await coverWriteRef.current.catch(() => {});
@@ -1614,7 +1799,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     setError(null);
     try {
       const { entries, project, cues } = collectProjectEntries();
-      downloadBlob(await packProject(entries), "aura-kurgu.aura.zip");
+      downloadBlob(await packProject(entries), projectFileName(projectTitle || fileName || ""));
       savedWorkRef.current = { project, cues };
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kurgu yedeği kaydedilemedi.");
@@ -1625,11 +1810,18 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   async function openEditingProject(file: File) {
     await restoreProject(() => unpackProject(file));
   }
-  async function restoreAutosavedProject() {
-    await restoreProject(readAutosave);
-  }
-  async function restoreProject(load: () => Promise<Map<string, Blob>>) {
+  /** `stored` is the My projects entry being opened; a project file becomes a new one. */
+  async function restoreProject(
+    load: () => Promise<Map<string, Blob>>,
+    stored?: { id: string; title: string },
+  ) {
     if (archiveBusy || recStatusRef.current !== "idle") return;
+    // An open project is kept as it is; what opens here is saved under its
+    // own entry (a project file becomes a new one).
+    autosaveNowRef.current();
+    projectIdRef.current = stored?.id ?? null;
+    setProjectTitle(stored?.title ?? "");
+    autosaveRef.current.keepOpened = !stored;
     setArchiveBusy(true);
     setError(null);
     engineRef.current?.pause();
@@ -1754,6 +1946,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     } catch (err) {
       editor.pending.current = null;
       captions.pending.current = null;
+      projectIdRef.current = null;
+      autosaveRef.current.keepOpened = false;
       setError(err instanceof Error ? err.message : "Kurgu yedeği açılamadı.");
     } finally {
       setArchiveBusy(false);
@@ -1922,6 +2116,25 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       editor.commit(editor.draw.current.project, drag.before);
     if (easy) openTool("layers");
   }
+  function chooseGuide(next: GuideId) {
+    setGuide(next);
+    writeSetting("aura-safe-guide", next);
+    safeHitRef.current = null;
+    setSafeHit(null);
+    // A platform guide describes a vertical video.
+    if (SAFE_GUIDES.find((g) => g.id === next)?.vertical && format !== "portrait")
+      changeFormat("portrait");
+  }
+  function fixSafeArea() {
+    const box = safeBoxRef.current;
+    if (!box) return;
+    const spot = safeSpot(box, safeZonesRef.current);
+    if (!spot) {
+      setError(ui("Altyazı güvenli alana sığmıyor. Yazı boyutunu küçültüp yeniden deneyin."));
+      return;
+    }
+    captions.commitPosition(spot, captions.options.position);
+  }
   function snapshotImage() {
     canvasRef.current?.toBlob((blob) => {
       if (blob) downloadBlob(blob, "aura-sahne.png");
@@ -1974,6 +2187,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
 
   const activeMode = MODES.find((m) => m.id === mode)!;
   const activeFormat = VIDEO_FORMATS.find((f) => f.id === format)!;
+  const safeZones = hud && source !== "idle" && !locked ? guideZones(guide, format) : [];
+  safeZonesRef.current = safeZones;
   return (
     <div
       ref={rootRef}
@@ -2017,7 +2232,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
           </div>
           {!homeView && (
             <span className="atelier-project-title">
-              {fileName || (en ? "Sound study" : "Ses çalışması")}
+              {projectTitle || fileName || (en ? "Sound study" : "Ses çalışması")}
             </span>
           )}
         </div>
@@ -2117,12 +2332,28 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         <AtelierHome
           language={language}
           busy={loading || archiveBusy}
-          current={source !== "idle" ? fileName || (en ? "Sound study" : "Ses çalışması") : null}
+          current={
+            source !== "idle"
+              ? projectTitle || fileName || (en ? "Sound study" : "Ses çalışması")
+              : null
+          }
           onNewProject={() => void startNewProject()}
           onResume={() => setHomeView(false)}
-          recovery={source === "idle" ? autosaved : null}
-          onRecover={() => void restoreAutosavedProject()}
-          onDiscardRecovery={() => void discardAutosave()}
+          confirmNew={autosaveRef.current.failed}
+          library={
+            <ProjectLibrary
+              language={language}
+              projects={projects}
+              currentId={source !== "idle" ? projectIdRef.current : null}
+              storage={storage}
+              busy={loading || archiveBusy}
+              onOpen={(id) => void openStoredProject(id)}
+              onRename={projectActions.rename}
+              onDuplicate={projectActions.duplicate}
+              onDownload={projectActions.download}
+              onDelete={projectActions.remove}
+            />
+          }
           onStart={startIntent}
           onOpen={() => archiveInputRef.current?.click()}
           onDemo={() => {
@@ -2189,6 +2420,56 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   </select>
                   <ChevronDown className="size-3" aria-hidden="true" />
                 </label>
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="safe-guide-button"
+                      aria-label={ui("Güvenli alan kılavuzu")}
+                      title={ui("Güvenli alan kılavuzu")}
+                      aria-pressed={guide !== "off"}
+                    >
+                      <Scan className="size-4" />
+                    </Button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content
+                      className="studio-popover safe-guide-menu"
+                      side="bottom"
+                      align="end"
+                      sideOffset={8}
+                    >
+                      <p>{ui("Güvenli alan kılavuzu")}</p>
+                      {[
+                        { id: "off" as const, name: "Kapalı", vertical: false },
+                        ...SAFE_GUIDES,
+                      ].map((g) => (
+                        <Popover.Close asChild key={g.id}>
+                          <button
+                            type="button"
+                            className="studio-popover-item"
+                            aria-pressed={guide === g.id}
+                            onClick={() => chooseGuide(g.id)}
+                          >
+                            <Check
+                              className="size-4"
+                              style={{ visibility: guide === g.id ? "visible" : "hidden" }}
+                            />
+                            <span>{ui(g.name)}</span>
+                            {g.vertical && format !== "portrait" && (
+                              <small>{ui("9:16'ya geçer")}</small>
+                            )}
+                          </button>
+                        </Popover.Close>
+                      ))}
+                      <small className="safe-guide-note">
+                        {ui(
+                          "Uygulama düğmelerinin ve yazılarının yaklaşık kapladığı yerler. Kılavuz videoya işlenmez.",
+                        )}
+                      </small>
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
                 <Button
                   variant="ghost"
                   disabled={locked || !canUndoAny}
@@ -2280,6 +2561,24 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 <span>{ui("Sürükle · iki kez dokun: düzenle")}</span>
               </div>
               {captionSnap && <div className="caption-center-guide" aria-hidden="true" />}
+              {safeZones.length > 0 && (
+                <div className="safe-guide" data-guide={guide} aria-hidden="true">
+                  {safeZones.map((z, i) => (
+                    <i
+                      key={i}
+                      data-tall={z.w < 0.3 && z.h > 0.3 ? "" : undefined}
+                      style={{
+                        left: `${z.x * 100}%`,
+                        top: `${z.y * 100}%`,
+                        width: `${z.w * 100}%`,
+                        height: `${z.h * 100}%`,
+                      }}
+                    >
+                      {guide !== "margin" && <span>{ui(z.label)}</span>}
+                    </i>
+                  ))}
+                </div>
+              )}
               {captionEdit && (
                 <textarea
                   className="caption-inline-edit"
@@ -2329,6 +2628,18 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 </div>
               )}
             </div>
+            {safeZones.length > 0 && safeHit && !captionEdit && (
+              <div className="safe-warning" role="status">
+                <span>
+                  {guide === "margin"
+                    ? ui("Altyazı kenara çok yakın")
+                    : `${ui("Altyazı kapanıyor:")} ${ui(safeHit)}`}
+                </span>
+                <button type="button" onClick={fixSafeArea}>
+                  {ui("Düzelt")}
+                </button>
+              </div>
+            )}
           </div>
           <div className="preview-meta">
             <span>
@@ -2457,6 +2768,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   }}
                   analysis={analysis}
                   onTemplates={openTemplates}
+                  loopSpan={loopSpan}
+                  onLoopRange={loopRange}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));
                     openTool("captions");

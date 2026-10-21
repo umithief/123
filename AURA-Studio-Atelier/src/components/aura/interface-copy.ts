@@ -150,6 +150,30 @@ Bitişi sürükle|Drag end
 Sonraki kesim noktası|Next edit point
 Mıknatıs: kenarları ve vuruşları yakala|Magnet: snap to edges and beats
 Vuruşlara böl|Split on beats
+Proje adı değiştirilemedi.|The project could not be renamed.
+Proje kopyalanamadı. Cihazda yer açıp yeniden deneyin.|The project could not be copied. Free up space on the device and try again.
+Proje silinemedi.|The project could not be deleted.
+Proje dosyası hazırlanamadı.|The project file could not be prepared.
+Altyazı güvenli alana sığmıyor. Yazı boyutunu küçültüp yeniden deneyin.|The caption does not fit in the safe area. Make the text smaller and try again.
+Güvenli alan kılavuzu|Safe area guide
+TikTok|TikTok
+Instagram Reels|Instagram Reels
+YouTube Shorts|YouTube Shorts
+Kenar payı|Margins
+9:16'ya geçer|switches to 9:16
+Uygulama düğmelerinin ve yazılarının yaklaşık kapladığı yerler. Kılavuz videoya işlenmez.|Roughly where the apps' buttons and text cover the video. The guide is not part of the export.
+Üst menü|Top menu
+Beğeni ve paylaş düğmeleri|Like and share buttons
+Açıklama ve müzik|Description and sound
+Açıklama ve hesap|Description and account
+Başlık ve kanal|Title and channel
+Altyazı kenara çok yakın|Caption is too close to the edge
+Altyazı kapanıyor:|Caption is covered:
+Düzelt|Fix
+İşaretli aralığı döngüde oynat|Play the marked range on a loop
+Döngüde oynat|Play on loop
+Döngüyü durdur|Stop loop
+Sil|Delete
 Oto Kurgu|Auto Edit
 Oto kurgu|Auto edit
 Tek dokunuşla profesyonel kısa kurgu: doğru an, vuruşta kesimler, geçişler ve final. Sonuç hemen oynar.|Professional short edits in one tap: the right moment, cuts on the beat, transitions and an ending. The result plays straight away.

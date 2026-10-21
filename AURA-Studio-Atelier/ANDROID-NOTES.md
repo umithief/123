@@ -1,5 +1,19 @@
 # AURA Studio Android
 
+## 2.3.0 — Projelerim, güvenli alan kılavuzu ve döngüde oynatma
+
+**Projelerim.** Başlangıç ekranında artık cihazındaki bütün projeler var. Her proje ilk düzenlemeden itibaren kendi kaydında otomatik saklanır; yeni bir projeye geçmek ya da uygulamayı kapatmak önceki işi silmez (eskiden yalnızca son oturum tutuluyordu). Kartlarda önizleme resmi, proje adı, ne zaman düzenlendiği, video boyutu ve süresi görünür; açık proje "Şu an açık" olarak işaretlenir. Bir karta dokununca proje kaldığı yerden açılır; başka bir proje açıkken de geçiş yapılabilir, açık olan önce kaydedilir. "⋯" menüsünden **Yeniden adlandır**, **Kopyasını oluştur** (medya kopyalanmaz, yer kaplamaz), **Proje dosyası olarak kaydet** (projeyi açmadan .aura.zip olarak indirir) ve onaylı **Sil** seçilebilir. Dörtten fazla projede arama kutusu ve "Tümünü göster" çıkar; başlıkta cihazda kullanılan alan yazar. 2.2'deki "Son oturum" kaydı ilk açılışta kendiliğinden Projelerim'e taşınır. "Yeni proje" artık onay sormaz (proje cihaza kaydedilemediyse yine sorar); proje dosyası kaydı da proje adını taşır.
+
+**Güvenli alan kılavuzu.** Önizlemenin üstündeki yeni çerçeve düğmesinden TikTok, Instagram Reels, YouTube Shorts veya Kenar payı seçilebilir. Uygulamanın üst menüsü, beğeni/paylaş düğmeleri ve açıklama alanı videonun üstünde taralı alanlar olarak görünür; platform seçilince video 9:16'ya geçer. Altyazı bu alanlardan birine girerse önizlemede "Altyazı kapanıyor: Açıklama ve müzik" uyarısı çıkar; **Düzelt** altyazıyı en yakın güvenli yere taşır (Geri al ile geri alınır). Kılavuz yalnızca önizlemede görünür, dışa aktarılan videoya işlenmez; seçim cihazda hatırlanır. Alanlar yaklaşıktır.
+
+**Aralığı döngüde oynat.** Zaman çizelgesinin Aralık bölümünde Giriş ve Çıkış işaretlenince **Döngüde oynat** o bölümü başa sararak tekrar tekrar çalar; işaretli bant nabız gibi atar. Duraklat, "Döngüyü durdur" veya işaretleri temizlemek döngüyü bitirir. Bir geçişi, kesimi ya da altyazı zamanlamasını incelerken aynı yeri defalarca bulmak gerekmez.
+
+**İyileştirmeler.** Telefonda açık proje kartında metin artık tek sütuna sıkışmıyor; İngilizce arayüzde "Sil" düğmesi çevrildi; Android geri tuşu, düzenleme Projelerim'e kaydedildiyse çıkış uyarısı göstermiyor.
+
+### 2.3.0 doğrulaması
+
+TypeScript ve 130 AURA birim testi geçti (7 yeni güvenli alan testi: platform ve boyut eşleşmesi, kapanan altyazının bulunması, düzeltmenin açıklama alanının üstüne ve düğmelerin soluna taşıması, geniş altyazının düğmelerin üstüne alınması, temiz altyazının yerinde kalması, kenar payı, sığmayan altyazı). Tarayıcıda 390 px telefon ve 1280 px masaüstünde: iki proje oluşturma, açıkken diğerine geçme, yeniden adlandırma, kopyalama, silme (paylaşılan medya korunarak), açmadan proje dosyası indirme, uygulamayı yeniden açıp projeyi sahne seçimiyle geri yükleme; 2.2 tek oturum kaydının Projelerim'e taşınması; TikTok kılavuzunun 9:16'ya geçmesi, uyarı, Düzelt ve Geri al; 4–6 sn aralığının döngüde kalması ve duraklatınca bitmesi. 320 px telefon, açık tema ve İngilizce arayüz denetlendi; önceki ekran turu, altyazı taşıma, Oto Kurgu, aralık araçları ve kaydırma testleri yeniden geçti. Fiziksel cihazda denenmedi; platform alanları güncel uygulama düzenlerine göre yaklaşıktır.
+
 ## 2.2.0 — Oto Kurgu: tek dokunuşla profesyonel kısa editler
 
 Araç çubuğunda yeni **Oto kurgu** düğmesi (Hazır araçlar penceresinin başında da bulunur). Altı kurgu tarifinden birine dokununca uygulama şarkının yapısını okur — en güçlü bölüm, müziğin patladığı "drop" anı ve vuruş ızgarası — ve bitmiş bir kısa video kurgusu hazırlar: hangi bölüm kullanılacak, kesimler hangi vuruşa düşecek, kesimlerde hangi hareket ve geçiş olacak, nasıl açılıp nasıl bitecek. Sonuç hemen baştan oynar.

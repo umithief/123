@@ -36,6 +36,7 @@ import {
   ArrowLeftToLine,
   X,
   Settings2,
+  Repeat,
 } from "lucide-react";
 import { orderedSpan, extractRange, keepRange, trimToPlayhead } from "./clip-edits";
 import { useClipThumbnails } from "./video-frames";
@@ -140,6 +141,8 @@ export function EditorTimeline({
   analysis,
   onTemplates,
   onPlayEdit,
+  loopSpan = null,
+  onLoopRange,
 }: {
   editor: Editor;
   file: File | null;
@@ -162,6 +165,10 @@ export function EditorTimeline({
   autoEditSignal?: number;
   /** Plays the whole edit from the start (after a one-tap edit). */
   onPlayEdit: () => void;
+  /** The marked range playing over and over, if any. */
+  loopSpan?: readonly [number, number] | null;
+  /** Starts (or with null stops) playing a range over and over. */
+  onLoopRange: (span: readonly [number, number] | null) => void;
   /** Shared decode of the source: waveform, onsets and the steady beat grid
    *  (marks, snapping and beat cuts use the grid rather than every onset). */
   analysis: AudioAnalysis;
@@ -980,10 +987,22 @@ export function EditorTimeline({
         </Button>
         <Button
           variant="ghost"
+          className="timeline-range-act"
+          disabled={disabled || (!span && !loopSpan)}
+          aria-pressed={!!loopSpan}
+          title={ui("İşaretli aralığı döngüde oynat")}
+          onClick={() => onLoopRange(loopSpan ? null : span)}
+        >
+          <Repeat className="size-4" />
+          {loopSpan ? ui("Döngüyü durdur") : ui("Döngüde oynat")}
+        </Button>
+        <Button
+          variant="ghost"
           aria-label={ui("İşaretleri temizle")}
           title={ui("İşaretleri temizle")}
           disabled={rangeIn == null && rangeOut == null}
           onClick={() => {
+            if (loopSpan) onLoopRange(null);
             setRangeIn(null);
             setRangeOut(null);
           }}
@@ -1080,6 +1099,7 @@ export function EditorTimeline({
             {file && span && (
               <span
                 className="timeline-range-band"
+                data-looping={loopSpan ? "" : undefined}
                 style={{ left: span[0] * scale, width: (span[1] - span[0]) * scale }}
                 aria-hidden="true"
               />
