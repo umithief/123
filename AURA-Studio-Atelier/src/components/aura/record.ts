@@ -4,18 +4,33 @@ import workletUrl from "./record-worklet.js?url&no-inline";
 import type { FrameRate } from "./studio";
 import { frameSlot, videoBitrate } from "./frame-rate";
 
-async function pickAudioCodec(): Promise<"aac" | "opus"> {
+/** The mix to record: a node in the studio's own audio context. */
+export type RecordingTap = { context: AudioContext; source: AudioNode };
+
+// The capture processor is registered once per audio context.
+const captureReady = new WeakMap<BaseAudioContext, Promise<void>>();
+function loadCapture(context: BaseAudioContext) {
+  let ready = captureReady.get(context);
+  if (!ready) {
+    ready = context.audioWorklet.addModule(workletUrl);
+    ready.catch(() => captureReady.delete(context));
+    captureReady.set(context, ready);
+  }
+  return ready;
+}
+
+async function pickAudioCodec(sampleRate: number): Promise<"aac" | "opus"> {
   if (typeof AudioEncoder === "undefined") throw new Error("Ses kodlayıcı yok");
   const aac = await AudioEncoder.isConfigSupported({
     codec: "mp4a.40.2",
-    sampleRate: 48000,
+    sampleRate,
     numberOfChannels: 2,
     bitrate: 256000,
   });
   if (aac.supported) return "aac";
   const opus = await AudioEncoder.isConfigSupported({
     codec: "opus",
-    sampleRate: 48000,
+    sampleRate,
     numberOfChannels: 2,
     bitrate: 192000,
   });
@@ -50,10 +65,9 @@ export class Mp4Recorder {
     setMetadataTags: (tags: { title?: string; artist?: string }) => void;
   } | null = null;
   private video: { add: (timestamp: number, duration?: number) => Promise<void> } | null = null;
-  private audioTrack: MediaStreamTrack | null = null;
   private audioSource: AudioSampleSource | null = null;
-  private audioContext: AudioContext | null = null;
   private capture: AudioWorkletNode | null = null;
+  private detachCapture: (() => void) | null = null;
   private audioWriting: Promise<void> = Promise.resolve();
   private captureStopped: (() => void) | null = null;
   private capturedSeconds = 0;
@@ -66,7 +80,7 @@ export class Mp4Recorder {
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly openAudio: () => MediaStream,
+    private readonly openAudio: () => RecordingTap,
     private readonly title: () => string,
     private readonly audioOnly = false,
     fps: FrameRate = 30,
@@ -145,33 +159,43 @@ export class Mp4Recorder {
 
     this.output = output;
     this.video = video;
-    const stream = this.openAudio();
-    const original = stream.getAudioTracks()[0];
-    if (original) {
-      const track = original.clone();
-      this.audioTrack = track;
-      const codec = this.audioOnly ? "pcm-s16" : await pickAudioCodec();
+    // The sound is captured inside the studio's own audio context, from the
+    // same node that feeds the speakers. Handing it to a second context
+    // through a media stream dropped 10 ms blocks whenever the device was
+    // busy (heard as crackling); here every rendered sample is recorded.
+    const { context, source } = this.openAudio();
+    {
+      const codec = this.audioOnly ? "pcm-s16" : await pickAudioCodec(context.sampleRate);
       const audio = new AudioSampleSource({
         codec,
         quality: new Quality({ bitrate: codec === "aac" ? 256_000 : 192_000 }),
       });
       this.audioSource = audio;
       output.addAudioTrack(audio);
-      const context = new AudioContext({ sampleRate: 48000 });
-      this.audioContext = context;
-      await context.audioWorklet.addModule(workletUrl);
+      await loadCapture(context);
       const capture = new AudioWorkletNode(context, "aura-capture", {
         numberOfInputs: 1,
         numberOfOutputs: 1,
         outputChannelCount: [2],
+        channelCount: 2,
+        channelCountMode: "explicit",
       });
       this.capture = capture;
-      const input = context.createMediaStreamSource(new MediaStream([track])),
-        silent = context.createGain();
+      // The processor only runs while something pulls it: a muted path to the speakers.
+      const silent = context.createGain();
       silent.gain.value = 0;
-      input.connect(capture);
+      source.connect(capture);
       capture.connect(silent);
       silent.connect(context.destination);
+      this.detachCapture = () => {
+        try {
+          source.disconnect(capture);
+        } catch {
+          /* already disconnected */
+        }
+        capture.disconnect();
+        silent.disconnect();
+      };
       capture.port.onmessage = (event) => {
         if (event.data.type === "stopped") {
           this.captureStopped?.();
@@ -280,12 +304,10 @@ export class Mp4Recorder {
 
   private releaseAudio(): void {
     this.capture?.port.close();
-    this.capture?.disconnect();
+    // The context belongs to the studio and stays open.
+    this.detachCapture?.();
+    this.detachCapture = null;
     this.capture = null;
-    void this.audioContext?.close();
-    this.audioContext = null;
-    this.audioTrack?.stop();
-    this.audioTrack = null;
     this.audioSource = null;
   }
 

@@ -1,5 +1,15 @@
 # AURA Studio Android
 
+## 2.4.1 — dışa aktarılan videoda cızırtısız ses
+
+Dışa aktarılan videoların sesinde cızırtı oluyordu. Neden: ses, uygulamanın ses motorundan ikinci bir ses sistemine bir medya akışıyla aktarılıp orada kaydediliyordu. Cihaz meşgulken (60 fps çizim, kesimlerde oynatıcı geçişi) bu aktarım 10 ms'lik ses bloklarını düşürüyordu; arka arkaya gelen bu kısa kopmalar cızırtı olarak duyuluyordu.
+
+Artık ses doğrudan stüdyonun kendi ses motorunun içinde, hoparlöre giden karışımın aynısından kaydediliyor. Araya ikinci bir ses sistemi, yeniden örnekleme ya da medya akışı girmiyor; çalınan her örnek kaydediliyor. Video ve WAV dışa aktarma aynı yolu kullanır. Yan etkisi olarak dışa aktarma sırasında işlemci yükü azaldı.
+
+### 2.4.1 doğrulaması
+
+Yüksek seviyeli stereo test sesiyle, örnekleri tek tek inceleyen bir ölçümle kontrol edildi. 2.4.0'da 60 fps dışa aktarmada kesim olmadan da 9 ms'lik bir kopma, kesimli dışa aktarmada iki kopma ölçüldü. 2.4.1'de kesimsiz, 60 fps ve kesimli toplam altı dışa aktarmada ve WAV dışa aktarmada hiç kopma ölçülmedi. Video ve ses süreleri eşleşiyor (6,15 / 6,16 sn), 60 fps kareler 1/60 sn ızgarasında. Kesim noktalarında sesin bir yerden başka bir yere geçişi her düzenleyicide olduğu gibi serttir; saf test tonunda bu geçişte tek bir sert adım görülür. 135 birim testi ve önceki Projelerim, kesim geçişi ve ekran turu testleri geçti. Telefonda AAC ile denenmedi.
+
 ## 2.4.0 — 60 fps video dışa aktarma
 
 Dışa aktar > Video'da yeni **Kare hızı** seçimi: **30 fps · Standart** veya **60 fps · Daha akıcı**. Seçim cihazda ve proje dosyasında saklanır; alttaki özet "9:16 · 720p · 60 fps · 0:30" gibi görünür.

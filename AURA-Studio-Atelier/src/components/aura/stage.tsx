@@ -1280,9 +1280,9 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     const rec = new Mp4Recorder(
       canvas,
       () => {
-        const stream = engineRef.current?.tapRecording();
-        if (!stream) throw new Error("Ses hattı yok");
-        return stream;
+        const tap = engineRef.current?.tapRecording();
+        if (!tap) throw new Error("Ses hattı yok");
+        return tap;
       },
       () => titleRef.current,
       audioExportRef.current,

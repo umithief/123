@@ -37,7 +37,6 @@ export class AudioEngine {
   private micStream: MediaStream | null = null;
   private micNode: MediaStreamAudioSourceNode | null = null;
   private demoStop: (() => void) | null = null;
-  private recordDest: MediaStreamAudioDestinationNode | null = null;
   private source: SourceKind = "idle";
   private op = 0;
   private noise: AudioBuffer | null = null;
@@ -471,11 +470,12 @@ export class AudioEngine {
     this.events.onTime(audio.currentTime);
   }
 
-  tapRecording(): MediaStream {
+  /** The mix as the speakers get it, for recording in this same context. */
+  tapRecording(): { context: AudioContext; source: AudioNode } {
     const ctx = this.ensure();
     void ctx.resume();
-    if (!this.recordDest) throw new Error("Kayıt hattı yok");
-    return this.recordDest.stream;
+    if (!this.volumeNode) throw new Error("Kayıt hattı yok");
+    return { context: ctx, source: this.volumeNode };
   }
 
   destroy(): void {
@@ -497,7 +497,6 @@ export class AudioEngine {
     this.ctx = null;
     this.analyser = null;
     this.rhythmAnalyser = null;
-    this.recordDest = null;
     this.fileNodes.clear();
     this.input = null;
     this.editGain = null;
@@ -523,7 +522,6 @@ export class AudioEngine {
     analyser.maxDecibels = -22;
     this.ctx = ctx;
     this.analyser = analyser;
-    this.recordDest = ctx.createMediaStreamDestination();
     this.input = ctx.createGain();
     // Detect low-frequency transients before EQ/compression; their gain must not mask beats.
     const bassProbe = ctx.createBiquadFilter();
@@ -609,7 +607,6 @@ export class AudioEngine {
     this.editGain = ctx.createGain();
     this.editGain.gain.value = this.editLevel;
     this.editGain.connect(this.inputNode());
-    this.volumeNode.connect(this.recordDest);
     this.volumeNode.connect(this.monitor);
     this.monitor.connect(ctx.destination);
     this.eqDry.gain.value = this.music.eq ? 0 : 1;
