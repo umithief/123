@@ -1,7 +1,8 @@
 import type { AudioSampleSource } from "mediabunny";
 import workletUrl from "./record-worklet.js?url&no-inline";
 
-const FPS = 30;
+import type { FrameRate } from "./studio";
+import { frameSlot, videoBitrate } from "./frame-rate";
 
 async function pickAudioCodec(): Promise<"aac" | "opus"> {
   if (typeof AudioEncoder === "undefined") throw new Error("Ses kodlayıcı yok");
@@ -56,13 +57,22 @@ export class Mp4Recorder {
   private audioWriting: Promise<void> = Promise.resolve();
   private captureStopped: (() => void) | null = null;
   private capturedSeconds = 0;
+  /** When the latest sound arrived: the clock runs on smoothly between chunks. */
+  private capturedAt = 0;
+  /** Frames written, for the frame rate the device actually reached. */
+  frames = 0;
+  /** The frame rate used (60 falls back to 30 when the device cannot encode it). */
+  fps: FrameRate;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly openAudio: () => MediaStream,
     private readonly title: () => string,
     private readonly audioOnly = false,
-  ) {}
+    fps: FrameRate = 30,
+  ) {
+    this.fps = fps;
+  }
 
   async start(): Promise<void> {
     if (typeof VideoEncoder === "undefined" || typeof AudioEncoder === "undefined") {
@@ -81,7 +91,38 @@ export class Mp4Recorder {
       AudioSampleSource,
       AudioSample,
       Quality,
+      canEncodeVideo,
     } = await import("mediabunny");
+    // H.264 first (it plays everywhere); MP4 also carries VP9 and AV1 for
+    // devices without an H.264 encoder. 60 fps falls back to 30 when no
+    // codec can encode it at this size.
+    const quality = (fps: number) =>
+      fps > 30
+        ? new Quality({ bitrate: videoBitrate(fitted.width, fitted.height, fps) })
+        : new Quality("very-high");
+    const pick = async (fps: number) => {
+      for (const codec of ["avc", "vp9", "av1"] as const) {
+        const ok = await canEncodeVideo(codec, {
+          width: fitted.width,
+          height: fitted.height,
+          frameRate: fps,
+          quality: quality(fps),
+        }).catch(() => false);
+        if (ok) return codec;
+      }
+      return null;
+    };
+    let codec: "avc" | "vp9" | "av1" = "avc";
+    if (!this.audioOnly) {
+      let found = await pick(this.fps);
+      if (!found && this.fps > 30) {
+        this.fps = 30;
+        found = await pick(30);
+      }
+      // Unknown support: try H.264 and let the encoder report a failure.
+      codec = found ?? "avc";
+    }
+    const fps = this.fps;
 
     const target = new BufferTarget();
     const output = new Output({
@@ -93,14 +134,14 @@ export class Mp4Recorder {
     const video = this.audioOnly
       ? null
       : new CanvasSource(this.canvas, {
-          codec: "avc",
-          quality: new Quality("very-high"),
+          codec,
+          quality: quality(fps),
           latencyMode: "quality",
           keyFrameInterval: 2,
           hardwareAcceleration: "no-preference",
           transform: { width: fitted.width, height: fitted.height, fit: "fill" },
         });
-    if (video) output.addVideoTrack(video, { frameRate: FPS });
+    if (video) output.addVideoTrack(video, { frameRate: fps });
 
     this.output = output;
     this.video = video;
@@ -140,6 +181,7 @@ export class Mp4Recorder {
         if (event.data.type !== "samples" || this.fail) return;
         const { data, frames, timestamp } = event.data;
         this.capturedSeconds = timestamp + frames / context.sampleRate;
+        this.capturedAt = performance.now();
         const sample = new AudioSample({
           format: "f32-planar",
           sampleRate: context.sampleRate,
@@ -171,10 +213,16 @@ export class Mp4Recorder {
     this.running = true;
     this.startedAt = performance.now();
     this.lastStamp = 0;
+    this.frames = 0;
     if (video) {
-      this.enqueue(0, 1 / FPS);
+      this.enqueue(0, 1 / fps);
       this.raf = requestAnimationFrame(this.loop);
     }
+  }
+
+  /** Seconds recorded so far. */
+  get seconds(): number {
+    return this.capture ? this.capturedSeconds : (performance.now() - this.startedAt) / 1000;
   }
 
   async stop(): Promise<Blob> {
@@ -196,10 +244,10 @@ export class Mp4Recorder {
     await this.audioWriting;
     await this.writing;
     // Hold the last image until the captured sound ends, on the same clock.
-    const finalStamp = this.capturedSeconds - 1 / FPS;
+    const finalStamp = frameSlot(this.capturedSeconds, this.fps) - 1 / this.fps;
     if (this.video && !this.fail && finalStamp > this.lastStamp) {
       this.lastStamp = finalStamp;
-      this.enqueue(finalStamp, 1 / FPS);
+      this.enqueue(finalStamp, 1 / this.fps);
       await this.writing;
     }
     if (this.fail) throw this.fail;
@@ -245,6 +293,7 @@ export class Mp4Recorder {
     const video = this.video;
     if (!video) return;
     this.busy = true;
+    this.frames++;
     const job = video.add(timestamp, duration);
     this.writing = this.writing
       .then(() => job)
@@ -256,15 +305,24 @@ export class Mp4Recorder {
       });
   }
 
+  /** Seconds of the export so far, on the captured sound's clock. */
+  private elapsed(): number {
+    const now = performance.now();
+    if (!this.capture) return (now - this.startedAt) / 1000;
+    // Sound arrives in ~21 ms chunks; between them the clock runs on with
+    // real time (never more than a chunk and a half ahead of the sound).
+    if (!this.capturedAt) return this.capturedSeconds;
+    return this.capturedSeconds + Math.min(0.032, (now - this.capturedAt) / 1000);
+  }
+
   private loop = (): void => {
     if (!this.running) return;
-    const elapsed = this.capture
-      ? this.capturedSeconds
-      : (performance.now() - this.startedAt) / 1000;
-    if (!this.busy && !this.fail && elapsed - this.lastStamp >= 1 / FPS) {
-      this.lastStamp = elapsed;
-      // A delayed frame must not extend the end by the previous rendering gap.
-      this.enqueue(elapsed, 1 / FPS);
+    const slot = frameSlot(this.elapsed(), this.fps);
+    if (!this.busy && !this.fail && slot > this.lastStamp + 1e-6) {
+      this.lastStamp = slot;
+      // A delayed frame takes the current slot; missed slots are not filled
+      // afterwards, so the end is never pushed back.
+      this.enqueue(slot, 1 / this.fps);
     }
     this.raf = requestAnimationFrame(this.loop);
   };

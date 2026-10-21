@@ -21,6 +21,8 @@ export const VIDEO_FORMATS = [
 ] as const;
 export type VideoFormat = (typeof VIDEO_FORMATS)[number]["id"];
 export type Resolution = "720" | "1080";
+/** Exported frames per second. */
+export type FrameRate = 30 | 60;
 export function videoSize(format: VideoFormat, resolution: Resolution) {
   const short = resolution === "1080" ? 1080 : 720;
   if (format === "landscape") return { width: (short * 16) / 9, height: short };
@@ -43,6 +45,7 @@ export type StudioSnapshot = {
   captions: CaptionOptions;
   format: VideoFormat;
   resolution: Resolution;
+  fps: FrameRate;
 };
 export type SavedLook = { id: string; name: string; savedAt: string; settings: StudioSnapshot };
 export function parseSnapshot(raw: string): StudioSnapshot {
@@ -79,6 +82,7 @@ export function parseSnapshot(raw: string): StudioSnapshot {
     captions: restoreCaptionOptions(JSON.stringify(v.captions)),
     format: VIDEO_FORMATS.some((f) => f.id === v.format) ? v.format : "landscape",
     resolution: v.resolution === "1080" ? "1080" : "720",
+    fps: v.fps === 60 ? 60 : 30,
   };
 }
 export function restoreLooks(raw: string | null): SavedLook[] {

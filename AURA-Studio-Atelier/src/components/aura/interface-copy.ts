@@ -175,6 +175,14 @@ Döngüde oynat|Play on loop
 Döngüyü durdur|Stop loop
 Sil|Delete
 Ekranda|On screen
+Kare hızı|Frame rate
+30 fps · Standart|30 fps · Standard
+60 fps · Daha akıcı|60 fps · Smoother
+Bu cihaz 60 fps kodlayamadı; video 30 fps hazırlandı.|This device cannot encode 60 fps; the video was made at 30 fps.
+Cihaz ortalama|The device averaged
+fps yakalayabildi.|fps.
+Daha akıcı sonuç için 720p deneyin.|Try 720p for smoother results.
+Bu cihazda 30 fps daha düzenli olabilir.|30 fps may be steadier on this device.
 Oto Kurgu|Auto Edit
 Oto kurgu|Auto edit
 Tek dokunuşla profesyonel kısa kurgu: doğru an, vuruşta kesimler, geçişler ve final. Sonuç hemen oynar.|Professional short edits in one tap: the right moment, cuts on the beat, transitions and an ending. The result plays straight away.

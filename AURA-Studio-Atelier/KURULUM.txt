@@ -1,4 +1,18 @@
-AURA Studio Atelier 2.3.2
+AURA Studio Atelier 2.4.0
+
+## 2.4.0 — 60 fps video dışa aktarma
+
+Dışa aktar > Video'da yeni **Kare hızı** seçimi: **30 fps · Standart** veya **60 fps · Daha akıcı**. Seçim cihazda ve proje dosyasında saklanır; alttaki özet "9:16 · 720p · 60 fps · 0:30" gibi görünür.
+
+- **Akıcı çizim:** 60 fps seçilince dışa aktarma sırasında sahne her ekran yenilemesinde çizilir (önizleme pil için 30 fps'te kalır).
+- **Düzgün zamanlama:** Kayıt saati ses kaydına bağlı kalır, ancak ses parçaları (~21 ms) arasında gerçek zamanla ilerler. Kareler tam 1/60 (veya 1/30) saniyelik ızgaraya yazılır; önceden kare zamanları ses parçalarına göre titriyordu. Bu iyileştirme 30 fps dışa aktarmaya da uygulanır.
+- **Daha yüksek bit hızı:** 60 fps'te kare başına ayrıntı korunsun diye bit hızı %60 artırılır (1080p dikey için ~18,5 Mbit/sn). 30 fps'te kalite eskisiyle aynıdır.
+- **Güvenli geri dönüş:** Cihaz bu boyutta 60 fps kodlayamıyorsa video 30 fps hazırlanır ve bu söylenir. H.264 kodlayıcısı olmayan cihazlarda video, MP4 içinde VP9 (o da yoksa AV1) ile kodlanır.
+- **Dürüst sonuç:** "Kaydın hazır" kartı videonun kare hızını gösterir. Cihaz 60 fps seçiliyken ortalama 50 fps'in altında kalırsa kaç fps yakalayabildiğini ve ne denenebileceğini yazar (1080p'de 720p, 720p'de 30 fps).
+
+### 2.4.0 doğrulaması
+
+TypeScript ve 135 AURA birim testi geçti (4 yeni test: kare ızgarası ve erken gelen yenilemeler, 60 Hz titreşimli yenilemede 10 sn'de 600/300 kare, 60 fps bit hızı, proje dosyasında kare hızı). Bu tarayıcıda H.264 olmadığı için dışa aktarma VP9/Opus ile uçtan uca denendi: 6 sn'lik parça 720p ve 1080p'de 60 fps, 720p'de 30 fps olarak MP4'e yazıldı. 60 fps dosyada her kare tam 1/60 sn ızgarasında ve video ile ses aynı sürede (6,18 sn). Bu test ortamında ekran kartı olmadığından sayfa saniyede yalnızca ~20 kez çizilebildi; kayıt bu karelerin neredeyse hepsini yakaladı ve kart düşük kare hızını doğru bildirdi. Kodlayıcının kendisi burada saniyede 60 kare kodlayabildi. Telefonda gerçek 60 fps ve H.264 ile denenmedi; ulaşılan kare hızı cihazın çizim gücüne bağlıdır. Önceki Projelerim, güvenli alan, kesim geçişi, aralık döngüsü, altyazı önizlemesi ve ekran turu testleri yeniden geçti.
 
 ## 2.3.2 — kesimlerde takılmadan akan oynatma
 

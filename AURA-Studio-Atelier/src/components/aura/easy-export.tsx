@@ -2,17 +2,19 @@ import { ui } from "./interface-copy";
 import { ChoiceStrip } from "./choice-strip";
 import { useEffect, useRef } from "react";
 import { Download, Video } from "lucide-react";
-import { VIDEO_FORMATS, type VideoFormat, type Resolution } from "./studio";
+import { VIDEO_FORMATS, type VideoFormat, type Resolution, type FrameRate } from "./studio";
 import { formatTime } from "./studio-panels";
 
 export function EasyExportPanel({
   format,
   resolution,
+  fps = 30,
   duration,
   available,
   busy,
   onFormat,
   onResolution,
+  onFps,
   onExport,
   onUpload,
   onAudio,
@@ -20,11 +22,13 @@ export function EasyExportPanel({
 }: {
   format: VideoFormat;
   resolution: Resolution;
+  fps?: FrameRate;
   duration: number;
   available: boolean;
   busy: boolean;
   onFormat: (value: VideoFormat) => void;
   onResolution: (value: Resolution) => void;
+  onFps?: (value: FrameRate) => void;
   onExport: () => void;
   onUpload: () => void;
   onAudio?: () => void;
@@ -71,12 +75,25 @@ export function EasyExportPanel({
             <option value="1080">{ui("1080p · Daha net")}</option>
           </select>
         </label>
+        {onFps && (
+          <label className="studio-check-row">
+            {ui("Kare hızı")}
+            <select
+              aria-label={ui("Kare hızı")}
+              value={fps}
+              onChange={(event) => onFps(Number(event.target.value) === 60 ? 60 : 30)}
+            >
+              <option value="30">{ui("30 fps · Standart")}</option>
+              <option value="60">{ui("60 fps · Daha akıcı")}</option>
+            </select>
+          </label>
+        )}
       </fieldset>
       <div className="easy-export-summary">
         <Video className="size-5" />
         <div>
           <strong>
-            {formatTime(Math.min(duration, 180))} {ui("· MP4")}
+            {formatTime(Math.min(duration, 180))} {ui("· MP4")} · {resolution}p · {fps} fps
           </strong>
           <p>
             {duration > 180

@@ -71,6 +71,7 @@ import {
   parseSnapshot,
   type VideoFormat,
   type Resolution,
+  type FrameRate,
   type StudioSnapshot,
 } from "./studio";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -304,11 +305,20 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [tab, setTab] = useState<StudioTab>("visual");
   const [format, setFormat] = useState<VideoFormat>("landscape");
   const [resolution, setResolution] = useState<Resolution>("720");
+  const [fps, setFps] = useState<FrameRate>(30);
+  const fpsRef = useRef<FrameRate>(30);
+  fpsRef.current = fps;
   const [loading, setLoading] = useState(false);
   const [muted, setMuted] = useState(false);
   const [looping, setLooping] = useState(false);
   const [recStatus, setRecStatus] = useState("idle");
-  const [lastVideo, setLastVideo] = useState<{ blob: Blob; name: string } | null>(null);
+  const [lastVideo, setLastVideo] = useState<{
+    blob: Blob;
+    name: string;
+    /** Frames per second of the video, and a note when it is not what was asked. */
+    fps?: number;
+    note?: string;
+  } | null>(null);
   const [drag, setDrag] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [title, setTitle] = useState("");
@@ -573,6 +583,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     // Phones mostly make Reels/Stories: start vertical until the user picks a size.
     else if (window.matchMedia("(max-width: 700px)").matches) setFormat("portrait");
     if (readSetting("aura-video-resolution") === "1080") setResolution("1080");
+    if (readSetting("aura-video-fps") === "60") setFps(60);
     setCoverOptions(restoreCoverOptions(readSetting("aura-cover-options")));
     try {
       const saved = JSON.parse(readSetting("aura-effects") ?? "null");
@@ -736,11 +747,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       if (looped && recStatusRef.current === "idle" && editor.draw.current.time >= looped[1] - 0.06)
         editor.seek(looped[0]);
       if ((document.hidden || homeViewRef.current) && !recordingSceneRef.current) return;
-      const frameDuration = 1000 / 30;
-      if (now - paintedAt < frameDuration) return;
-      // Preserve the remainder: resetting to `now` skipped every third screen
-      // refresh when two 60 Hz frames were fractionally short of 33.33 ms.
-      paintedAt = now - ((now - paintedAt) % frameDuration);
+      // The preview paints at 30 fps; a 60 fps export paints every frame it
+      // records. A refresh that comes a little early still counts (a strict
+      // limit skipped every other 60 Hz refresh when it was a hair short).
+      const frameDuration =
+        1000 / (recStatusRef.current !== "idle" && !audioExportRef.current ? fpsRef.current : 30);
+      if (now - paintedAt < frameDuration * 0.8) return;
+      paintedAt = now;
       resize();
       const reading = engineRef.current?.read() ?? null;
       let signal: Signal = { kind: "off" };
@@ -1224,7 +1237,22 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         const safe =
           (titleRef.current.trim() || "aura").replace(/[^\p{L}\p{N}\- ]+/gu, "").trim() || "aura";
         const name = `${safe}.${audioExportRef.current ? "wav" : "mp4"}`;
-        setLastVideo({ blob, name });
+        // Say so when the device could not give the frame rate that was chosen.
+        const reached = current.seconds > 1 ? current.frames / current.seconds : current.fps;
+        const asked = fpsRef.current;
+        const note = audioExportRef.current
+          ? undefined
+          : current.fps < asked
+            ? ui("Bu cihaz 60 fps kodlayamadı; video 30 fps hazırlandı.")
+            : asked === 60 && reached < 50
+              ? `${ui("Cihaz ortalama")} ${Math.round(reached)} ${ui("fps yakalayabildi.")} ${ui(resolution === "1080" ? "Daha akıcı sonuç için 720p deneyin." : "Bu cihazda 30 fps daha düzenli olabilir.")}`
+              : undefined;
+        setLastVideo({
+          blob,
+          name,
+          fps: audioExportRef.current ? undefined : current.fps,
+          note,
+        });
         downloadBlob(blob, name);
       } catch {
         await current.cancel();
@@ -1258,6 +1286,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       },
       () => titleRef.current,
       audioExportRef.current,
+      fpsRef.current,
     );
     try {
       await editor.waitForTransitions();
@@ -1371,6 +1400,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     captions: captions.options,
     format,
     resolution,
+    fps,
   };
   const locked = recStatus !== "idle";
 
@@ -1660,6 +1690,11 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     setResolution(next);
     writeSetting("aura-video-resolution", next);
   }
+  function changeFps(next: FrameRate) {
+    if (recStatusRef.current !== "idle") return;
+    setFps(next);
+    writeSetting("aura-video-fps", String(next));
+  }
   function changeFinish(next: Finish) {
     setFinish(next);
     writeSetting("aura-finish", next);
@@ -1679,6 +1714,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     captions.changeOptions(next.captions);
     changeFormat(next.format);
     changeResolution(next.resolution);
+    changeFps(next.fps);
   }
   // Video templates. Switching between templates always starts from the look
   // and cuts the project had when the dialog opened, so they never compound.
@@ -2796,6 +2832,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
               <p>
                 {ui("Kaydın hazır ·")}
                 {(lastVideo.blob.size / 1024 / 1024).toFixed(1)} {ui("MB")}
+                {lastVideo.fps ? ` · ${lastVideo.fps} fps` : ""}
+                {lastVideo.note && <small className="block">{lastVideo.note}</small>}
               </p>
               <button
                 className="studio-button"
@@ -3133,11 +3171,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                     showAction={false}
                     format={format}
                     resolution={resolution}
+                    fps={fps}
                     duration={editor.total}
                     available={source === "file" && editor.total > 0}
                     busy={locked}
                     onFormat={changeFormat}
                     onResolution={changeResolution}
+                    onFps={changeFps}
                     onUpload={() => fileRef.current?.click()}
                     onExport={() => void exportVideo()}
                   />
@@ -3219,8 +3259,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
               <div className="easy-step-footer">
                 <span>
                   {activeFormat.ratio} · {resolution}
-                  {ui("p ·")}
-                  {formatTime(Math.min(editor.total, 180))}
+                  {ui("p ·")} {fps} fps · {formatTime(Math.min(editor.total, 180))}
                 </span>
                 <Button
                   variant="default"
