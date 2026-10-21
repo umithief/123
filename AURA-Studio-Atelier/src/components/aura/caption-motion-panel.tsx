@@ -1,6 +1,6 @@
 import { ui } from "./interface-copy";
 import { ChoiceStrip } from "./choice-strip";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CAPTION_ANIMATIONS,
   loadCaptionFont,
@@ -15,24 +15,14 @@ import {
   MOTION_LIMITS,
   NO_MOTION,
   hasMotion,
+  previewRound,
   type CaptionMotion,
 } from "./caption-motion";
 import { MotionTiles } from "./caption-motion-tiles";
 import { paintCaptions } from "./caption-paint";
 import { CaptionTemplateGallery, CaptionAppearancePanel } from "./caption-template-panel";
 
-const SAMPLE: CaptionCue = {
-  id: "preview",
-  text: "Müziğin ritmini hisset",
-  start: 0,
-  end: 3,
-  words: [
-    { text: "Müziğin", start: 0, end: 1 },
-    { text: "ritmini", start: 1, end: 2 },
-    { text: "hisset", start: 2, end: 3 },
-  ],
-};
-const LOOP = 3.6;
+const SAMPLE = "Müziğin ritmini hisset";
 const KINDS = [
   { id: "in", label: "Giriş" },
   { id: "out", label: "Çıkış" },
@@ -41,31 +31,78 @@ const KINDS = [
 ] as const;
 type Kind = (typeof KINDS)[number]["id"];
 
-/** Plays `cue` with `options` on a loop; still when motion is reduced or absent. */
+/**
+ * Plays `text` with `options` (and `motion`, when given) on a loop: an empty
+ * lead-in, the entrance, a readable hold, the exit and a pause. The bar under
+ * it shows the phases and where the round is. Still when motion is reduced.
+ */
 function CaptionPreview({
   options,
-  cue,
+  text,
+  motion,
   label,
 }: {
   options: CaptionOptions;
-  cue: CaptionCue;
+  text: string;
+  motion?: CaptionMotion;
   label: string;
 }) {
-  const preview = useRef<HTMLCanvasElement>(null);
+  const preview = useRef<HTMLCanvasElement>(null),
+    playhead = useRef<HTMLSpanElement>(null);
+  const active = motion ?? options.motion;
+  const round = previewRound(active);
+  const cue = useMemo<CaptionCue>(() => {
+    // Words share the caption's time, so word-by-word styles play in full.
+    const words = text.split(/\s+/).filter(Boolean),
+      step = (round.end - round.start) / Math.max(1, words.length);
+    return {
+      id: "preview",
+      text,
+      start: round.start,
+      end: round.end,
+      words: words.map((word, i) => ({
+        text: word,
+        start: round.start + i * step,
+        end: round.start + (i + 1) * step,
+      })),
+      ...(motion ? { motion } : {}),
+    };
+  }, [text, motion, round.start, round.end]);
+  // The studio re-renders several times a second (music meters); the round's
+  // clock and the drawing loop must not restart with it, or only the first
+  // instant of the animation would ever be seen. The loop reads the latest
+  // values here and starts a fresh round only when what it shows changes.
+  const latest = useRef({ options, cue, active, round });
+  latest.current = { options, cue, active, round };
+  const clock = useRef(0),
+    redraw = useRef(() => {});
+  const shown = JSON.stringify([options, text, active]);
+  useEffect(() => {
+    clock.current = performance.now();
+    redraw.current();
+  }, [shown]);
+  useEffect(() => {
+    void loadCaptionFont(options.font, options.weight, options.italic)
+      .then(() => redraw.current())
+      .catch(() => {});
+  }, [options.font, options.weight, options.italic]);
   useEffect(() => {
     const canvas = preview.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const moving = options.animation !== "none" || hasMotion(cue.motion ?? options.motion);
     let frame = 0;
     let visible = false;
     let alive = true;
-    const start = performance.now();
     const accent =
       getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim() ||
       "#ff6b00";
     const draw = (now: number) => {
+      const { options, cue, active, round } = latest.current;
+      const still = reduced.matches || (options.animation === "none" && !hasMotion(active));
+      const t = still
+        ? round.start + round.enter + round.hold / 2
+        : ((now - clock.current) / 1000) % round.total;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       paintCaptions(
         ctx,
@@ -73,18 +110,22 @@ function CaptionPreview({
         canvas.height,
         0,
         [cue],
-        { ...options, enabled: true, place: "center", offset: 0 },
-        reduced.matches || !moving ? 1.5 : ((now - start) / 1000) % LOOP,
+        { ...options, enabled: true, place: "center", offset: 0, position: null },
+        t,
         accent,
         reduced.matches,
       );
-      if (visible && !document.hidden && !reduced.matches && moving)
-        frame = requestAnimationFrame(draw);
+      if (playhead.current) {
+        playhead.current.hidden = still;
+        playhead.current.style.left = `${(t / round.total) * 100}%`;
+      }
+      if (visible && !document.hidden && !still) frame = requestAnimationFrame(draw);
     };
     const restart = () => {
       cancelAnimationFrame(frame);
       if (alive) draw(performance.now());
     };
+    redraw.current = restart;
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       restart();
@@ -92,27 +133,45 @@ function CaptionPreview({
     observer.observe(canvas);
     reduced.addEventListener("change", restart);
     document.addEventListener("visibilitychange", restart);
-    void loadCaptionFont(options.font, options.weight, options.italic)
-      .then(restart)
-      .catch(() => {});
     restart();
     return () => {
       alive = false;
+      redraw.current = () => {};
       cancelAnimationFrame(frame);
       observer.disconnect();
       reduced.removeEventListener("change", restart);
       document.removeEventListener("visibilitychange", restart);
     };
-  }, [options, cue]);
+  }, []);
+  const share = (seconds: number) => `${(seconds / round.total) * 100}%`;
   return (
-    <canvas
-      ref={preview}
-      width={640}
-      height={180}
-      className="h-auto w-full rounded-xl border border-line bg-canvas"
-      role="img"
-      aria-label={label}
-    />
+    <div className="caption-preview">
+      <canvas
+        ref={preview}
+        width={640}
+        height={200}
+        className="h-auto w-full rounded-xl border border-line bg-canvas"
+        role="img"
+        aria-label={label}
+      />
+      <div className="caption-preview-phases" aria-hidden="true">
+        <i style={{ left: share(round.start), width: share(round.enter) }} data-phase="in" />
+        <i
+          style={{ left: share(round.start + round.enter), width: share(round.hold) }}
+          data-phase="hold"
+        />
+        <i
+          style={{ left: share(round.start + round.enter + round.hold), width: share(round.leave) }}
+          data-phase="out"
+        />
+        <span ref={playhead} />
+      </div>
+      <p className="caption-preview-time">
+        {round.enter > 0 && `${ui("Giriş")} ${round.enter.toFixed(1)} ${ui("sn")} · `}
+        {`${ui("Ekranda")} ${round.hold.toFixed(1)} ${ui("sn")}`}
+        {round.leave > 0 && ` · ${ui("Çıkış")} ${round.leave.toFixed(1)} ${ui("sn")}`}
+      </p>
+    </div>
   );
 }
 
@@ -188,9 +247,7 @@ export function CaptionMotionPanel({
     else onChange({ motion: next });
   }
   // The preview plays the caption being edited, with the motion being edited.
-  const previewCue: CaptionCue = perCue
-    ? { id: "preview", text: target!.text, start: 0, end: 3, motion }
-    : SAMPLE;
+  const previewText = perCue ? target!.text : SAMPLE;
   const previewOptions = perCue ? options : { ...options, motion };
   const picked = (list: readonly { id: string; label: string }[], id: string) =>
     ui(list.find((item) => item.id === id)?.label);
@@ -235,7 +292,8 @@ export function CaptionMotionPanel({
         <div className="caption-motion space-y-2">
           <CaptionPreview
             options={previewOptions}
-            cue={previewCue}
+            text={previewText}
+            motion={perCue ? motion : undefined}
             label={ui("Animasyon önizlemesi")}
           />
           {onCueMotion && (
@@ -512,7 +570,7 @@ export function CaptionMotionPanel({
           <summary>{ui("Örnek metinde önizle")}</summary>
           <CaptionPreview
             options={options}
-            cue={SAMPLE}
+            text={SAMPLE}
             label={ui(`${selected?.label} animasyonu: Müziğin ritmini hisset`)}
           />
         </details>

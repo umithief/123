@@ -1,5 +1,15 @@
 # AURA Studio Android
 
+## 2.3.1 — altyazı animasyon önizlemesi baştan sona oynar
+
+Altyazı > Animasyonlar'daki canlı önizleme animasyonun yalnızca ilk anını gösteriyordu. Stüdyo, müzik göstergeleri için saniyede birkaç kez yenileniyor ve önizleme her yenilemede animasyonu baştan başlatıyordu. Önizlemenin saati artık bu yenilemelerden bağımsız; yalnızca bir animasyon, süre ya da görünüm değiştiğinde baştan başlar.
+
+Önizleme turu da seçilen sürelere göre uzadı: kısa bir boşluk, giriş (seçilen süre kadar), en az 2,2 sn ekranda kalma (döngü animasyonunda 3,2 sn), çıkış ve yeniden başlamadan önce kısa bir duraklama. Önceden altyazı 3 sn'ye sıkışıyordu; uzun giriş ve çıkışlar kısalıyor, döngü hareketi neredeyse hiç görünmüyordu. Kelime kelime çalışan stiller tüm süreye yayılır; önizleme, önizlemede taşınmış altyazıyı da her zaman ortada gösterir. Önizlemenin altındaki çubuk giriş, ekranda kalma ve çıkış bölümlerini ve turun neresinde olunduğunu gösterir ("Giriş 2,0 sn · Ekranda 2,2 sn · Çıkış 2,0 sn"). Animasyon kartlarındaki "Aa" örnekleri de daha yavaş oynar: girişten önce kısa bir boşluk, 0,9 sn giriş ve görünür bekleme; çıkışta önce bekleme, sonra 0,9 sn çıkış.
+
+### 2.3.1 doğrulaması
+
+TypeScript ve 131 AURA birim testi geçti (yeni test: önizleme turunun giriş ve çıkışı kısaltmadan okunacak bir bekleme bırakması). Tarayıcıda telefon ve masaüstünde 2 sn Belirme ve 2 sn Sönme ile önizleme 16 sn boyunca ölçüldü: altyazı 7,6 sn'lik turlarla göründü ve yaklaşık 7 sn tamamen görünür kaldı; önceki altyazı animasyonu ve kombo testleri yeniden geçti.
+
 ## 2.3.0 — Projelerim, güvenli alan kılavuzu ve döngüde oynatma
 
 **Projelerim.** Başlangıç ekranında artık cihazındaki bütün projeler var. Her proje ilk düzenlemeden itibaren kendi kaydında otomatik saklanır; yeni bir projeye geçmek ya da uygulamayı kapatmak önceki işi silmez (eskiden yalnızca son oturum tutuluyordu). Kartlarda önizleme resmi, proje adı, ne zaman düzenlendiği, video boyutu ve süresi görünür; açık proje "Şu an açık" olarak işaretlenir. Bir karta dokununca proje kaldığı yerden açılır; başka bir proje açıkken de geçiş yapılabilir, açık olan önce kaydedilir. "⋯" menüsünden **Yeniden adlandır**, **Kopyasını oluştur** (medya kopyalanmaz, yer kaplamaz), **Proje dosyası olarak kaydet** (projeyi açmadan .aura.zip olarak indirir) ve onaylı **Sil** seçilebilir. Dörtten fazla projede arama kutusu ve "Tümünü göster" çıkar; başlıkta cihazda kullanılan alan yazar. 2.2'deki "Son oturum" kaydı ilk açılışta kendiliğinden Projelerim'e taşınır. "Yeni proje" artık onay sormaz (proje cihaza kaydedilemediyse yine sorar); proje dosyası kaydı da proje adını taşır.

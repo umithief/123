@@ -15,16 +15,17 @@ import {
 export type MotionKind = "in" | "out" | "loop";
 type Item = { id: string; label: string; description: string };
 
-const CYCLE = 1.8;
+const CYCLE = 2.6;
 
 /** The tile's frame `t` seconds into its preview cycle. */
 function tileFrame(kind: MotionKind, id: string, t: number): MotionFrame {
   if (id === "none") return REST;
   const c = t % CYCLE;
-  if (kind === "in") return entranceFrame(id as CaptionInId, c / 0.7);
+  // A beat of nothing, arrive, then stay long enough to see where it landed.
+  if (kind === "in") return entranceFrame(id as CaptionInId, Math.max(0, (c - 0.3) / 0.9));
   if (kind === "out")
     // Rest, leave, then stay gone for a moment before the next round.
-    return c < 0.5 ? REST : exitFrame(id as CaptionOutId, (c - 0.5) / 0.7);
+    return c < 0.9 ? REST : exitFrame(id as CaptionOutId, (c - 0.9) / 0.9);
   return loopFrame(id as CaptionLoopId, t, 1, 1.2, 4);
 }
 

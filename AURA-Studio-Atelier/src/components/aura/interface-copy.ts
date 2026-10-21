@@ -174,6 +174,7 @@ Düzelt|Fix
 Döngüde oynat|Play on loop
 Döngüyü durdur|Stop loop
 Sil|Delete
+Ekranda|On screen
 Oto Kurgu|Auto Edit
 Oto kurgu|Auto edit
 Tek dokunuşla profesyonel kısa kurgu: doğru an, vuruşta kesimler, geçişler ve final. Sonuç hemen oynar.|Professional short edits in one tap: the right moment, cuts on the beat, transitions and an ending. The result plays straight away.

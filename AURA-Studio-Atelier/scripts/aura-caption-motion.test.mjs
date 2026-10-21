@@ -13,6 +13,7 @@ import {
   motionFrame,
   motionWindows,
   parseCaptionMotion,
+  previewRound,
 } from "../src/components/aura/caption-motion.ts";
 import { DEFAULT_CAPTIONS, restoreCaptionOptions } from "../src/components/aura/captions.ts";
 
@@ -119,4 +120,28 @@ test("stored motion is validated and old settings get none", () => {
   const saved = { ...DEFAULT_CAPTIONS, motion: m({ in: "bounce", loop: "jelly" }) };
   assert.deepEqual(restoreCaptionOptions(JSON.stringify(saved)).motion, saved.motion);
   assert.equal(hasMotion(DEFAULT_CAPTIONS.motion), false);
+});
+
+test("the panel preview gives the caption time to arrive, stay and leave", () => {
+  const plain = previewRound(NO_MOTION);
+  assert.ok(plain.start > 0, "an empty lead-in before the caption");
+  assert.ok(plain.end - plain.start >= 2, "readable on screen");
+  const slow = previewRound({
+    ...NO_MOTION,
+    in: "fade",
+    inDuration: 2,
+    out: "fade",
+    outDuration: 2,
+  });
+  assert.equal(slow.enter, 2);
+  assert.equal(slow.leave, 2);
+  assert.ok(slow.hold >= 2, "long entrances and exits keep the hold");
+  const { enter, leave } = motionWindows(
+    { ...NO_MOTION, in: "fade", inDuration: 2, out: "fade", outDuration: 2 },
+    slow.end - slow.start,
+  );
+  assert.equal(enter, 2, "the motion is not squeezed");
+  assert.equal(leave, 2);
+  assert.ok(slow.total > slow.end, "a pause before the next round");
+  assert.ok(previewRound({ ...NO_MOTION, loop: "pulse" }).hold > plain.hold);
 });

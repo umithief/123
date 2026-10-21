@@ -124,6 +124,20 @@ export function motionWindows(m: CaptionMotion, length: number) {
   return { enter, leave };
 }
 
+/**
+ * One round of the panel preview for `m`, in seconds: an empty lead-in so
+ * the entrance is seen arriving, the caption (entrance, a hold long enough
+ * to read it and see a loop motion, exit), then a pause before it repeats.
+ */
+export function previewRound(m: CaptionMotion) {
+  const lead = 0.5,
+    enter = m.in === "none" ? 0 : m.inDuration,
+    leave = m.out === "none" ? 0 : m.outDuration,
+    hold = m.loop === "none" ? 2.2 : 3.2;
+  const end = lead + enter + hold + leave;
+  return { start: lead, enter, hold, leave, end, total: end + 0.9 };
+}
+
 export type RevealMode = "none" | "left" | "center" | "up";
 export type MotionFrame = {
   alpha: number;
