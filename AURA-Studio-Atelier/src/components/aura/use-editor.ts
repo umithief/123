@@ -23,6 +23,8 @@ export type MediaAsset = {
   url: string;
   element: HTMLImageElement | HTMLVideoElement;
   duration: number;
+  /** The source video's second player, waiting at the next cut. */
+  spare?: HTMLVideoElement;
 };
 export type SoundAsset = {
   file: File;
@@ -156,11 +158,12 @@ export function useEditor(
     () => () => {
       assetGeneration.current++;
       for (const asset of assets.values()) {
-        if (asset.element instanceof HTMLVideoElement) {
-          asset.element.pause();
-          asset.element.removeAttribute("src");
-          asset.element.load();
-        }
+        for (const video of [asset.element, asset.spare])
+          if (video instanceof HTMLVideoElement) {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+          }
         URL.revokeObjectURL(asset.url);
       }
       assets.clear();
@@ -182,34 +185,99 @@ export function useEditor(
   useEffect(() => {
     let raf = 0,
       lastUi = 0;
+    // The source videos that follow the main player (the clip's own picture).
+    const sourceVideos = () =>
+      [...assets.values()].filter(
+        (a) =>
+          a.element instanceof HTMLVideoElement &&
+          draw.current.project.media.some((m) => m.sourceVideo && assets.get(m.asset) === a),
+      );
+    let prepared = "";
+    /** Plays on from `next.in`: a split point simply continues; a jump uses the spare players when they are ready, else seeks. */
+    const continueAt = (player: HTMLAudioElement, next: EditClip) => {
+      if (Math.abs(player.currentTime - next.in) < 0.06) {
+        if (player.playbackRate !== next.rate) player.playbackRate = next.rate;
+        if (player.paused) void player.play().catch(() => {});
+        return player;
+      }
+      const swapped = engine.current?.cutTo(next.in, next.rate) ?? null;
+      if (!swapped) {
+        player.playbackRate = next.rate;
+        player.currentTime = next.in;
+        if (player.paused) void player.play().catch(() => {});
+        return player;
+      }
+      audio.current = swapped;
+      for (const asset of sourceVideos()) {
+        const spare = asset.spare,
+          shown = asset.element as HTMLVideoElement;
+        if (
+          !spare ||
+          spare.seeking ||
+          spare.readyState < HTMLMediaElement.HAVE_CURRENT_DATA ||
+          Math.abs(spare.currentTime - next.in) > 0.05
+        )
+          continue;
+        spare.playbackRate = next.rate;
+        void spare.play().catch(() => {});
+        shown.pause();
+        asset.element = spare;
+        asset.spare = shown;
+      }
+      prepared = "";
+      return swapped;
+    };
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
-      const player = audio.current,
-        clips = draw.current.project.clips;
+      let player = audio.current;
+      const clips = draw.current.project.clips;
       if (!player || !clips.length) return;
       const clip = clips[index.current] ?? clips[0];
       if (!clip) return;
+      const wrap = settings.current.looping && !settings.current.exporting;
+      const upcoming =
+        index.current + 1 < clips.length ? clips[index.current + 1] : wrap ? clips[0] : null;
+      // Shortly before a jump, the spare players wait at its first frame.
+      if (
+        upcoming &&
+        !player.paused &&
+        Math.abs(upcoming.in - clip.out) >= 0.06 &&
+        (clip.out - player.currentTime) / clip.rate < 1.5
+      ) {
+        const key = `${upcoming.id}@${upcoming.in}`;
+        if (prepared !== key) {
+          prepared = key;
+          engine.current?.prepareCut(upcoming.in, upcoming.rate);
+          for (const asset of sourceVideos()) {
+            if (!asset.spare) {
+              const spare = document.createElement("video");
+              spare.muted = true;
+              spare.playsInline = true;
+              spare.preload = "auto";
+              spare.src = asset.url;
+              asset.spare = spare;
+            }
+            if (!asset.spare.paused) asset.spare.pause();
+            if (Math.abs(asset.spare.currentTime - upcoming.in) > 0.01)
+              asset.spare.currentTime = upcoming.in;
+          }
+        }
+      }
       if (!player.paused && (player.currentTime >= clip.out - 0.015 || player.ended)) {
         if (index.current + 1 < clips.length) {
           index.current++;
-          const next = clips[index.current];
-          player.playbackRate = next.rate;
-          player.currentTime = next.in;
+          player = continueAt(player, clips[index.current]);
           ended.current = false;
-        } else if (settings.current.looping && !settings.current.exporting) {
+        } else if (wrap) {
           index.current = 0;
-          player.currentTime = clips[0].in;
-          player.playbackRate = clips[0].rate;
-          void player.play().catch(() => {});
+          player = continueAt(player, clips[0]);
         } else {
           player.pause();
           ended.current = true;
         }
       } else if (player.ended && index.current + 1 < clips.length) {
         index.current++;
-        player.currentTime = clips[index.current].in;
-        player.playbackRate = clips[index.current].rate;
-        void player.play().catch(() => {});
+        player = continueAt(player, clips[index.current]);
         ended.current = false;
       }
       const current = clips[index.current] ?? clips[0];
@@ -359,11 +427,12 @@ export function useEditor(
       if (!Number.isFinite(length) || length <= 0) throw new Error("Medya süresi okunamadı.");
       if (assets.has(id)) {
         const old = assets.get(id)!;
-        if (old.element instanceof HTMLVideoElement) {
-          old.element.pause();
-          old.element.removeAttribute("src");
-          old.element.load();
-        }
+        for (const video of [old.element, old.spare])
+          if (video instanceof HTMLVideoElement) {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+          }
         URL.revokeObjectURL(old.url);
       }
       assets.set(id, { file, url, element, duration: length });

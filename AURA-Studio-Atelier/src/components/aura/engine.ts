@@ -27,7 +27,11 @@ export class AudioEngine {
   private freq = new Uint8Array(0);
   private time = new Uint8Array(0);
   private audio: HTMLAudioElement | null = null;
-  private fileNode: MediaElementAudioSourceNode | null = null;
+  // Two players share the file: the one playing and a spare that waits,
+  // already positioned, at the next cut. A cut then switches players
+  // instead of seeking, which would stall the sound for a moment.
+  private spare: HTMLAudioElement | null = null;
+  private fileNodes = new Map<HTMLAudioElement, MediaElementAudioSourceNode>();
   private fileUrl: string | null = null;
   private fileName: string | null = null;
   private micStream: MediaStream | null = null;
@@ -101,9 +105,19 @@ export class AudioEngine {
     };
   }
   attach(audio: HTMLAudioElement): void {
-    this.detachAudio?.();
     this.audio = audio;
     audio.preload = "metadata";
+    if (!this.spare) {
+      this.spare = document.createElement("audio");
+      this.spare.preload = "auto";
+      (this.spare as HTMLMediaElement & { playsInline?: boolean }).playsInline = true;
+    }
+    this.listen(audio);
+  }
+
+  /** Moves the player events to `audio`, the player now in use. */
+  private listen(audio: HTMLAudioElement): void {
+    this.detachAudio?.();
     const handlers: Record<string, EventListener> = {
       loadedmetadata: () => {
         if (this.source === "file")
@@ -147,6 +161,50 @@ export class AudioEngine {
 
   setLoop(loop: boolean): void {
     if (this.audio) this.audio.loop = loop;
+    if (this.spare) this.spare.loop = loop;
+  }
+
+  /** Positions the spare player at `at` (source seconds) for the next cut. */
+  prepareCut(at: number, rate: number): void {
+    const spare = this.spare,
+      audio = this.audio;
+    if (!spare || !audio || this.source !== "file" || !audio.src) return;
+    if (spare.src !== audio.src) {
+      spare.src = audio.src;
+      spare.load();
+    }
+    if (!spare.paused) spare.pause();
+    if (spare.playbackRate !== rate) spare.playbackRate = rate;
+    if (Math.abs(spare.currentTime - at) > 0.01) spare.currentTime = at;
+  }
+
+  /**
+   * Continues from `at` on the spare player when it is ready there and
+   * returns it (it is the player in use from now on); null when the caller
+   * has to seek instead.
+   */
+  cutTo(at: number, rate: number): HTMLAudioElement | null {
+    const spare = this.spare,
+      audio = this.audio;
+    if (
+      !spare ||
+      !audio ||
+      this.source !== "file" ||
+      spare.src !== audio.src ||
+      spare.seeking ||
+      spare.readyState < HTMLMediaElement.HAVE_FUTURE_DATA ||
+      Math.abs(spare.currentTime - at) > 0.04
+    )
+      return null;
+    if (!this.fileNodes.has(spare)) this.connectFile(true);
+    this.listen(spare);
+    spare.loop = audio.loop;
+    spare.playbackRate = rate;
+    void spare.play().catch(() => {});
+    audio.pause();
+    this.audio = spare;
+    this.spare = audio;
+    return spare;
   }
 
   stop(): void {
@@ -276,6 +334,10 @@ export class AudioEngine {
       this.fileUrl = url;
       this.fileName = file.name;
       audio.src = url;
+      if (this.spare) {
+        this.spare.pause();
+        this.spare.src = url;
+      }
       this.connectFile(true);
       await this.waitForFile(audio);
       if (token !== this.op) return;
@@ -423,9 +485,10 @@ export class AudioEngine {
     this.detachAudio = null;
     this.stopDemo();
     this.stopMic();
-    if (this.audio) {
-      this.audio.pause();
-      this.audio.src = "";
+    for (const player of [this.audio, this.spare]) {
+      if (!player) continue;
+      player.pause();
+      player.src = "";
     }
     if (this.fileUrl) URL.revokeObjectURL(this.fileUrl);
     this.fileUrl = null;
@@ -435,7 +498,7 @@ export class AudioEngine {
     this.analyser = null;
     this.rhythmAnalyser = null;
     this.recordDest = null;
-    this.fileNode = null;
+    this.fileNodes.clear();
     this.input = null;
     this.editGain = null;
     this.monitor = null;
@@ -566,23 +629,28 @@ export class AudioEngine {
   }
 
   private connectFile(on: boolean): void {
-    const audio = this.audio;
     const ctx = this.ctx;
     const analyser = this.analyser;
-    if (!audio || !ctx || !analyser || !audio.src) return;
-    if (!this.fileNode) this.fileNode = ctx.createMediaElementSource(audio);
-    try {
-      this.fileNode.disconnect();
-    } catch {
-      /* already disconnected */
-    }
-    if (on) {
-      this.fileNode.connect(this.editGain!);
+    if (!ctx || !analyser) return;
+    // A paused player is silent, so both stay connected.
+    for (const player of [this.audio, this.spare]) {
+      if (!player?.src) continue;
+      let node = this.fileNodes.get(player);
+      if (!node) {
+        node = ctx.createMediaElementSource(player);
+        this.fileNodes.set(player, node);
+      }
+      try {
+        node.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+      if (on) node.connect(this.editGain!);
     }
   }
 
   private pauseFile(): void {
-    if (this.audio && !this.audio.paused) this.audio.pause();
+    for (const player of [this.audio, this.spare]) if (player && !player.paused) player.pause();
   }
 
   private stopMic(): void {

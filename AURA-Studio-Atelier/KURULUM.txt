@@ -1,4 +1,16 @@
-AURA Studio Atelier 2.3.1
+AURA Studio Atelier 2.3.2
+
+## 2.3.2 — kesimlerde takılmadan akan oynatma
+
+Kurgu oynatılırken her kesimde ses kısa bir an susuyor, görüntü donuyordu. Ölçülen nedenler ve düzeltmeler:
+
+- **Böl ile ayrılan yerler artık kesintisiz.** Klip yalnızca bölündüğünde (araya bir şey silinmeden) oynatıcı aynı yere gereksiz yere yeniden konumlanıyordu; bu, her bölme noktasında 120–170 ms'lik bir boşluk yaratıyordu. Kaynakta kaldığı yerden devam eden kesimlerde artık hiç konumlama yapılmıyor; hız değişse bile ses ve görüntü akmaya devam ediyor.
+- **Atlanan kesimlerde ikinci oynatıcı.** Arası silinmiş, sırası değiştirilmiş ya da Oto Kurgu ile oluşmuş kesimlerde, kesimden yaklaşık 1,5 sn önce ikinci bir ses oynatıcısı (videolarda ikinci bir görüntü oynatıcısı da) sonraki parçanın ilk karesinde hazır bekletiliyor. Kesim anında oynatma bu hazır oynatıcıya geçiyor; konumlama beklemesi ortadan kalkıyor. Hazırlık yetişmezse (örneğin kesimden hemen önce ileri sarıldıysa) eski yöntemle devam edilir.
+- Altyazılar, zaman çizelgesi, döngü ve ses efektleri hangi oynatıcının çaldığından bağımsız olarak aynı çalışır.
+
+### 2.3.2 doğrulaması
+
+Tarayıcıda 2 sn'de bir anahtar kareli 20 sn'lik bir test videosuyla ölçüldü. 2.3.1'de arası silinen iki kesimde ses 156 ve 162 ms, iki bölme noktasında 167 ve 118 ms kesildi; görüntü kesimlerde 122–191 ms dondu. 2.3.2'de kesimlerde hiç ses kesintisi ölçülmedi, bölme noktalarında görüntü atlaması kalmadı, kesim anındaki kare aralığı normal oynatmayla aynı düzeyde (bu yavaş test ortamında ~100 ms). Müzik projesinde de kesimlerde sessizlik ölçülmedi. Kesimlerden geçerken duraklatma, geri sarıp yeniden oynatma, zaman göstergesi, aralık araçları, Oto Kurgu, aralık döngüsü, Projelerim ve altyazı taşıma testleri ve 131 birim testi geçti. Dışa aktarma ayrıca denenmedi. Fiziksel telefonda denenmedi; telefonda donanım çözücüyle süreler farklı olabilir.
 
 ## 2.3.1 — altyazı animasyon önizlemesi baştan sona oynar
 
