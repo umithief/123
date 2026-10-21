@@ -5,6 +5,8 @@ import { Button } from "../ui/button";
 import { ChoiceStrip } from "./choice-strip";
 import { ui } from "./interface-copy";
 import type { useEditor } from "./use-editor";
+import { isPro } from "./pro-paint";
+import { ProBadge } from "./pro-badge";
 import {
   SCENE_TRANSITIONS,
   parseSceneTransition,
@@ -181,11 +183,19 @@ export function TransitionPanel({
             value={group}
             className="transition-categories"
           >
-            {["Tümü", ...new Set(SCENE_TRANSITIONS.map((t) => t.group))].map((g) => (
-              <button type="button" key={g} aria-pressed={g === group} onClick={() => setGroup(g)}>
-                {ui(g)}
-              </button>
-            ))}
+            {["Tümü", "Pro", ...new Set(SCENE_TRANSITIONS.map((t) => t.group))]
+              .filter((g, i, all) => all.indexOf(g) === i)
+              .map((g) => (
+                <button
+                  type="button"
+                  key={g}
+                  className={g === "Pro" ? "pro-chip" : undefined}
+                  aria-pressed={g === group}
+                  onClick={() => setGroup(g)}
+                >
+                  {ui(g)}
+                </button>
+              ))}
           </ChoiceStrip>
           <ChoiceStrip
             aria-label={ui("Sahne geçiş efektleri")}
@@ -196,10 +206,13 @@ export function TransitionPanel({
               <button
                 key={effect.id}
                 type="button"
+                data-pro={isPro(effect.id) || undefined}
+                title={"description" in effect ? ui(effect.description) : undefined}
                 aria-pressed={value.id === effect.id}
                 disabled={disabled}
                 onClick={() => set({ ...value, id: effect.id })}
               >
+                {isPro(effect.id) && <ProBadge />}
                 <TransitionPreview
                   type={effect.id}
                   before={thumbnails[previous?.id]?.at(-1)}

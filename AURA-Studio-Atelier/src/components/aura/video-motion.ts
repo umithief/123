@@ -1,5 +1,60 @@
 export const VIDEO_MOTIONS = [
   { id: "none", label: "Yok", group: "Temel", description: "Görüntüyü sabit tut" },
+  // AURA Pro: real motion blur, light and lens effects.
+  {
+    id: "pro-warp",
+    label: "Hız Bükülmesi",
+    group: "Pro",
+    description: "Işık hızından yavaşlayarak gelir; merkeze doğru hız bulanıklığı",
+  },
+  {
+    id: "pro-whip",
+    label: "Savrularak Gir",
+    group: "Pro",
+    description: "Kamera savrulması ve gerçek hareket bulanıklığıyla kadraja kilitlenir",
+  },
+  {
+    id: "pro-bloom",
+    label: "Işıltılı Doğuş",
+    group: "Pro",
+    description: "Beyaz ışıltının içinden netleşerek doğar",
+  },
+  {
+    id: "pro-prism",
+    label: "Prizma Vuruşu",
+    group: "Pro",
+    description: "Renk kanalları ayrışır, görüntü güçlü bir vuruşla yerine oturur",
+  },
+  {
+    id: "pro-depth",
+    label: "3D Derinlik",
+    group: "Pro",
+    description: "Derinlikten perspektifle dönerek öne çıkar",
+  },
+  {
+    id: "pro-burn",
+    label: "Film Yanığı",
+    group: "Pro",
+    description: "Sıcak film yanığı ışığıyla açılır",
+  },
+  {
+    id: "pro-vortex",
+    label: "Girdap",
+    group: "Pro",
+    description: "Dönme bulanıklığıyla girdaptan çıkar",
+  },
+  {
+    id: "pro-flare",
+    label: "Anamorfik Işık",
+    group: "Pro",
+    description: "Mavi sinema parlaması kadrajı tarar",
+  },
+  {
+    id: "pro-pulse",
+    label: "Bas Vuruşu",
+    group: "Pro",
+    description: "Karma için: ritimle atan zoom, ışıltı ve renk ayrışması",
+  },
   {
     id: "impact",
     label: "Ani Etki",
@@ -206,6 +261,21 @@ export type MotionFrame = {
   reveal: number;
   perspective: number;
   axis: "x" | "y";
+  /** Pro: radial zoom blur (0..1). */
+  zoomBlur: number;
+  /** Pro: directional motion blur, as a share of the frame. */
+  streakX: number;
+  streakY: number;
+  /** Pro: rotational blur in radians. */
+  spinBlur: number;
+  /** Pro: true colour-channel separation (0..1). */
+  chroma: number;
+  /** Pro: highlight glow (0..1). */
+  bloom: number;
+  /** Pro: film-burn light (0..1). */
+  burn: number;
+  /** Pro: anamorphic flare (0..1). */
+  flare: number;
 };
 export const identityMotion = (): MotionFrame => ({
   x: 0,
@@ -227,6 +297,14 @@ export const identityMotion = (): MotionFrame => ({
   reveal: 1,
   perspective: 0,
   axis: "x",
+  zoomBlur: 0,
+  streakX: 0,
+  streakY: 0,
+  spinBlur: 0,
+  chroma: 0,
+  bloom: 0,
+  burn: 0,
+  flare: 0,
 });
 export function motionEffect(
   id: VideoMotionId,
@@ -243,7 +321,54 @@ export function motionEffect(
     reveal = 1 - a;
   if (a < 1e-8) return f;
   const oscillate = (speed: number) => Math.sin(p * Math.PI * speed);
-  if (id === "fade") f.opacity = reveal;
+  if (id === "pro-warp") {
+    f.scale = 1 + a * 1.4;
+    f.zoomBlur = a * 0.9;
+    f.chroma = a * 0.5;
+    f.brightness = 1 + a * 0.35;
+    f.opacity = Math.min(1, reveal * 3);
+  } else if (id === "pro-whip") {
+    f.x = a * 0.9;
+    f.streakX = a * 0.45;
+    f.rotation = a * 0.04;
+    f.scale = 1 + a * 0.06;
+  } else if (id === "pro-bloom") {
+    f.bloom = a;
+    f.brightness = 1 + a * 1.3;
+    f.blur = a * 5;
+    f.scale = 1 + a * 0.08;
+  } else if (id === "pro-prism") {
+    f.chroma = a;
+    f.scale = 1 + a * 0.22;
+    f.x = oscillate(9) * a * 0.02;
+    f.zoomBlur = a * 0.25;
+    f.flash = a * 0.15;
+  } else if (id === "pro-depth") {
+    f.perspective = -a * 0.42;
+    f.scale = 1 - a * 0.3;
+    f.rotation = a * 0.06;
+    f.brightness = 1 - a * 0.45;
+    f.opacity = Math.min(1, reveal * 2.5);
+    f.zoomBlur = a * 0.15;
+  } else if (id === "pro-burn") {
+    f.burn = a;
+    f.brightness = 1 + a * 0.5;
+    f.opacity = 1 - a * 0.55;
+  } else if (id === "pro-vortex") {
+    f.rotation = -a * Math.PI * 0.9;
+    f.scale = 1 - a * 0.65;
+    f.spinBlur = a * 0.7;
+    f.opacity = Math.min(1, reveal * 2);
+  } else if (id === "pro-flare") {
+    f.flare = a;
+    f.brightness = 1 + a * 0.3;
+    f.bloom = a * 0.4;
+  } else if (id === "pro-pulse") {
+    f.scale = 1 + a * 0.12;
+    f.zoomBlur = a * 0.3;
+    f.bloom = a * 0.35;
+    f.chroma = a * 0.25;
+  } else if (id === "fade") f.opacity = reveal;
   else if (id === "zoom-in") {
     f.scale = 1 - a * 0.55;
     f.opacity = reveal;
@@ -351,6 +476,14 @@ function combine(a: MotionFrame, b: MotionFrame): MotionFrame {
     reveal: b.mask === "none" ? a.reveal : b.reveal,
     perspective: a.perspective + b.perspective,
     axis: b.perspective ? b.axis : a.axis,
+    zoomBlur: Math.max(a.zoomBlur, b.zoomBlur),
+    streakX: a.streakX + b.streakX,
+    streakY: a.streakY + b.streakY,
+    spinBlur: Math.max(a.spinBlur, b.spinBlur),
+    chroma: Math.max(a.chroma, b.chroma),
+    bloom: Math.max(a.bloom, b.bloom),
+    burn: Math.max(a.burn, b.burn),
+    flare: Math.max(a.flare, b.flare),
   };
 }
 export function videoMotionAt(

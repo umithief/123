@@ -175,6 +175,65 @@ Döngüde oynat|Play on loop
 Döngüyü durdur|Stop loop
 Sil|Delete
 Ekranda|On screen
+Pro|Pro
+AURA Pro|AURA Pro
+Efekt koleksiyonu|Effect collection
+Görüntü efektleri|Image effects
+Kamçı Savrulma|Whip Pan
+Hız Tüneli|Hyper Tunnel
+Merkeze doğru ışık hızında çekilip yeni sahneden çıkar|Pulled into the centre at light speed, out through the new shot
+Film Yanığı|Film Burn
+Mürekkep Yayılımı|Ink Bloom
+Yeni sahne yumuşak kenarlı mürekkep lekeleri gibi yayılır|The new shot spreads like soft-edged drops of ink
+Cam Kırılması|Shattered Glass
+Kare parlayan cam parçalarına ayrılıp dağılır|The frame breaks into glinting shards of glass
+Girdap|Vortex
+Dönme bulanıklığıyla kendi etrafında savrularak geçiş|A spin-blurred turn into the next shot
+3D Küp|3D Cube
+Gerçek perspektifle dönen küpün diğer yüzüne geçiş|Turns to the cube's next face in true perspective
+Işık Akışı|Light Flow
+Yeni sahne önce en parlak yerlerden süzülerek belirir|The new shot seeps in through the brightest areas first
+Anamorfik Parlama|Anamorphic Flare
+Mavi sinema parlaması kareyi yatay keser|A blue cinema flare cuts across the frame
+Işıltılı Çözülme|Bloom Dissolve
+Görüntü parlak bir ışıltıda erir ve yeniden netleşir|The picture melts into a bright glow and resolves again
+Kayan Paneller|Sliding Panels
+Yeni sahne kademeli panellerle hızla yerine kayar|The new shot slides in fast in staggered panels
+Veri Bozulması|Data Corruption
+Renk kanalları ayrılır, bloklar kayar, sinyal yeni sahneye atlar|Colour channels tear, blocks slip and the signal jumps to the new shot
+Kamera hızla savrulur; hareket bulanıklığıyla yeni sahneye kilitlenir|The camera whips away and locks onto the new shot with motion blur
+Sıcak film yanığı kareyi kaplar, yeni sahne ışığın içinden doğar|A warm film burn floods the frame; the new shot rises out of the light
+Hız Bükülmesi|Speed Warp
+Işık hızından yavaşlayarak gelir; merkeze doğru hız bulanıklığı|Arrives from light speed with a radial speed blur
+Savrularak Gir|Whip In
+Kamera savrulması ve gerçek hareket bulanıklığıyla kadraja kilitlenir|Whips into frame with real motion blur
+Işıltılı Doğuş|Bloom Rise
+Beyaz ışıltının içinden netleşerek doğar|Resolves out of a white glow
+Prizma Vuruşu|Prism Punch
+Renk kanalları ayrışır, görüntü güçlü bir vuruşla yerine oturur|Colour channels split as the picture punches into place
+3D Derinlik|3D Depth
+Derinlikten perspektifle dönerek öne çıkar|Swings forward out of depth in perspective
+Sıcak film yanığı ışığıyla açılır|Opens through warm film-burn light
+Dönme bulanıklığıyla girdaptan çıkar|Spins out of a vortex with rotational blur
+Anamorfik Işık|Anamorphic Light
+Mavi sinema parlaması kadrajı tarar|A blue cinema flare sweeps the frame
+Bas Vuruşu|Bass Hit
+Karma için: ritimle atan zoom, ışıltı ve renk ayrışması|For combos: a beating zoom with glow and colour split
+Parlak noktalardan uzanan mavi sinema çizgileri|Blue cinema streaks stretching from the highlights
+Sinematik Parıltı|Cinematic Bloom
+Işıklar yumuşak ve sıcak bir parıltıyla taşar|Lights spill over in a soft, warm glow
+Film Halasyonu|Film Halation
+Analog filmdeki kırmızı ışık halesi, ince tane ve vinyet|The red halo of analogue film, fine grain and a vignette
+Lens Kırılması|Lens Dispersion
+Kenarlara doğru açılan gerçek renk sapması|Real chromatic aberration opening towards the edges
+Işık Hüzmeleri|God Rays
+Parlak bölgelerden yayılan hacimli ışık huzmeleri|Volumetric light rays from the bright areas
+Neon Rüya|Neon Dream
+Pembe ve camgöbeği iki tonlu neon görünüm, ışıltıyla|A pink and cyan neon duotone with glow
+VHS Kaset|VHS Tape
+Renk kayması, takip parazitleri ve kayıt ekranı|Colour bleed, tracking noise and the recorder display
+Sinemaskop|CinemaScope
+Sinema bantları (yatayda 2.39:1), camgöbeği gölgeler ve sıcak ışıklar|Cinema bars (2.39:1 in landscape), teal shadows and warm lights
 Kare hızı|Frame rate
 30 fps · Standart|30 fps · Standard
 60 fps · Daha akıcı|60 fps · Smoother

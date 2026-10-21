@@ -15,6 +15,8 @@ import {
 } from "./video-motion";
 import { paintVideoMotion } from "./video-motion-paint";
 import { searchText } from "./search";
+import { isPro } from "./pro-paint";
+import { ProBadge } from "./pro-badge";
 
 type Editor = ReturnType<typeof useEditor>;
 const SECTIONS = [
@@ -22,7 +24,7 @@ const SECTIONS = [
   { id: "out", label: "Çıkış" },
   { id: "combo", label: "Karma" },
 ] as const;
-const GROUPS = ["Trend", "Temel", "Işık", "Arıza", "Maske", "3D", "Titreşim", "Tümü"];
+const GROUPS = ["Trend", "Pro", "Temel", "Işık", "Arıza", "Maske", "3D", "Titreşim", "Tümü"];
 const seconds = (value: number) =>
   `${value.toLocaleString("tr-TR", { maximumFractionDigits: 2 })} sn`;
 
@@ -413,7 +415,12 @@ export function VideoMotionPanel({
           aria-label={ui("Video animasyon kategorileri")}
         >
           {GROUPS.map((name) => (
-            <Button key={name} aria-pressed={group === name} onClick={() => setGroup(name)}>
+            <Button
+              key={name}
+              className={name === "Pro" ? "pro-chip" : undefined}
+              aria-pressed={group === name}
+              onClick={() => setGroup(name)}
+            >
               {ui(name)}
             </Button>
           ))}
@@ -454,6 +461,7 @@ export function VideoMotionPanel({
             key={preset.id}
             data-motion={preset.id}
             className="video-motion-preset"
+            data-pro={isPro(preset.id) || undefined}
             aria-label={ui(preset.label)}
             aria-pressed={setting.id === preset.id}
             title={ui(preset.description)}
@@ -467,6 +475,7 @@ export function VideoMotionPanel({
               amount={motion.amount}
               selected={setting.id === preset.id}
             />
+            {isPro(preset.id) && <ProBadge />}
             <span>{ui(preset.label)}</span>
           </Button>
         ))}

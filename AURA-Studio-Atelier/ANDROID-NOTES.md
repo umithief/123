@@ -1,5 +1,21 @@
 # AURA Studio Android
 
+## 2.5.0 — AURA Pro: premium geçişler, animasyonlar ve efektler
+
+Pro kullanıcılar için yeni bir koleksiyon. Her Pro öğe altın **PRO** rozetiyle işaretli. Geçiş, animasyon ve efekt seçicilerinde altın **Pro** sekmesi yalnızca bu koleksiyonu gösterir; geçiş listesinde Pro geçişler en başta yer alır. Sıradan kaydırma ve solmalardan farklı olarak gerçek hareket bulanıklığı (görüntünün yumuşak kopyalarının ortalaması), renk kanallarının ayrılması, görüntünün kendi parlak noktalarından üretilen ışık ve gerçek perspektif kullanır.
+
+**12 Pro geçiş:** Kamçı Savrulma (hızlanıp yavaşlayan kamera savrulması, hızla artan bulanıklık), Hız Tüneli (merkeze ışınsal hız bulanıklığı ve beyaz sıcak çekirdek), Film Yanığı (titreşen sıcak film yanığı ışığı), Veri Bozulması (RGB ayrışması, kayan bloklar, iki sahne arasında sinyal atlaması), Mürekkep Yayılımı (yumuşak kenarlı, organik mürekkep lekeleri), Cam Kırılması (merkezden yayılan çatlaklar ve dönerek düşen parlak cam parçaları), Girdap (dönme bulanıklığı), 3D Küp (gerçek perspektifle dönen küp, yüzey gölgelemesi), Işık Akışı (yeni sahne önce en parlak yerlerden süzülür), Anamorfik Parlama (yatay mavi sinema parlaması ve lens hayaletleri), Işıltılı Çözülme (parlak ışıltıda erime) ve Kayan Paneller (kademeli, hareket bulanıklıklı paneller).
+
+**9 Pro animasyon:** giriş, çıkış ve karma olarak kullanılabilir. Hız Bükülmesi, Savrularak Gir, Işıltılı Doğuş, Prizma Vuruşu, 3D Derinlik, Film Yanığı, Girdap, Anamorfik Işık ve karma için Bas Vuruşu. Bunun için animasyon motoruna yeni kontroller eklendi: ışınsal, yönlü ve dönme bulanıklığı, gerçek renk ayrışması, ışıltı, film yanığı ve anamorfik parlama.
+
+**8 Pro efekt:** Anamorfik Işık (parlak noktalardan yatay mavi çizgiler), Sinematik Parıltı, Film Halasyonu (kırmızı hale, tane, vinyet), Lens Kırılması (kenarlara doğru gerçek renk sapması), Işık Hüzmeleri, Neon Rüya (pembe-camgöbeği iki ton ve ışıltı), VHS Kaset (renk kayması, takip parazitleri ve "PLAY ▶" kayıt ekranı) ve Sinemaskop (sinema bantları, camgöbeği gölgeler, sıcak ışıklar). Efektler artık yazılı düğmeler yerine videonun kendi karesi üzerinde canlı önizlemeli kartlarla seçilir.
+
+Pro öğeler önizlemede ve dışa aktarılan videoda aynı görünür ve proje dosyasıyla saklanır. Ağır işler (bulanıklık, ışıltı) küçük boyutta hesaplanıp büyütülür; ara görüntüler videonun gerçek çözünürlüğünde çizilir, böylece görüntü netliğini kaybetmez. Bu sürümde Pro öğeler herkese açıktır: satın alma (Google Play faturalandırma) bağlı değildir, kilit henüz yoktur.
+
+### 2.5.0 doğrulaması
+
+TypeScript ve 140 AURA birim testi geçti (5 yeni test: Pro sayıları, adlar ve açıklamalar; Pro geçişlerin listede önce gelmesi ve proje kaydı; her Pro animasyonun giriş, çıkış ve karma olarak çalışıp sonunda görüntüyü olduğu gibi bırakması; yeni bulanıklık, renk ve ışık kontrolleri; Pro efektlerin proje dosyasında korunması). Her Pro geçiş, animasyon ve efekt ara karelerde görsel olarak incelendi; tuval çizim süreleri ölçülüp ağır olanlar (Mürekkep 164→31 ms, 3D Derinlik 167→23 ms, yazılımsal çizimde) hafifletildi. Uygulamada telefon ve masaüstünde üç galerinin Pro sekmeleri ve seçimleri denendi; Pro geçiş + Pro animasyon + Pro efekt içeren beş proje dışa aktarılıp karelerinde 3D Küp, Cam Kırılması, Mürekkep, Veri Bozulması, Anamorfik Parlama, Hız Bükülmesi, Savrularak Gir ve efektler doğrulandı. Önceki ekran turu, Projelerim, kesim geçişi, Oto Kurgu, altyazı ve 60 fps dışa aktarma testleri yeniden geçti. Fiziksel telefonda denenmedi; bu ortamda ekran kartı yoktu, telefonda çizim çok daha hızlı olmalıdır.
+
 ## 2.4.1 — dışa aktarılan videoda cızırtısız ses
 
 Dışa aktarılan videoların sesinde cızırtı oluyordu. Neden: ses, uygulamanın ses motorundan ikinci bir ses sistemine bir medya akışıyla aktarılıp orada kaydediliyordu. Cihaz meşgulken (60 fps çizim, kesimlerde oynatıcı geçişi) bu aktarım 10 ms'lik ses bloklarını düşürüyordu; arka arkaya gelen bu kısa kopmalar cızırtı olarak duyuluyordu.

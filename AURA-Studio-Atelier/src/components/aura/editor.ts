@@ -23,6 +23,47 @@ export const VIDEO_EFFECTS = [
   { id: "frame", label: "Film çerçevesi", description: "İnce sinema çerçevesi" },
   { id: "dream", label: "Rüya parıltısı", description: "Yumuşak ışık ve atmosfer" },
   { id: "prism", label: "Prizma ışığı", description: "Renkli ve hareketli yansımalar" },
+  // AURA Pro: lens, light and film looks built from the picture's own highlights.
+  {
+    id: "pro-anamorphic",
+    label: "Anamorfik Işık",
+    description: "Parlak noktalardan uzanan mavi sinema çizgileri",
+  },
+  {
+    id: "pro-bloom",
+    label: "Sinematik Parıltı",
+    description: "Işıklar yumuşak ve sıcak bir parıltıyla taşar",
+  },
+  {
+    id: "pro-halation",
+    label: "Film Halasyonu",
+    description: "Analog filmdeki kırmızı ışık halesi, ince tane ve vinyet",
+  },
+  {
+    id: "pro-chroma",
+    label: "Lens Kırılması",
+    description: "Kenarlara doğru açılan gerçek renk sapması",
+  },
+  {
+    id: "pro-rays",
+    label: "Işık Hüzmeleri",
+    description: "Parlak bölgelerden yayılan hacimli ışık huzmeleri",
+  },
+  {
+    id: "pro-neon",
+    label: "Neon Rüya",
+    description: "Pembe ve camgöbeği iki tonlu neon görünüm, ışıltıyla",
+  },
+  {
+    id: "pro-vhs",
+    label: "VHS Kaset",
+    description: "Renk kayması, takip parazitleri ve kayıt ekranı",
+  },
+  {
+    id: "pro-scope",
+    label: "Sinemaskop",
+    description: "Sinema bantları (yatayda 2.39:1), camgöbeği gölgeler ve sıcak ışıklar",
+  },
 ] as const;
 export type EditClip = {
   transition?: SceneTransition;

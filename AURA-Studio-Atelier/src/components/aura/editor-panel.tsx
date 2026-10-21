@@ -36,6 +36,7 @@ import {
   type Overlay,
 } from "./editor";
 import { CAPTION_FONTS } from "./captions";
+import { EffectGallery } from "./effect-gallery";
 import { formatTime } from "./studio-panels";
 type Editor = ReturnType<typeof useEditor>;
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -1170,14 +1171,9 @@ export function AdjustmentPanel({ editor: e, disabled }: { editor: Editor; disab
           onChange={(filter) => change({ filter: filter as Adjustment["filter"] })}
         />
       </div>
-      <div hidden={section !== "Efektler"}>
-        <ChoicePicker
-          label={ui("Görüntü efekti")}
-          value={a.effect}
-          options={VIDEO_EFFECTS}
-          onChange={(effect) => change({ effect: effect as Adjustment["effect"] })}
-        />
-      </div>
+      {section === "Efektler" && (
+        <EffectGallery value={a.effect} onChange={(effect) => change({ effect })} />
+      )}
       {section === "Efektler" && a.effect !== "none" && (
         <>
           <p className="editor-note">

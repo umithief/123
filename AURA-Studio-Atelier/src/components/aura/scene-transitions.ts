@@ -1,6 +1,10 @@
 import type { EditClip } from "./editor.ts";
+import { PRO_TRANSITIONS, paintProTransition } from "./pro-transitions.ts";
+import { isPro } from "./pro-paint.ts";
 export const SCENE_TRANSITIONS = [
   { id: "none", label: "Yok", group: "Temel" },
+  // AURA Pro: premium transitions, first in the list and in their own collection.
+  ...PRO_TRANSITIONS.map((t) => ({ ...t, group: "Pro" as const })),
   { id: "dissolve", label: "Çapraz çözülme", group: "Temel" },
   { id: "fade-black", label: "Siyaha geçiş", group: "Temel" },
   { id: "fade-white", label: "Beyaza geçiş", group: "Işık" },
@@ -61,6 +65,10 @@ export function paintSceneTransition(
   w: number,
   h: number,
 ) {
+  if (isPro(type)) {
+    paintProTransition(ctx, outgoing, incoming, type, progress, w, h);
+    return;
+  }
   const p = Math.max(0, Math.min(1, progress)),
     ease = p * p * (3 - 2 * p);
   ctx.save();
