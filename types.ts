@@ -119,6 +119,9 @@ export interface UserBike {
   isPublic?: boolean;
 }
 
+// Profil fotoğrafı etrafındaki animasyonlu motosiklet çerçeveleri
+export type ProfileFrameId = 'none' | 'tachometer' | 'tire' | 'led-halo' | 'chain' | 'brake-disc' | 'exhaust' | 'checkered';
+
 export interface User {
   id: string;
   name: string;
@@ -134,6 +137,7 @@ export interface User {
   bio?: string;
   followers?: number;
   following?: number;
+  profileFrame?: ProfileFrameId;
 }
 
 export interface OrderItem {

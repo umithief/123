@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Package, Settings, Bike, LogOut, MapPin, Calendar, Image as ImageIcon, Heart, MessageSquare, Share2, MoreHorizontal, Grid, X, Plus, Trophy, TrendingUp, Zap, Shield, Flag, Users, Camera, Edit3, LayoutDashboard } from 'lucide-react';
+import { User, Package, Settings, Bike, LogOut, MapPin, Calendar, Image as ImageIcon, Heart, MessageSquare, Share2, MoreHorizontal, Grid, X, Plus, Trophy, TrendingUp, Zap, Shield, Flag, Users, Camera, Edit3, LayoutDashboard, Lock, Sparkles } from 'lucide-react';
 import { User as UserType, Order, ViewState, ColorTheme, UserBike as UserBikeType, SocialPost } from '../types';
 import { Button } from './ui/Button';
 import { orderService } from '../services/orderService';
 import { authService } from '../services/auth';
 import { storageService } from '../services/storageService';
 import { UserAvatar } from './ui/UserAvatar';
+import { ProfileFrame, PROFILE_FRAMES, DEFAULT_PROFILE_FRAME, isProfileFrameUnlocked } from './ui/ProfileFrame';
 import { BikeDetailModal } from './BikeDetailModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { notify } from '../services/notificationService';
@@ -66,7 +67,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
       name: user.name,
       bio: user.bio || '',
       location: user.address || '',
-      phone: user.phone || ''
+      phone: user.phone || '',
+      profileFrame: user.profileFrame || DEFAULT_PROFILE_FRAME
   });
 
   const nextRankPoints = user.points < 200 ? 200 : user.points < 1000 ? 1000 : 5000;
@@ -87,7 +89,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
           name: user.name,
           bio: user.bio || '',
           location: user.address || '',
-          phone: user.phone || ''
+          phone: user.phone || '',
+          profileFrame: user.profileFrame || DEFAULT_PROFILE_FRAME
       });
       if (user.garage) setMyBikes(user.garage);
   }, [user]);
@@ -107,7 +110,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
               name: editForm.name,
               bio: editForm.bio,
               address: editForm.location,
-              phone: editForm.phone
+              phone: editForm.phone,
+              profileFrame: editForm.profileFrame
           });
           onUpdateUser(updatedUser);
           setIsEditModalOpen(false);
@@ -191,29 +195,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                 <div className="bg-white/90 backdrop-blur-xl border border-gray-200 rounded-3xl p-6 md:p-8 shadow-xl flex flex-col md:flex-row gap-8 items-start md:items-center relative overflow-hidden">
                     
                     <div className="relative flex-shrink-0 mx-auto md:mx-0">
-                        <div className="relative w-32 h-32 md:w-40 md:h-40 group">
-                            <svg className="w-full h-full rotate-[-90deg] drop-shadow-md" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="48" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-                                <circle 
-                                    cx="50" cy="50" r="48" fill="none" stroke="url(#gradient)" strokeWidth="4" 
-                                    strokeDasharray="301.59" 
-                                    strokeDashoffset={301.59 * (1 - progressPercent / 100)} 
-                                    strokeLinecap="round"
-                                    className="transition-all duration-1000 ease-out"
-                                />
-                                <defs>
-                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" stopColor="#F2A619" />
-                                        <stop offset="100%" stopColor="#ef4444" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                            
-                            <div className="absolute inset-1.5 rounded-full overflow-hidden border-4 border-white group-hover:scale-95 transition-transform duration-300 shadow-inner">
-                                <UserAvatar name={user.name} size={150} className="w-full h-full" />
-                            </div>
-                            
-                            <div className="absolute -bottom-2 -right-2 bg-white p-1 rounded-full shadow-md">
+                        <div className="relative w-40 h-40 md:w-48 md:h-48">
+                            <ProfileFrame frame={user.profileFrame} progress={progressPercent} className="w-full h-full drop-shadow-md">
+                                <UserAvatar name={user.name} size={150} />
+                            </ProfileFrame>
+
+                            <div className="absolute bottom-0 right-0 bg-white p-1 rounded-full shadow-md">
                                 <div className="bg-gradient-to-r from-moto-accent to-red-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-sm flex flex-col items-center leading-none">
                                     <span className="text-[8px] opacity-80 mb-0.5">LVL</span>
                                     {Math.floor(user.points / 100)}
@@ -620,7 +607,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                 <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="bg-white border border-gray-200 rounded-3xl w-full max-w-lg p-6 shadow-2xl"
+                    className="bg-white border border-gray-200 rounded-3xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
                 >
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Edit3 className="w-5 h-5 text-moto-accent"/> {t('profile.edit_profile')}</h2>
@@ -647,6 +634,39 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                             </div>
                         </div>
                         
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
+                            <h4 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2"><Sparkles className="w-4 h-4"/> Profil Çerçevesi</h4>
+                            <p className="text-xs text-gray-500 mb-4">Rütben yükseldikçe yeni çerçevelerin kilidi açılır.</p>
+                            <div className="grid grid-cols-4 gap-2">
+                                {PROFILE_FRAMES.map(option => {
+                                    const unlocked = isProfileFrameUnlocked(option, user);
+                                    const selected = editForm.profileFrame === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            type="button"
+                                            disabled={!unlocked}
+                                            onClick={() => setEditForm({...editForm, profileFrame: option.id})}
+                                            title={unlocked ? option.description : `${option.rank} rütbesinde açılır`}
+                                            className={`relative flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+                                                selected ? 'border-moto-accent bg-white shadow-sm' : 'border-transparent hover:bg-white hover:border-gray-200'
+                                            } ${unlocked ? '' : 'opacity-50 grayscale cursor-not-allowed'}`}
+                                        >
+                                            <ProfileFrame frame={option.id} progress={progressPercent} size={60}>
+                                                <UserAvatar name={editForm.name || user.name} size={60} />
+                                            </ProfileFrame>
+                                            <span className="text-[10px] font-bold text-gray-700 text-center leading-tight">{option.name}</span>
+                                            {!unlocked && (
+                                                <span className="absolute top-1.5 right-1.5 bg-gray-900 text-white rounded-full p-1">
+                                                    <Lock className="w-2.5 h-2.5" />
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
                         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mt-4">
                             <h4 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2"><Settings className="w-4 h-4"/> Uygulama Ayarları</h4>
                             <div className="grid grid-cols-7 gap-2">

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, UserBike } from '../types';
 import { UserAvatar } from './ui/UserAvatar';
+import { ProfileFrame } from './ui/ProfileFrame';
 import { Trophy, Calendar, MapPin, Bike, UserPlus, MessageCircle, Share2, Grid, ArrowLeft, Shield, Eye } from 'lucide-react';
 import { Button } from './ui/Button';
 import { motion } from 'framer-motion';
@@ -24,6 +25,9 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({ user, onBack, curr
     const [isFollowing, setIsFollowing] = useState(false);
     const [garage, setGarage] = useState<UserBike[]>(user.garage || []);
     const [selectedBike, setSelectedBike] = useState<UserBike | null>(null);
+
+    const nextRankPoints = user.points < 200 ? 200 : user.points < 1000 ? 1000 : 5000;
+    const rankProgress = Math.min(100, (user.points / nextRankPoints) * 100);
 
     useEffect(() => {
         // If user has no garage data (mock users), give them some cool bikes for display
@@ -68,10 +72,12 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({ user, onBack, curr
                         <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 gap-6">
                             {/* Avatar */}
                             <div className="relative">
-                                <div className="p-2 bg-white dark:bg-[#111] rounded-full">
-                                    <UserAvatar name={user.name} size={128} className="shadow-2xl" />
+                                <div className="p-1.5 bg-white dark:bg-[#111] rounded-full shadow-2xl">
+                                    <ProfileFrame frame={user.profileFrame} progress={rankProgress} size={160}>
+                                        <UserAvatar name={user.name} size={128} />
+                                    </ProfileFrame>
                                 </div>
-                                <div className="absolute bottom-4 right-4 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-[#111] flex items-center justify-center shadow-md" title="Çevrimiçi"></div>
+                                <div className="absolute bottom-5 right-5 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-[#111] flex items-center justify-center shadow-md" title="Çevrimiçi"></div>
                             </div>
 
                             {/* Info */}
