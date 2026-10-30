@@ -6,6 +6,8 @@ import { DEFAULT_ADJUST, VIDEO_EFFECTS, type Adjustment } from "./editor";
 import { paintVideoEffect } from "./video-effects";
 import { isPro } from "./pro-paint";
 import { ProBadge } from "./pro-badge";
+import { useFavorites } from "./favorites";
+import { FavoriteMark, FavoriteToggle } from "./favorite-toggle";
 
 const TILE_W = 96,
   TILE_H = 128;
@@ -112,24 +114,57 @@ export function EffectGallery({
   onChange: (effect: Adjustment["effect"]) => void;
 }) {
   const sample = useSample();
-  const [group, setGroup] = useState<"all" | "pro">("all");
-  const items = [
-    VIDEO_EFFECTS[0],
-    ...VIDEO_EFFECTS.filter((e) => isPro(e.id)),
-    ...VIDEO_EFFECTS.filter((e) => e.id !== "none" && !isPro(e.id)),
-  ].filter((e) => group === "all" || isPro(e.id) || e.id === "none");
+  const [group, setGroup] = useState<"all" | "pro" | "favorites" | "recent">("all");
+  const fav = useFavorites("effects", (id) =>
+    VIDEO_EFFECTS.some((e) => e.id === id && id !== "none"),
+  );
+  const shown =
+    (group === "favorites" && !fav.favorites.length) || (group === "recent" && !fav.recent.length)
+      ? "all"
+      : group;
+  const listed = (ids: string[]) => ids.flatMap((id) => VIDEO_EFFECTS.filter((e) => e.id === id));
+  const items =
+    shown === "favorites"
+      ? [VIDEO_EFFECTS[0], ...listed(fav.favorites)]
+      : shown === "recent"
+        ? [VIDEO_EFFECTS[0], ...listed(fav.recent)]
+        : [
+            VIDEO_EFFECTS[0],
+            ...VIDEO_EFFECTS.filter((e) => isPro(e.id)),
+            ...VIDEO_EFFECTS.filter((e) => e.id !== "none" && !isPro(e.id)),
+          ].filter((e) => shown === "all" || isPro(e.id) || e.id === "none");
+  const selected = VIDEO_EFFECTS.find((e) => e.id === value);
   return (
     <section className="effect-gallery-wrap" aria-label={ui("Görüntü efekti")}>
       <div className="effect-gallery-head">
         <h4>{ui("Görüntü efekti")}</h4>
-        <ChoiceStrip aria-label={ui("Efekt koleksiyonu")} value={group} className="choice-chips">
-          <button type="button" aria-pressed={group === "all"} onClick={() => setGroup("all")}>
+        <ChoiceStrip aria-label={ui("Efekt koleksiyonu")} value={shown} className="choice-chips">
+          <button type="button" aria-pressed={shown === "all"} onClick={() => setGroup("all")}>
             {ui("Tümü")}
           </button>
+          {fav.favorites.length > 0 && (
+            <button
+              type="button"
+              className="favorite-chip"
+              aria-pressed={shown === "favorites"}
+              onClick={() => setGroup("favorites")}
+            >
+              {ui("Favoriler")}
+            </button>
+          )}
+          {fav.recent.length > 0 && (
+            <button
+              type="button"
+              aria-pressed={shown === "recent"}
+              onClick={() => setGroup("recent")}
+            >
+              {ui("Son kullanılan")}
+            </button>
+          )}
           <button
             type="button"
             className="pro-chip"
-            aria-pressed={group === "pro"}
+            aria-pressed={shown === "pro"}
             onClick={() => setGroup("pro")}
           >
             {ui("Pro")}
@@ -145,14 +180,28 @@ export function EffectGallery({
             data-pro={isPro(effect.id) || undefined}
             aria-pressed={value === effect.id}
             title={ui(effect.description)}
-            onClick={() => onChange(effect.id)}
+            onClick={() => {
+              onChange(effect.id);
+              fav.use(effect.id);
+            }}
           >
             <EffectTile sample={sample} id={effect.id} animated={value === effect.id} />
             {isPro(effect.id) && <ProBadge />}
+            {fav.isFavorite(effect.id) && <FavoriteMark />}
             <span>{ui(effect.label)}</span>
           </button>
         ))}
       </ChoiceStrip>
+      {value !== "none" && selected && (
+        <div className="effect-gallery-selected">
+          <span>{ui(selected.label)}</span>
+          <FavoriteToggle
+            active={fav.isFavorite(value)}
+            label={selected.label}
+            onToggle={() => fav.toggle(value)}
+          />
+        </div>
+      )}
     </section>
   );
 }

@@ -175,6 +175,23 @@ Döngüde oynat|Play on loop
 Döngüyü durdur|Stop loop
 Sil|Delete
 Ekranda|On screen
+Akıcı önizleme|Smooth preview
+Açık · dışa aktarma tam kalite|On · exports stay full quality
+Düzenlerken görüntüyü daha küçük çizer; dışa aktarma tam kalitede kalır.|Draws a smaller picture while editing; exports stay full quality.
+Önizleme takılıyor mu?|Is the preview stuttering?
+Akıcı önizlemeyi aç|Turn on smooth preview
+Favoriler|Favourites
+Son kullanılan|Recently used
+Favorilere ekle|Add to favourites
+Favorilerden çıkar|Remove from favourites
+Tüm kliplere uygula|Apply to all clips
+Klip silindi|Clip deleted
+Aralık çıkarıldı|Range removed
+Yalnızca işaretli aralık tutuldu|Kept only the marked range
+Oto kurgu uygulandı|Auto edit applied
+Geçiş tüm aralıklara uygulandı|Transition applied to every cut
+Tüm geçişler kaldırıldı|All transitions removed
+Animasyon tüm kliplere uygulandı|Animation applied to all clips
 Pro|Pro
 AURA Pro|AURA Pro
 Efekt koleksiyonu|Effect collection

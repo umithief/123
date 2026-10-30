@@ -41,6 +41,7 @@ import {
   Check,
   Sparkles,
   Scan,
+  Gauge,
 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
 import {
@@ -145,6 +146,7 @@ import {
 } from "./autosave";
 import { ProjectLibrary } from "./project-library";
 import { createId } from "./id";
+import { EDIT_EVENT } from "./edit-toast";
 import {
   exportSrt,
   importSrt,
@@ -287,6 +289,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   });
   const [source, setSource] = useState<SourceKind>("idle");
   const [playing, setPlaying] = useState(false);
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
   const [fileName, setFileName] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [time, setTime] = useState(0);
@@ -306,6 +310,27 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [format, setFormat] = useState<VideoFormat>("landscape");
   const [resolution, setResolution] = useState<Resolution>("720");
   const [fps, setFps] = useState<FrameRate>(30);
+  // Smooth preview (smaller picture while editing) and the slow-preview watch.
+  const [smoothPreview, setSmoothPreview] = useState(
+    () => readSetting("aura-preview-smooth") === "1",
+  );
+  const smoothRef = useRef({
+    on: smoothPreview,
+    full: false,
+    since: 0,
+    frames: 0,
+    slow: 0,
+    hinted: false,
+  });
+  smoothRef.current.on = smoothPreview;
+  const [slowHint, setSlowHint] = useState(false);
+  function changeSmoothPreview(on: boolean) {
+    setSmoothPreview(on);
+    smoothRef.current.on = on;
+    writeSetting("aura-preview-smooth", on ? "1" : "0");
+    setSlowHint(false);
+    resizeRenderRef.current?.();
+  }
   const fpsRef = useRef<FrameRate>(30);
   fpsRef.current = fps;
   const [loading, setLoading] = useState(false);
@@ -715,8 +740,13 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     const resize = () => {
       const { format, resolution } = videoRef.current;
       const size = videoSize(format, resolution);
-      const width = size.width;
-      const height = size.height;
+      // Smooth preview: while editing, the picture is drawn at a phone
+      // screen's size; exports and stills always get the full size.
+      const draft =
+        smoothRef.current.on && recStatusRef.current === "idle" && !smoothRef.current.full;
+      const k = draft ? Math.min(1, 480 / Math.min(size.width, size.height)) : 1;
+      const width = Math.round((size.width * k) / 2) * 2;
+      const height = Math.round((size.height * k) / 2) * 2;
       // Both surfaces must have the same dimensions. Resizing only the output
       // stretched a landscape intermediate into portrait and clipped its bottom.
       for (const surface of [canvas, baseCanvas]) {
@@ -753,6 +783,25 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       const frameDuration =
         1000 / (recStatusRef.current !== "idle" && !audioExportRef.current ? fpsRef.current : 30);
       if (now - paintedAt < frameDuration * 0.8) return;
+      // Count painted frames while the edit plays: a preview that cannot keep
+      // up (under 20 a second) suggests the smooth preview, once.
+      const watch = smoothRef.current;
+      if (playingRef.current && recStatusRef.current === "idle" && !watch.on) {
+        if (!watch.since) {
+          watch.since = now;
+          watch.frames = 0;
+        }
+        watch.frames++;
+        if (now - watch.since > 2500) {
+          watch.slow = watch.frames / ((now - watch.since) / 1000) < 20 ? watch.slow + 1 : 0;
+          watch.since = now;
+          watch.frames = 0;
+          if (watch.slow >= 2 && !watch.hinted) {
+            watch.hinted = true;
+            setSlowHint(true);
+          }
+        }
+      } else watch.since = 0;
       paintedAt = now;
       resize();
       const reading = engineRef.current?.read() ?? null;
@@ -1052,6 +1101,31 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   const [autoEditSignal, setAutoEditSignal] = useState(0);
   const canUndoAny = editor.canUndo || captions.canUndo,
     canRedoAny = editor.canRedo || captions.canRedo;
+  // Big edits offer "Geri al" for a few seconds; the offer lapses with the
+  // next change, so it never undoes something else.
+  const [editToast, setEditToast] = useState<{ message: string; serial: number } | null>(null);
+  const toastProject = useRef<unknown>(null);
+  useEffect(() => {
+    const show = (event: Event) => {
+      toastProject.current = null;
+      setEditToast((t) => ({
+        message: String((event as CustomEvent).detail),
+        serial: (t?.serial ?? 0) + 1,
+      }));
+    };
+    window.addEventListener(EDIT_EVENT, show);
+    return () => window.removeEventListener(EDIT_EVENT, show);
+  }, []);
+  useEffect(() => {
+    if (!editToast) return;
+    const timer = window.setTimeout(() => setEditToast(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [editToast]);
+  useEffect(() => {
+    if (!editToast) return;
+    if (toastProject.current === null) toastProject.current = editor.project;
+    else if (toastProject.current !== editor.project) setEditToast(null);
+  }, [editToast, editor.project]);
   function undoLast() {
     if (captions.undoAt > editor.undoAt) captions.undo();
     else editor.undo();
@@ -1272,9 +1346,10 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
     const canvas = canvasRef.current;
     if (!canvas || (!playing && !autoExportRef.current) || loading) return;
-    resizeRenderRef.current?.();
     if (!autoExportRef.current) audioExportRef.current = false;
     setRecordStatus("preparing");
+    // Recording always draws the full size, also with the smooth preview.
+    resizeRenderRef.current?.();
     const gen = ++recGenRef.current;
     recordingSceneRef.current = true;
     const rec = new Mp4Recorder(
@@ -2172,9 +2247,20 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     captions.commitPosition(spot, captions.options.position);
   }
   function snapshotImage() {
-    canvasRef.current?.toBlob((blob) => {
-      if (blob) downloadBlob(blob, "aura-sahne.png");
-    }, "image/png");
+    // A still is always full size: with the smooth preview, paint one full frame first.
+    const smooth = smoothRef.current;
+    const save = () =>
+      canvasRef.current?.toBlob((blob) => {
+        smooth.full = false;
+        if (blob) downloadBlob(blob, "aura-sahne.png");
+      }, "image/png");
+    if (!smooth.on) {
+      save();
+      return;
+    }
+    smooth.full = true;
+    resizeRenderRef.current?.();
+    window.setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(save)), 120);
   }
 
   // Explicit development-only fixture for reviewing the complete UI without user media.
@@ -2664,6 +2750,23 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 </div>
               )}
             </div>
+            {slowHint && !smoothPreview && !locked && (
+              <div className="slow-hint" role="status">
+                <Gauge className="size-4" aria-hidden="true" />
+                <span>{ui("Önizleme takılıyor mu?")}</span>
+                <button type="button" onClick={() => changeSmoothPreview(true)}>
+                  {ui("Akıcı önizlemeyi aç")}
+                </button>
+                <button
+                  type="button"
+                  className="slow-hint-close"
+                  aria-label={ui("Kapat")}
+                  onClick={() => setSlowHint(false)}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
             {safeZones.length > 0 && safeHit && !captionEdit && (
               <div className="safe-warning" role="status">
                 <span>
@@ -2739,6 +2842,8 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             onVolume={(v) => changeMusic({ volume: v })}
             onMute={() => setMuted((v) => !v)}
             onLoop={() => setLooping((v) => !v)}
+            smooth={smoothPreview}
+            onSmooth={() => changeSmoothPreview(!smoothPreview)}
           />
           {easy && source !== "idle" && (
             <div className={`project-timeline ${timelineExpanded ? "is-expanded" : ""}`}>
@@ -2846,6 +2951,22 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             </div>
           )}
         </main>
+        {editToast && !locked && (
+          <div className="edit-toast" role="status" key={editToast.serial}>
+            <span>{ui(editToast.message)}</span>
+            <button
+              type="button"
+              disabled={!canUndoAny}
+              onClick={() => {
+                undoLast();
+                setEditToast(null);
+              }}
+            >
+              <Undo2 className="size-4" />
+              {ui("Geri al")}
+            </button>
+          </div>
+        )}
         <aside className="studio-inspector" aria-label={ui("Stüdyo ayarları")}>
           <VideoTemplatesPanel
             open={templatesOpen}

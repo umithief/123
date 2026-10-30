@@ -1,4 +1,5 @@
 import { ui } from "./interface-copy";
+import { announceEdit } from "./edit-toast";
 import { createId } from "./id.ts";
 import {
   useEffect,
@@ -752,12 +753,17 @@ export function EditorTimeline({
     !!selectedSpan && e.time > selectedSpan.start + 0.1 && e.time < selectedSpan.end - 0.1;
   // Marks past the end (after an undo or a shorter edit) clamp to the total via
   // orderedSpan and the display below, so there is no stale state to clear.
-  function applyRange(fn: (clips: EditClip[], from: number, to: number) => EditClip[], at: number) {
+  function applyRange(
+    fn: (clips: EditClip[], from: number, to: number) => EditClip[],
+    at: number,
+    message: string,
+  ) {
     if (!span) return;
     const next = fn(e.project.clips, span[0], span[1]);
     if (next === e.project.clips) return;
     onPause();
     e.commit({ ...e.project, clips: next });
+    announceEdit(message);
     e.seek(at);
     setRangeIn(null);
     setRangeOut(null);
@@ -915,12 +921,13 @@ export function EditorTimeline({
               variant="ghost"
               aria-label={ui("Seçili klibi sil")}
               disabled={disabled || !selected || e.project.clips.length <= 1}
-              onClick={() =>
+              onClick={() => {
                 e.commit({
                   ...e.project,
                   clips: e.project.clips.filter((c) => c.id !== selected?.id),
-                })
-              }
+                });
+                announceEdit("Klip silindi");
+              }}
             >
               <Trash2 className="size-4" />
               {ui("Sil")}
@@ -970,7 +977,7 @@ export function EditorTimeline({
           className="timeline-range-act"
           disabled={disabled || !span}
           title={ui("İşaretli aralığı çıkar ve boşluğu kapat")}
-          onClick={() => applyRange(extractRange, span ? span[0] : 0)}
+          onClick={() => applyRange(extractRange, span ? span[0] : 0, "Aralık çıkarıldı")}
         >
           <FoldVertical className="size-4" />
           {ui("Aralığı çıkar")}
@@ -980,7 +987,7 @@ export function EditorTimeline({
           className="timeline-range-act"
           disabled={disabled || !span}
           title={ui("Yalnızca işaretli aralığı tut")}
-          onClick={() => applyRange(keepRange, 0)}
+          onClick={() => applyRange(keepRange, 0, "Yalnızca işaretli aralık tutuldu")}
         >
           <Crop className="size-4" />
           {ui("Aralığı tut")}

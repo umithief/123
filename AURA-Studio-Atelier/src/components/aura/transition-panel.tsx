@@ -4,9 +4,12 @@ import { Play, X, Layers, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ChoiceStrip } from "./choice-strip";
 import { ui } from "./interface-copy";
+import { announceEdit } from "./edit-toast";
 import type { useEditor } from "./use-editor";
 import { isPro } from "./pro-paint";
 import { ProBadge } from "./pro-badge";
+import { useFavorites } from "./favorites";
+import { FavoriteMark, FavoriteToggle } from "./favorite-toggle";
 import {
   SCENE_TRANSITIONS,
   parseSceneTransition,
@@ -122,11 +125,26 @@ export function TransitionPanel({
   const set = (transition: SceneTransition) => {
     if (incoming && !disabled) e.changeClip(incoming.id, { transition });
   };
-  const options = SCENE_TRANSITIONS.filter(
-    (t) =>
-      (group === "Tümü" || t.group === group) &&
-      ui(t.label).toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+  const fav = useFavorites("transitions", (id) =>
+    SCENE_TRANSITIONS.some((t) => t.id === id && id !== "none"),
   );
+  const groups = [
+    "Tümü",
+    ...(fav.favorites.length ? ["Favoriler"] : []),
+    ...(fav.recent.length ? ["Son kullanılan"] : []),
+    "Pro",
+    ...new Set(SCENE_TRANSITIONS.map((t) => t.group)),
+  ].filter((g, i, all) => all.indexOf(g) === i);
+  const shown = groups.includes(group) ? group : "Tümü";
+  const pick = (ids: string[]) => ids.flatMap((id) => SCENE_TRANSITIONS.filter((t) => t.id === id));
+  const options = (
+    shown === "Favoriler"
+      ? pick(fav.favorites)
+      : shown === "Son kullanılan"
+        ? pick(fav.recent)
+        : SCENE_TRANSITIONS.filter((t) => shown === "Tümü" || t.group === shown)
+  ).filter((t) => ui(t.label).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+  const selectedLabel = SCENE_TRANSITIONS.find((t) => t.id === value.id)?.label ?? "";
   return (
     <Dialog.Root
       open={!!incomingId && index > 0}
@@ -180,22 +198,22 @@ export function TransitionPanel({
           />
           <ChoiceStrip
             aria-label={ui("Geçiş kategorileri")}
-            value={group}
+            value={shown}
             className="transition-categories"
           >
-            {["Tümü", "Pro", ...new Set(SCENE_TRANSITIONS.map((t) => t.group))]
-              .filter((g, i, all) => all.indexOf(g) === i)
-              .map((g) => (
-                <button
-                  type="button"
-                  key={g}
-                  className={g === "Pro" ? "pro-chip" : undefined}
-                  aria-pressed={g === group}
-                  onClick={() => setGroup(g)}
-                >
-                  {ui(g)}
-                </button>
-              ))}
+            {groups.map((g) => (
+              <button
+                type="button"
+                key={g}
+                className={
+                  g === "Pro" ? "pro-chip" : g === "Favoriler" ? "favorite-chip" : undefined
+                }
+                aria-pressed={g === shown}
+                onClick={() => setGroup(g)}
+              >
+                {ui(g)}
+              </button>
+            ))}
           </ChoiceStrip>
           <ChoiceStrip
             aria-label={ui("Sahne geçiş efektleri")}
@@ -210,9 +228,13 @@ export function TransitionPanel({
                 title={"description" in effect ? ui(effect.description) : undefined}
                 aria-pressed={value.id === effect.id}
                 disabled={disabled}
-                onClick={() => set({ ...value, id: effect.id })}
+                onClick={() => {
+                  set({ ...value, id: effect.id });
+                  fav.use(effect.id);
+                }}
               >
                 {isPro(effect.id) && <ProBadge />}
+                {fav.isFavorite(effect.id) && <FavoriteMark />}
                 <TransitionPreview
                   type={effect.id}
                   before={thumbnails[previous?.id]?.at(-1)}
@@ -250,6 +272,12 @@ export function TransitionPanel({
               {previous && incoming ? sceneTransitionDuration(previous, incoming).toFixed(2) : 0}{" "}
               {ui("sn")}
             </span>
+            <FavoriteToggle
+              active={fav.isFavorite(value.id)}
+              disabled={value.id === "none"}
+              label={selectedLabel}
+              onToggle={() => fav.toggle(value.id)}
+            />
           </div>
           <p className="editor-note">
             {ui(
@@ -272,14 +300,15 @@ export function TransitionPanel({
             <Button
               variant="outline"
               disabled={disabled || e.project.clips.length < 2}
-              onClick={() =>
+              onClick={() => {
                 e.commit({
                   ...e.project,
                   clips: e.project.clips.map((c, i) =>
                     i ? { ...c, transition: { ...value } } : c,
                   ),
-                })
-              }
+                });
+                announceEdit("Geçiş tüm aralıklara uygulandı");
+              }}
             >
               <Layers className="size-4" />
               {ui("Tüm aralıklara uygula")}
@@ -289,12 +318,13 @@ export function TransitionPanel({
             <Button
               variant="ghost"
               disabled={disabled}
-              onClick={() =>
+              onClick={() => {
                 e.commit({
                   ...e.project,
                   clips: e.project.clips.map((c) => ({ ...c, transition: undefined })),
-                })
-              }
+                });
+                announceEdit("Tüm geçişler kaldırıldı");
+              }}
             >
               <Trash2 className="size-4" />
               {ui("Tüm geçişleri kaldır")}

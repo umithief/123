@@ -3,6 +3,7 @@ import { useMemo, useRef } from "react";
 import { Clapperboard, RotateCcw, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { ui } from "./interface-copy";
+import { announceEdit } from "./edit-toast";
 import { clipDuration, type EditClip } from "./editor";
 import { AUTO_EDITS, autoEdit, type AutoEditId } from "./auto-edits";
 
@@ -66,6 +67,7 @@ export function AutoEditPanel({
   function apply(id: AutoEditId, next: EditClip[]) {
     session.current = { before: last?.before ?? clips, result: next, id };
     onApply(next);
+    announceEdit("Oto kurgu uygulandı");
     onClose();
     onPlay();
   }

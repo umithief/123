@@ -1,6 +1,7 @@
 import { ui } from "./interface-copy";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Ban, Play, Pause, Search, X, SlidersHorizontal, Film, Check } from "lucide-react";
+import { Ban, Play, Pause, Search, X, SlidersHorizontal, Film, Check, Layers } from "lucide-react";
+import { announceEdit } from "./edit-toast";
 import { Button } from "../ui/button";
 import type { useEditor } from "./use-editor";
 import { clipDuration, locateTime, type EditorProject } from "./editor";
@@ -17,6 +18,8 @@ import { paintVideoMotion } from "./video-motion-paint";
 import { searchText } from "./search";
 import { isPro } from "./pro-paint";
 import { ProBadge } from "./pro-badge";
+import { useFavorites } from "./favorites";
+import { FavoriteMark, FavoriteToggle } from "./favorite-toggle";
 
 type Editor = ReturnType<typeof useEditor>;
 const SECTIONS = [
@@ -133,6 +136,9 @@ export function VideoMotionPanel({
 }) {
   const [section, setSection] = useState<MotionSection>("in"),
     [group, setGroup] = useState("Trend");
+  const fav = useFavorites("motions", (id) =>
+    VIDEO_MOTIONS.some((preset) => preset.id === id && id !== "none"),
+  );
   const [searching, setSearching] = useState(false),
     [query, setQuery] = useState(""),
     [showAmount, setShowAmount] = useState(false);
@@ -247,9 +253,24 @@ export function VideoMotionPanel({
   }
   function choose(id: VideoMotionId) {
     onPause();
+    fav.use(id);
     const next = { ...motion, [section]: { ...setting, id } };
     update(next);
     if (id !== "none" && !matchMedia("(prefers-reduced-motion: reduce)").matches) preview(next);
+  }
+  /** The animation of this part (entrance, exit or combo) on every clip. */
+  function applyToAll() {
+    if (!target || disabled || setting.id === "none") return;
+    onPause();
+    const p = e.draw.current.project;
+    e.commit({
+      ...p,
+      clips: p.clips.map((c) => {
+        const m = c.motion ?? motionDefaults();
+        return { ...c, motion: { ...m, [section]: { ...setting } } };
+      }),
+    });
+    announceEdit("Animasyon tüm kliplere uygulandı");
   }
   function startGesture() {
     if (!target || disabled) return;
@@ -275,16 +296,29 @@ export function VideoMotionPanel({
       Boolean(gesture.current),
     );
   }
-  const results = VIDEO_MOTIONS.filter(
-    (preset) =>
-      preset.id === "none" ||
-      ((query
-        ? true
-        : group === "Tümü" || (group === "Trend" && "trend" in preset) || preset.group === group) &&
-        searchText(`${preset.label} ${preset.description} ${preset.group}`).includes(
-          searchText(query),
-        )),
-  );
+  const groups = [
+    ...(fav.favorites.length ? ["Favoriler"] : []),
+    ...(fav.recent.length ? ["Son kullanılan"] : []),
+    ...GROUPS,
+  ];
+  const shown = groups.includes(group) ? group : "Trend";
+  const listed = (ids: string[]) =>
+    ids.flatMap((id) => VIDEO_MOTIONS.filter((preset) => preset.id === id));
+  const results =
+    !query && (shown === "Favoriler" || shown === "Son kullanılan")
+      ? [VIDEO_MOTIONS[0], ...listed(shown === "Favoriler" ? fav.favorites : fav.recent)]
+      : VIDEO_MOTIONS.filter(
+          (preset) =>
+            preset.id === "none" ||
+            ((query
+              ? true
+              : shown === "Tümü" ||
+                (shown === "Trend" && "trend" in preset) ||
+                preset.group === shown) &&
+              searchText(`${preset.label} ${preset.description} ${preset.group}`).includes(
+                searchText(query),
+              )),
+        );
   const active = VIDEO_MOTIONS.find((p) => p.id === setting.id)!;
   const actual =
     section === "combo"
@@ -414,11 +448,13 @@ export function VideoMotionPanel({
           role="group"
           aria-label={ui("Video animasyon kategorileri")}
         >
-          {GROUPS.map((name) => (
+          {groups.map((name) => (
             <Button
               key={name}
-              className={name === "Pro" ? "pro-chip" : undefined}
-              aria-pressed={group === name}
+              className={
+                name === "Pro" ? "pro-chip" : name === "Favoriler" ? "favorite-chip" : undefined
+              }
+              aria-pressed={shown === name}
               onClick={() => setGroup(name)}
             >
               {ui(name)}
@@ -476,6 +512,7 @@ export function VideoMotionPanel({
               selected={setting.id === preset.id}
             />
             {isPro(preset.id) && <ProBadge />}
+            {fav.isFavorite(preset.id) && <FavoriteMark />}
             <span>{ui(preset.label)}</span>
           </Button>
         ))}
@@ -517,6 +554,12 @@ export function VideoMotionPanel({
           >
             {playing ? <Pause className="size-4" /> : <Play className="size-4" />}
           </Button>
+          <FavoriteToggle
+            active={fav.isFavorite(setting.id)}
+            disabled={setting.id === "none"}
+            label={active.label}
+            onToggle={() => fav.toggle(setting.id)}
+          />
           <Button
             variant="ghost"
             aria-label={ui(showAmount ? "Animasyon süresini ayarla" : "Animasyon şiddetini ayarla")}
@@ -526,19 +569,27 @@ export function VideoMotionPanel({
             <SlidersHorizontal className="size-4" />
           </Button>
         </div>
-        <p
-          className="video-motion-status"
-          role="status"
-          title={ui(`${target.name} · ${active.description}`)}
-        >
-          {target.name} · {ui(active.label)}
-          {setting.id !== "none" &&
-            ` · ${section === "combo" ? "döngü" : SECTIONS.find((s) => s.id === section)!.label.toLocaleLowerCase("tr")}`}
-          {setting.id !== "none" &&
-            actual + 0.005 < setting.duration &&
-            section !== "combo" &&
-            ` · Bu klipte ${seconds(actual)}`}
-        </p>
+        <div className="video-motion-footer">
+          <p
+            className="video-motion-status"
+            role="status"
+            title={ui(`${target.name} · ${active.description}`)}
+          >
+            {target.name} · {ui(active.label)}
+            {setting.id !== "none" &&
+              ` · ${section === "combo" ? "döngü" : SECTIONS.find((s) => s.id === section)!.label.toLocaleLowerCase("tr")}`}
+            {setting.id !== "none" &&
+              actual + 0.005 < setting.duration &&
+              section !== "combo" &&
+              ` · Bu klipte ${seconds(actual)}`}
+          </p>
+          {target.kind === "clip" && e.project.clips.length > 1 && setting.id !== "none" && (
+            <button type="button" className="video-motion-all" onClick={applyToAll}>
+              <Layers className="size-4" aria-hidden="true" />
+              {ui("Tüm kliplere uygula")}
+            </button>
+          )}
+        </div>
       </div>
     </fieldset>
   );

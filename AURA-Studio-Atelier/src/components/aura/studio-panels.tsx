@@ -15,6 +15,7 @@ import {
   Volume2,
   VolumeX,
   Repeat2,
+  Gauge,
   RotateCcw,
   SkipBack,
   Pause,
@@ -547,6 +548,8 @@ export function Transport({
   onVolume,
   onMute,
   onLoop,
+  smooth = false,
+  onSmooth,
 }: {
   compact?: boolean;
   source: string;
@@ -563,6 +566,9 @@ export function Transport({
   onVolume: (v: number) => void;
   onMute: () => void;
   onLoop: () => void;
+  /** Smooth preview: a smaller picture while editing (exports stay full size). */
+  smooth?: boolean;
+  onSmooth?: () => void;
 }) {
   const file = source === "file";
   if (compact)
@@ -653,6 +659,23 @@ export function Transport({
                 <SkipBack className="size-4" />
                 {ui("Başa dön")}
               </button>
+              {onSmooth && (
+                <button
+                  type="button"
+                  className="studio-popover-item"
+                  aria-pressed={smooth}
+                  title={ui(
+                    "Düzenlerken görüntüyü daha küçük çizer; dışa aktarma tam kalitede kalır.",
+                  )}
+                  onClick={onSmooth}
+                >
+                  <Gauge className="size-4" />
+                  <span>
+                    {ui("Akıcı önizleme")}
+                    <small>{ui(smooth ? "Açık · dışa aktarma tam kalite" : "Kapalı")}</small>
+                  </span>
+                </button>
+              )}
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>

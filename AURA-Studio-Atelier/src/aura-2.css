@@ -1987,3 +1987,192 @@ html[data-theme="light"] .pro-chip {
 .effect-tile[aria-pressed="true"] .effect-tile-picture {
   border-color: var(--color-accent);
 }
+
+/* Smooth preview: the playback menu entry and the slow-preview suggestion. */
+.playback-menu .studio-popover-item > span {
+  display: grid;
+  text-align: left;
+}
+.playback-menu .studio-popover-item small {
+  color: var(--color-soft);
+  font-size: 0.6875rem;
+}
+.playback-menu .studio-popover-item[aria-pressed="true"] > svg {
+  color: var(--color-accent);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .slow-hint {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: calc(100% - 0.75rem);
+  padding: 0.3125rem 0.3125rem 0.3125rem 0.75rem;
+  border-radius: 999px;
+  background: rgb(14 15 18 / 0.92);
+  color: #fff;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.4);
+  transform: translateX(-50%);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .slow-hint > button:not(.slow-hint-close) {
+  flex: none;
+  min-height: 1.875rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .slow-hint-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.75);
+}
+
+/* Favourites: the star toggle, the star on a tile and the gold-outlined chip. */
+.favorite-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mute);
+}
+.favorite-toggle:not(:disabled):hover {
+  background: var(--color-hover);
+}
+.favorite-toggle[aria-pressed="true"] {
+  color: #f1c453;
+}
+.favorite-toggle:disabled {
+  opacity: 0.35;
+}
+.favorite-mark {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  z-index: 2;
+  display: inline-flex;
+  padding: 0.1875rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  color: #f1c453;
+  pointer-events: none;
+}
+.transition-gallery .favorite-mark {
+  display: inline-flex;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.1875rem;
+}
+.transition-gallery > button,
+.video-motion-preset,
+.effect-tile {
+  position: relative;
+}
+.favorite-chip::before {
+  content: "★ ";
+  color: #f1c453;
+}
+.effect-gallery-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+  color: var(--color-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.transition-duration .favorite-toggle {
+  margin-left: auto;
+}
+
+/* "Geri al" after a big edit. */
+.aura-2.aura-studio.atelier-studio.calm-layout .edit-toast {
+  position: fixed;
+  left: 50%;
+  /* Under the header: clear of the tool sheet and the timeline. */
+  top: calc(var(--a2-header) + 0.5rem);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  white-space: nowrap;
+  padding: 0.375rem 0.375rem 0.375rem 1rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: var(--color-glass);
+  color: var(--color-ink);
+  font-size: 0.8125rem;
+  box-shadow: var(--a2-shadow);
+  backdrop-filter: blur(12px);
+  transform: translateX(-50%);
+  animation: edit-toast-in 220ms ease-out;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .edit-toast > button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 600;
+}
+@keyframes edit-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.5rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-2.aura-studio.atelier-studio.calm-layout .edit-toast {
+    animation: none;
+  }
+}
+.video-motion-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.video-motion-footer .video-motion-status {
+  min-width: 0;
+}
+.video-motion-all {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+}

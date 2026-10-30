@@ -1,5 +1,19 @@
 # AURA Studio Android
 
+## 2.6.0 — akıcı önizleme, favoriler, tüm kliplere uygula ve "Geri al" bildirimi
+
+**Akıcı önizleme.** Oynatma ayarlarında (hoparlör düğmesi) yeni **Akıcı önizleme** seçeneği: düzenlerken görüntü telefon ekranına yetecek boyutta (kısa kenar 480 piksel) çizilir; bu, özellikle 1080p projelerde ve Pro efektlerde önizlemeyi rahatlatır. Dışa aktarma ve "Sahneyi PNG olarak indir" her zaman tam boyutta çizilir (akıcı önizleme açıkken de 1080p video 1080×1920, fotoğraf 1920×1080 çıkar). Önizleme oynarken saniyede 20 karenin altına düşerse, önizlemenin altında bir kez "Önizleme takılıyor mu? · Akıcı önizlemeyi aç" önerisi çıkar. Seçim cihazda hatırlanır.
+
+**Favoriler ve son kullanılanlar.** Geçiş, animasyon ve efekt galerilerinde seçili öğenin yanındaki ★ ile favorilere ekleyebilirsin; favori kartlarda küçük bir yıldız görünür. Galerilerde **★ Favoriler** ve **Son kullanılan** (son 8) sekmeleri belirir; böylece sık kullandığın görünümler bir dokunuş uzakta. Listeler cihazda saklanır ve açık olan tüm galerilerde aynı anda güncellenir.
+
+**Tüm kliplere uygula.** Animasyon panelinde, seçili giriş, çıkış ya da karma animasyonu tek dokunuşla bütün kliplere uygular; her klibin diğer animasyonları ve şiddeti korunur.
+
+**"Geri al" bildirimi.** Büyük düzenlemelerden sonra (klip silme, aralığı çıkarma/tutma, Oto Kurgu, geçişi tüm aralıklara uygulama, tüm geçişleri kaldırma, animasyonu tüm kliplere uygulama) ekranın üstünde birkaç saniye "… · Geri al" bildirimi çıkar. Başka bir düzenleme yapılınca bildirim kendiliğinden kalkar, böylece yanlışlıkla başka bir adımı geri almaz.
+
+### 2.6.0 doğrulaması
+
+TypeScript ve 143 AURA birim testi geçti (3 yeni test: favori ekleme/çıkarma, son kullanılanların sırası ve sınırı, bozuk ya da kaldırılmış kayıtların temizlenmesi). Tarayıcıda telefon ve masaüstünde: işlemci yapay olarak yavaşlatıldığında öneri çıktı ve akıcı önizleme tuvali 1280×720'den 854×480'e indirdi; akıcı önizleme açıkken 1080p video 1080×1920 ve PNG 1920×1080 kaydedildi; geçiş, animasyon ve efekt favorileri ve son kullanılanlar yeniden açılışta korundu; "Tüm kliplere uygula" iki klibe uyguladı ve Geri al yalnızca seçilen klipte bıraktı; klip silme Geri al ile geri geldi ve sonraki düzenleme bildirimi kaldırdı. Önceki ekran turları, Projelerim, güvenli alan, kesim geçişi, Oto Kurgu, aralık araçları, döngü, Pro galerileri ve altyazı önizleme testleri yeniden geçti. Fiziksel telefonda denenmedi.
+
 ## 2.5.0 — AURA Pro: premium geçişler, animasyonlar ve efektler
 
 Pro kullanıcılar için yeni bir koleksiyon. Her Pro öğe altın **PRO** rozetiyle işaretli. Geçiş, animasyon ve efekt seçicilerinde altın **Pro** sekmesi yalnızca bu koleksiyonu gösterir; geçiş listesinde Pro geçişler en başta yer alır. Sıradan kaydırma ve solmalardan farklı olarak gerçek hareket bulanıklığı (görüntünün yumuşak kopyalarının ortalaması), renk kanallarının ayrılması, görüntünün kendi parlak noktalarından üretilen ışık ve gerçek perspektif kullanır.
