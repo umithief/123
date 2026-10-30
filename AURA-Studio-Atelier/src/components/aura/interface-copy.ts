@@ -175,6 +175,73 @@ Döngüde oynat|Play on loop
 Döngüyü durdur|Stop loop
 Sil|Delete
 Ekranda|On screen
+Düzenleme geçmişi|Edit history
+Henüz bir düzenleme yok.|No edits yet.
+Şu an|Now
+Başlangıç|Start
+Bir adıma dokun: proje o adımdaki hâline döner. Yeni bir düzenleme, geri alınanları siler.|Tap a step to bring the project back to it. A new edit clears the undone steps.
+Klip bölündü|Clip split
+Klipler bölündü|Clips split
+Klip çoğaltıldı|Clip duplicated
+Kurgu kısaldı|Edit shortened
+Kurgu yeniden yapıldı|Edit rebuilt
+Klip sırası değişti|Clips reordered
+Geçiş kaldırıldı|Transition removed
+Geçiş tüm aralıklara|Transition on every cut
+Animasyon tüm kliplere|Animation on all clips
+Kaldırıldı|Removed
+Hız|Speed
+Klip kırpıldı|Clip trimmed
+Sesin açılışı ve kapanışı|Sound fade in and out
+Klip düzenlendi|Clip edited
+Yazı eklendi|Text added
+Görsel eklendi|Image added
+Şekil eklendi|Shape added
+Katman silindi|Layer deleted
+Katman sırası değişti|Layers reordered
+Yazı düzenlendi|Text edited
+Katman büyütüldü ya da döndürüldü|Layer resized or turned
+Katman taşındı|Layer moved
+Katman zamanı|Layer timing
+Katman düzenlendi|Layer edited
+Medya eklendi|Media added
+Medya silindi|Media deleted
+Medya düzenlendi|Media edited
+Ses eklendi|Sound added
+Ses silindi|Sound deleted
+Ses düzenlendi|Sound edited
+Efekt|Effect
+Filtre değişti|Filter changed
+Renk ve kadraj|Colour and framing
+Altyazılar eklendi|Captions added
+Altyazı silindi|Caption deleted
+Altyazılar kaldırıldı|Captions removed
+Altyazı eklendi|Caption added
+Altyazı metni düzenlendi|Caption text edited
+Altyazı zamanı değişti|Caption timing changed
+Altyazı animasyonu|Caption animation
+Altyazılar düzenlendi|Captions edited
+Sürükle · iki parmakla büyüt ve döndür|Drag · pinch to resize and turn
+Sürükle · tekerlek: büyüt · Shift: döndür|Drag · wheel: resize · Shift: turn
+Metinle Kurgu|Text Edit
+Konuşmayı yazı olarak düzenle: kelimelere dokunup seç, Kes ile videodan çıkar.|Edit the speech as text: tap words to select them, Cut removes them from the video.
+Metinle kurgu için önce konuşmanın yazıya dökülmesi gerekir. Altyazı aracında Oluştur ile konuşmayı otomatik yazıya dök ya da SRT dosyası ekle.|Text editing needs the speech as text first. In the Captions tool, use Create to transcribe the speech automatically, or add an SRT file.
+Hızlı seçimler|Quick selections
+Duraksamaları seç|Select hesitations
+Uzun duraklamaları kısalt|Shorten long pauses
+Aralık seç|Select a range
+Aralık: ilk kelimeye, sonra son kelimeye dokun.|Range: tap the first word, then the last.
+noktasından oynat|play from here
+Kesildi|Cut
+Bazı altyazıların kelime süreleri tahmini; kesmeden önce seçimi dinlemen önerilir.|Some captions have estimated word times; listen to the selection before cutting.
+Bu kesim çok fazla parça oluşturuyor. Daha az kelime seç ya da bölüm bölüm kes.|This cut makes too many pieces. Select fewer words or cut part by part.
+kelime seçili|words selected
+kelime videoda|words in the video
+Seçimi dinle|Listen to the selection
+Temizle|Clear
+Seçili kelimeler kesildi|Selected words cut
+Uzun duraklamalar kısaltıldı|Long pauses shortened
+Konuşmayı yazı olarak düzenle: kelimeleri sil, duraksamaları ve uzun boşlukları tek dokunuşla temizle.|Edit the speech as text: delete words, clear hesitations and long pauses in one tap.
 Akıcı önizleme|Smooth preview
 Açık · dışa aktarma tam kalite|On · exports stay full quality
 Düzenlerken görüntüyü daha küçük çizer; dışa aktarma tam kalitede kalır.|Draws a smaller picture while editing; exports stay full quality.

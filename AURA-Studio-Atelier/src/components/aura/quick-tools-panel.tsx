@@ -12,6 +12,7 @@ import {
   ScissorsLineDashed,
   Sunrise,
   X,
+  TextCursorInput,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ui } from "./interface-copy";
@@ -68,6 +69,7 @@ export function QuickToolsPanel({
   onBeatImages,
   onTemplates,
   onAutoEdit,
+  onTranscript,
 }: {
   open: boolean;
   onClose: () => void;
@@ -84,6 +86,8 @@ export function QuickToolsPanel({
   onBeatImages: () => void;
   onTemplates: () => void;
   onAutoEdit: () => void;
+  /** Opens text-based editing. */
+  onTranscript?: () => void;
 }) {
   const [section, setSection] = useState("edit");
   const ranges = useMemo(() => soundRanges(peaks, duration), [peaks, duration]);
@@ -140,6 +144,25 @@ export function QuickToolsPanel({
                 {ui("Aç")}
               </Button>
             </Card>
+            {onTranscript && (
+              <Card
+                icon={<TextCursorInput className="size-5" />}
+                title={ui("Metinle Kurgu")}
+                text={ui(
+                  "Konuşmayı yazı olarak düzenle: kelimeleri sil, duraksamaları ve uzun boşlukları tek dokunuşla temizle.",
+                )}
+              >
+                <Button
+                  disabled={disabled}
+                  onClick={() => {
+                    onClose();
+                    onTranscript();
+                  }}
+                >
+                  {ui("Aç")}
+                </Button>
+              </Card>
+            )}
           </div>
           <PanelTabs
             label="Hazır araç bölümleri"

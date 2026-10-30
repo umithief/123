@@ -395,6 +395,14 @@ export function useCaptions(audio: RefObject<HTMLAudioElement | null>, source: S
     undoAt: history.past.at(-1)?.at ?? 0,
     /** Stamp of the step redo would restore (0 = none). */
     redoAt: redoable(history.future[0]?.at) ? history.future[0].at : 0,
+    /** The undo and redo steps, for the history list. */
+    past: history.past,
+    future: history.future,
+    peekUndoAt: () => historyRef.current.past.at(-1)?.at ?? 0,
+    peekRedoAt: () => {
+      const next = historyRef.current.future[0];
+      return next && redoable(next.at) ? next.at : 0;
+    },
     undo: () => {
       const h = historyRef.current,
         previous = h.past.at(-1);

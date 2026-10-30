@@ -8,6 +8,7 @@ import {
   AudioLines,
   Captions,
   Clapperboard,
+  TextCursorInput,
   ChevronRight,
   Film,
   FolderOpen,
@@ -208,6 +209,7 @@ export function ToolBar({
   onTemplates,
   onQuickTools,
   onAutoEdit,
+  onTranscript,
   language,
   disabled,
 }: {
@@ -216,6 +218,7 @@ export function ToolBar({
   onTemplates: () => void;
   onQuickTools: () => void;
   onAutoEdit: () => void;
+  onTranscript: () => void;
   language: InterfaceLanguage;
   disabled: boolean;
 }) {
@@ -246,6 +249,20 @@ export function ToolBar({
         >
           <Clapperboard size={20} />
           <span>{en ? "Auto edit" : "Oto kurgu"}</span>
+        </button>
+        <button
+          type="button"
+          data-tool="transcript"
+          title={
+            en
+              ? "Text edit: cut the video by deleting words"
+              : "Metinle kurgu: kelimeleri silerek videoyu kes"
+          }
+          disabled={disabled}
+          onClick={onTranscript}
+        >
+          <TextCursorInput size={20} />
+          <span>{en ? "Text edit" : "Metinle"}</span>
         </button>
         <button
           type="button"

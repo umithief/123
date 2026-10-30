@@ -281,6 +281,9 @@ function shape(ctx: CanvasRenderingContext2D, kind: Overlay["kind"], size: numbe
   else ctx.roundRect(-s, -s * 0.65, size, size * 0.65, 5);
   ctx.fill();
 }
+/** Where a layer sits on the frame: centre, half size and turn, in frame units. */
+export type LayerBox = { cx: number; cy: number; hw: number; hh: number; rotate: number };
+
 export function paintEditorLayers(
   ctx: CanvasRenderingContext2D,
   project: EditorProject,
@@ -289,7 +292,10 @@ export function paintEditorLayers(
   w: number,
   h: number,
   reducedMotion = false,
+  /** Filled with the box of every layer on screen (for touch and the outline). */
+  boxes?: Map<string, LayerBox>,
 ) {
+  boxes?.clear();
   for (const layer of project.layers) {
     if (time < layer.start || time >= layer.end) continue;
     const frame = frameAt(layer, time),
@@ -350,6 +356,17 @@ export function paintEditorLayers(
         }
         lines.push(current);
       }
+      if (boxes) {
+        const shown = lines.slice(0, 8),
+          widest = Math.max(...shown.map((row) => ctx.measureText(row).width));
+        boxes.set(layer.id, {
+          cx: frame.x * w,
+          cy: frame.y * h,
+          hw: ((widest + 16) / 2) * frame.scale,
+          hh: ((shown.length * size * 0.48) / 2) * frame.scale,
+          rotate: (frame.rotation * Math.PI) / 180,
+        });
+      }
       lines.slice(0, 8).forEach((row, i) => {
         const y = (i - (Math.min(8, lines.length) - 1) / 2) * size * 0.48;
         if (layer.background) {
@@ -390,8 +407,24 @@ export function paintEditorLayers(
         const e = asset.element,
           ratio = e.width / e.height;
         ctx.drawImage(e, (-size * ratio) / 2, -size / 2, size * ratio, size);
+        boxes?.set(layer.id, {
+          cx: frame.x * w,
+          cy: frame.y * h,
+          hw: ((size * ratio) / 2) * frame.scale,
+          hh: (size / 2) * frame.scale,
+          rotate: (frame.rotation * Math.PI) / 180,
+        });
       }
-    } else shape(ctx, layer.kind, size);
+    } else {
+      shape(ctx, layer.kind, size);
+      boxes?.set(layer.id, {
+        cx: frame.x * w,
+        cy: frame.y * h,
+        hw: (size / 2) * frame.scale,
+        hh: (size / 2) * frame.scale,
+        rotate: (frame.rotation * Math.PI) / 180,
+      });
+    }
     ctx.restore();
   }
 }

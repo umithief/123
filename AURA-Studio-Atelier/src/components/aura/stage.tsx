@@ -6,6 +6,7 @@ import { CAPTION_TEMPLATES } from "./caption-templates";
 import { useAudioAnalysis } from "./use-audio-analysis";
 import { ui } from "./interface-copy";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AudioLines,
   Captions,
@@ -127,8 +128,14 @@ import { paintCaptions } from "./caption-paint";
 import { parseCaptionMotion } from "./caption-motion";
 import { useEditor } from "./use-editor";
 import { CutPanel, MediaPanel, LayerPanel, AdjustmentPanel, SoundPanel } from "./editor-panel";
-import { paintEditorBase, paintEditorLayers } from "./editor-paint";
-import { projectDuration, parseEditorProject, frameAt, type EditorProject } from "./editor";
+import { paintEditorBase, paintEditorLayers, type LayerBox } from "./editor-paint";
+import {
+  projectDuration,
+  parseEditorProject,
+  frameAt,
+  type EditorProject,
+  type Overlay,
+} from "./editor";
 import { clipDuration } from "./editor";
 import { sceneTransitionDuration } from "./scene-transitions";
 import { packProject, unpackProject } from "./project-archive";
@@ -147,6 +154,8 @@ import {
 import { ProjectLibrary } from "./project-library";
 import { createId } from "./id";
 import { EDIT_EVENT } from "./edit-toast";
+import { TranscriptPanel } from "./transcript-panel";
+import { HistoryPanel } from "./history-panel";
 import {
   exportSrt,
   importSrt,
@@ -413,6 +422,32 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   } | null>(null);
   const captionTap = useRef<{ id: string; at: number; x: number; y: number } | null>(null);
   const captionOutlineRef = useRef<HTMLDivElement>(null);
+  // Layers on the preview: their painted boxes (for touch and the outline),
+  // the fingers on the canvas and a two-finger pinch/turn in progress.
+  const layerBoxes = useRef(new Map<string, LayerBox>());
+  /** The frame size the boxes are measured in. */
+  const layerFrame = useRef({ w: 1, h: 1 });
+  const layerOutlineRef = useRef<HTMLDivElement>(null);
+  const layerUi = useRef({ selected: "", show: false });
+  const fingers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<
+    | {
+        kind: "layer";
+        id: string;
+        before: EditorProject;
+        time: number;
+        dist: number;
+        angle: number;
+        cx: number;
+        cy: number;
+        scale: number;
+        rotation: number;
+        x: number;
+        y: number;
+      }
+    | { kind: "caption"; dist: number; size: number }
+    | null
+  >(null);
   const captionSelectedRef = useRef<string | null>(null);
   const captionEditingRef = useRef(false);
   const [captionSnap, setCaptionSnap] = useState(false);
@@ -547,6 +582,24 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
     wasPlaying.current = playing;
   }, [playing]);
+  /** Plays the edit from where it reaches source second `start`, until `end`. */
+  function playSource(start: number, end: number) {
+    const clips = editor.draw.current.project.clips;
+    let at = 0;
+    for (const c of clips) {
+      if (start < c.out && end > c.in) {
+        const from = at + Math.max(0, (Math.max(start, c.in) - c.in) / c.rate);
+        previewMotion(
+          from,
+          Number.isFinite(end)
+            ? from + (end - Math.max(start, c.in)) / c.rate
+            : projectDuration(editor.draw.current.project),
+        );
+        return;
+      }
+      at += clipDuration(c);
+    }
+  }
   function pauseMotionPreview() {
     if (motionPreviewEnd.current !== null) engineRef.current?.pause();
     motionPreviewEnd.current = null;
@@ -954,7 +1007,29 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
         width,
         height,
         reduce && recStatusRef.current === "idle",
+        layerBoxes.current,
       );
+      layerFrame.current = { w: width, h: height };
+      // The selected layer's outline follows it, turned with it.
+      const layerOutline = layerOutlineRef.current;
+      if (layerOutline) {
+        const ui = layerUi.current,
+          held = pinch.current?.kind === "layer" ? pinch.current.id : overlayDrag.current?.id,
+          shownId = held ?? (ui.show ? ui.selected : ""),
+          lbox =
+            recStatusRef.current === "idle" && shownId
+              ? layerBoxes.current.get(shownId)
+              : undefined;
+        layerOutline.hidden = !lbox;
+        if (lbox) {
+          const pad = Math.min(width, height) * 0.015;
+          layerOutline.style.left = `${((lbox.cx - lbox.hw - pad) / width) * 100}%`;
+          layerOutline.style.top = `${((lbox.cy - lbox.hh - pad) / height) * 100}%`;
+          layerOutline.style.width = `${(((lbox.hw + pad) * 2) / width) * 100}%`;
+          layerOutline.style.height = `${(((lbox.hh + pad) * 2) / height) * 100}%`;
+          layerOutline.style.transform = `rotate(${lbox.rotate}rad)`;
+        }
+      }
     };
     frame = requestAnimationFrame(loop);
     return () => {
@@ -1099,11 +1174,16 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   // Project and caption edits share one undo/redo, in the order they were made.
   const [quickToolsSignal, setQuickToolsSignal] = useState(0);
   const [autoEditSignal, setAutoEditSignal] = useState(0);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
   const canUndoAny = editor.canUndo || captions.canUndo,
     canRedoAny = editor.canRedo || captions.canRedo;
   // Big edits offer "Geri al" for a few seconds; the offer lapses with the
   // next change, so it never undoes something else.
-  const [editToast, setEditToast] = useState<{ message: string; serial: number } | null>(null);
+  const [editToast, setEditToast] = useState<{
+    message: string;
+    serial: number;
+    host: HTMLElement | null;
+  } | null>(null);
   const toastProject = useRef<unknown>(null);
   useEffect(() => {
     const show = (event: Event) => {
@@ -1111,6 +1191,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
       setEditToast((t) => ({
         message: String((event as CustomEvent).detail),
         serial: (t?.serial ?? 0) + 1,
+        host: document.querySelector<HTMLElement>('[role="dialog"][data-state="open"]'),
       }));
     };
     window.addEventListener(EDIT_EVENT, show);
@@ -1129,6 +1210,24 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
   function undoLast() {
     if (captions.undoAt > editor.undoAt) captions.undo();
     else editor.undo();
+  }
+  /** Several undos (negative) or redos (positive) in the order they were made. */
+  function jumpHistory(steps: number) {
+    for (let i = 0; i < Math.abs(steps); i++) {
+      if (steps < 0) {
+        const c = captions.peekUndoAt(),
+          e = editor.peekUndoAt();
+        if (!c && !e) break;
+        if (c > e) captions.undo();
+        else editor.undo();
+      } else {
+        const c = captions.peekRedoAt(),
+          e = editor.peekRedoAt();
+        if (!c && !e) break;
+        if (c > e) captions.redo();
+        else editor.redo();
+      }
+    }
   }
   function redoNext() {
     if (captions.redoAt > editor.redoAt) captions.redo();
@@ -2076,19 +2175,167 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     captionSelectedRef.current = id;
     if (!id && captionOutlineRef.current) captionOutlineRef.current.hidden = true;
   }
+  /** `layer` moved, resized or turned at `time` (a keyframe there when it has keyframes). */
+  function placeLayer(
+    layer: Overlay,
+    time: number,
+    patch: { x: number; y: number; scale?: number; rotation?: number },
+  ): Overlay {
+    return {
+      ...layer,
+      ...patch,
+      keyframes: layer.keyframes.length
+        ? [
+            ...layer.keyframes.filter((f) => Math.abs(f.time - time) > 0.05),
+            { ...frameAt(layer, time), time, ...patch },
+          ].sort((a, b) => a.time - b.time)
+        : [],
+    };
+  }
+  /** A second finger turns a drag into a pinch: resize and turn (or caption size). */
+  function startPinch(event: React.PointerEvent<HTMLCanvasElement>) {
+    const [a, b] = [...fingers.current.values()];
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    if (dist < 8) return false;
+    const angle = Math.atan2(b.y - a.y, b.x - a.x),
+      cx = (a.x + b.x) / 2,
+      cy = (a.y + b.y) / 2,
+      t = editor.draw.current.time,
+      drag = overlayDrag.current,
+      id =
+        drag?.id ??
+        (layerBoxes.current.has(layerUi.current.selected) ? layerUi.current.selected : ""),
+      layer = editor.draw.current.project.layers.find((l) => l.id === id);
+    if (layer) {
+      const f = frameAt(layer, t);
+      pinch.current = {
+        kind: "layer",
+        id: layer.id,
+        before: drag?.before ?? editor.project,
+        time: t,
+        dist,
+        angle,
+        cx,
+        cy,
+        scale: f.scale,
+        rotation: f.rotation,
+        x: f.x,
+        y: f.y,
+      };
+      overlayDrag.current = null;
+      editor.setSelected(layer.id);
+    } else if (captionDrag.current || captionSelectedRef.current) {
+      pinch.current = { kind: "caption", dist, size: captions.draw.current.options.size };
+      captionDrag.current = null;
+    } else return false;
+    engineRef.current?.pause();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    return true;
+  }
+  function movePinch(rect: DOMRect) {
+    const g = pinch.current;
+    if (!g || fingers.current.size < 2) return;
+    const [a, b] = [...fingers.current.values()];
+    const dist = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
+    if (g.kind === "caption") {
+      const size = Math.round(Math.max(20, Math.min(48, (g.size * dist) / g.dist)));
+      if (size !== captions.draw.current.options.size) captions.changeOptions({ size });
+      return;
+    }
+    const angle = Math.atan2(b.y - a.y, b.x - a.x),
+      scale = Math.max(0.15, Math.min(6, (g.scale * dist) / g.dist));
+    let rotation = g.rotation + ((angle - g.angle) * 180) / Math.PI;
+    // Straight angles are magnetic.
+    const straight = Math.round(rotation / 90) * 90;
+    if (Math.abs(rotation - straight) < 4) rotation = straight;
+    const x = Math.max(0, Math.min(1, g.x + ((a.x + b.x) / 2 - g.cx) / rect.width)),
+      y = Math.max(0, Math.min(1, g.y + ((a.y + b.y) / 2 - g.cy) / rect.height));
+    const current = editor.draw.current.project;
+    editor.preview({
+      ...current,
+      layers: current.layers.map((l) =>
+        l.id === g.id ? placeLayer(l, g.time, { x, y, scale, rotation }) : l,
+      ),
+    });
+  }
+  // Desktop: the wheel resizes the layer under the pointer, Shift+wheel turns it.
+  const wheelSession = useRef<{ id: string; before: EditorProject; timer: number } | null>(null);
+  function commitWheel() {
+    const session = wheelSession.current;
+    wheelSession.current = null;
+    if (!session) return;
+    window.clearTimeout(session.timer);
+    if (
+      JSON.stringify(editor.draw.current.project.layers) !== JSON.stringify(session.before.layers)
+    )
+      editor.commit(editor.draw.current.project, session.before);
+  }
+  const wheelRef = useRef<(event: WheelEvent) => void>(() => {});
+  wheelRef.current = (event) => {
+    const canvas = canvasRef.current;
+    if (!canvas || recStatusRef.current !== "idle" || event.ctrlKey) return;
+    const rect = canvas.getBoundingClientRect(),
+      layer = layerAt(
+        (event.clientX - rect.left) / rect.width,
+        (event.clientY - rect.top) / rect.height,
+        rect,
+      );
+    if (!layer) return;
+    event.preventDefault();
+    if (wheelSession.current && wheelSession.current.id !== layer.id) commitWheel();
+    wheelSession.current ??= { id: layer.id, before: editor.project, timer: 0 };
+    const t = editor.draw.current.time,
+      current = editor.draw.current.project,
+      live = current.layers.find((l) => l.id === layer.id) ?? layer,
+      f = frameAt(live, t);
+    const patch = event.shiftKey
+      ? { x: f.x, y: f.y, rotation: f.rotation + (event.deltaY > 0 ? 3 : -3) }
+      : {
+          x: f.x,
+          y: f.y,
+          scale: Math.max(0.15, Math.min(6, f.scale * Math.exp(-event.deltaY * 0.0015))),
+        };
+    editor.setSelected(layer.id);
+    editor.preview({
+      ...current,
+      layers: current.layers.map((l) => (l.id === layer.id ? placeLayer(l, t, patch) : l)),
+    });
+    window.clearTimeout(wheelSession.current.timer);
+    wheelSession.current.timer = window.setTimeout(commitWheel, 400);
+  };
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const wheel = (event: WheelEvent) => wheelRef.current(event);
+    canvas?.addEventListener("wheel", wheel, { passive: false });
+    return () => canvas?.removeEventListener("wheel", wheel);
+  }, []);
+  /** The topmost layer under (x, y) (shares of the frame), by its painted box. */
+  function layerAt(x: number, y: number, rect: DOMRect) {
+    const t = editor.draw.current.time,
+      { w, h } = layerFrame.current,
+      unit = w / Math.max(1, rect.width);
+    return [...editor.project.layers].reverse().find((l) => {
+      const box = layerBoxes.current.get(l.id);
+      if (!box || t < l.start || t >= l.end) return false;
+      // Into the layer's own turned frame; a finger's width of slack.
+      const px = x * w - box.cx,
+        py = y * h - box.cy,
+        lx = px * Math.cos(box.rotate) + py * Math.sin(box.rotate),
+        ly = -px * Math.sin(box.rotate) + py * Math.cos(box.rotate),
+        pad = 10 * unit;
+      return Math.abs(lx) <= box.hw + pad && Math.abs(ly) <= box.hh + pad;
+    });
+  }
   function pointerCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
     if (recStatusRef.current !== "idle") return;
+    fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (fingers.current.size >= 2 && startPinch(event)) return;
+    if (fingers.current.size > 2) return;
     const rect = event.currentTarget.getBoundingClientRect(),
       x = (event.clientX - rect.left) / rect.width,
       y = (event.clientY - rect.top) / rect.height,
       t = editor.draw.current.time;
-    const layer = [...editor.project.layers].reverse().find((l) => {
-      if (t < l.start || t >= l.end) return false;
-      const f = frameAt(l, t),
-        halfWidth =
-          l.kind === "text" ? Math.min(0.4, l.text.length * 0.022) * f.scale : 0.12 * f.scale;
-      return Math.abs(x - f.x) < halfWidth && Math.abs(y - f.y) < 0.13 * f.scale;
-    });
+    const layer = layerAt(x, y, rect);
     if (!layer) {
       const box = captionBoxRef.current,
         reach = 0.025;
@@ -2132,6 +2379,12 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     }
   }
   function moveCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (fingers.current.has(event.pointerId))
+      fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch.current) {
+      movePinch(event.currentTarget.getBoundingClientRect());
+      return;
+    }
     const lift = captionDrag.current;
     if (lift) {
       const rect = event.currentTarget.getBoundingClientRect(),
@@ -2175,6 +2428,20 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
     });
   }
   function finishCanvas(event: React.PointerEvent<HTMLCanvasElement>) {
+    fingers.current.delete(event.pointerId);
+    const g = pinch.current;
+    if (g) {
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      // The pinch ends with the first lifted finger; the other does nothing more.
+      pinch.current = null;
+      if (
+        g.kind === "layer" &&
+        JSON.stringify(editor.draw.current.project.layers) !== JSON.stringify(g.before.layers)
+      )
+        editor.commit(editor.draw.current.project, g.before);
+      return;
+    }
     const lift = captionDrag.current;
     if (lift) {
       captionDrag.current = null;
@@ -2309,6 +2576,17 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
 
   const activeMode = MODES.find((m) => m.id === mode)!;
   const activeFormat = VIDEO_FORMATS.find((f) => f.id === format)!;
+  const coarsePointer =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  {
+    const selectedLayer = editor.project.layers.some((l) => l.id === editor.selected)
+      ? editor.selected
+      : "";
+    layerUi.current = {
+      selected: selectedLayer,
+      show: !!selectedLayer && (activeTool === "layers" || !easy),
+    };
+  }
   const safeZones = hud && source !== "idle" && !locked ? guideZones(guide, format) : [];
   safeZonesRef.current = safeZones;
   return (
@@ -2510,6 +2788,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             setTimelineExpanded(true);
             setAutoEditSignal((n) => n + 1);
           }}
+          onTranscript={() => setTranscriptOpen(true)}
           disabled={locked || loading || source === "idle"}
         />
         <main className="studio-main">
@@ -2610,6 +2889,17 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 >
                   <Redo2 className="size-4" />
                 </Button>
+                <HistoryPanel
+                  project={editor.project}
+                  editPast={editor.past}
+                  editFuture={editor.future}
+                  cues={captions.cues}
+                  position={captions.options.position}
+                  captionPast={captions.past}
+                  captionFuture={captions.future}
+                  disabled={locked}
+                  onJump={jumpHistory}
+                />
                 <Button
                   className="preview-fold"
                   aria-expanded={!compactPreview}
@@ -2679,6 +2969,15 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                 ref={canvasRef}
                 aria-label={ui(`${activeMode.label} müzik görselleştirmesi`)}
               />
+              <div ref={layerOutlineRef} className="layer-outline" hidden aria-hidden="true">
+                <span>
+                  {ui(
+                    coarsePointer
+                      ? "Sürükle · iki parmakla büyüt ve döndür"
+                      : "Sürükle · tekerlek: büyüt · Shift: döndür",
+                  )}
+                </span>
+              </div>
               <div ref={captionOutlineRef} className="caption-outline" hidden aria-hidden="true">
                 <span>{ui("Sürükle · iki kez dokun: düzenle")}</span>
               </div>
@@ -2911,6 +3210,7 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
                   onTemplates={openTemplates}
                   loopSpan={loopSpan}
                   onLoopRange={loopRange}
+                  onTranscript={() => setTranscriptOpen(true)}
                   onCaption={(id) => {
                     setCaptionFocus((previous) => ({ id, serial: (previous?.serial || 0) + 1 }));
                     openTool("captions");
@@ -2951,22 +3251,47 @@ function StudioEditor({ onNewProject }: { onNewProject: () => void }) {
             </div>
           )}
         </main>
-        {editToast && !locked && (
-          <div className="edit-toast" role="status" key={editToast.serial}>
-            <span>{ui(editToast.message)}</span>
-            <button
-              type="button"
-              disabled={!canUndoAny}
-              onClick={() => {
-                undoLast();
-                setEditToast(null);
-              }}
-            >
-              <Undo2 className="size-4" />
-              {ui("Geri al")}
-            </button>
-          </div>
-        )}
+        <TranscriptPanel
+          open={transcriptOpen}
+          onClose={() => setTranscriptOpen(false)}
+          cues={captions.cues}
+          offset={captions.options.offset}
+          clips={editor.project.clips}
+          sourceTime={time}
+          playing={playing}
+          disabled={locked}
+          onApply={(clips) => editor.commit({ ...editor.draw.current.project, clips })}
+          onPlaySource={playSource}
+          onPause={() => engineRef.current?.pause()}
+          onCreateCaptions={() => openTool("captions")}
+        />
+        {editToast &&
+          !locked &&
+          (() => {
+            const toast = (
+              <div
+                className={`edit-toast ${editToast.host ? "in-dialog" : ""}`}
+                role="status"
+                key={editToast.serial}
+              >
+                <span>{ui(editToast.message)}</span>
+                <button
+                  type="button"
+                  disabled={!canUndoAny}
+                  onClick={() => {
+                    undoLast();
+                    setEditToast(null);
+                  }}
+                >
+                  <Undo2 className="size-4" />
+                  {ui("Geri al")}
+                </button>
+              </div>
+            );
+            // An open dialog blocks everything outside it, so the offer
+            // goes inside the dialog the edit was made in.
+            return editToast.host?.isConnected ? createPortal(toast, editToast.host) : toast;
+          })()}
         <aside className="studio-inspector" aria-label={ui("Stüdyo ayarları")}>
           <VideoTemplatesPanel
             open={templatesOpen}

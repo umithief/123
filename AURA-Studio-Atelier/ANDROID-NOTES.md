@@ -1,5 +1,27 @@
 # AURA Studio Android
 
+## 2.7.0 — Metinle Kurgu, iki parmakla düzenleme ve düzenleme geçmişi
+
+**Metinle Kurgu.** Araç çubuğundaki yeni **Metinle** düğmesi (ayrıca Hazır araçlar'daki **Metinle Kurgu** kartı) videodaki konuşmayı yazı olarak açar. Kelimelere dokunup seç, **Kes** ile videodan çıkar; kesilen kelimeler üstü çizili olarak görünmeye devam eder. **Duraksamaları seç**, "ııı, eee, hmm, şey" gibi dolgu sözcüklerini tek dokunuşla seçer. **Uzun duraklamaları kısalt**, 0,7 saniyeden uzun sessizlikleri çeyrek saniyeye indirir; kazanılacak süre düğmenin üstünde yazar. **Aralık seç** ile ilk ve son kelimeye dokunarak bir cümlenin tamamını seçebilirsin. **Seçimi dinle**, kesmeden önce o bölümü oynatır. Satır başındaki saate dokununca video o satırdan oynar ve oynarken söylenen kelime vurgulanır. Altyazılar kaynak videonun zamanına bağlı olduğu için kalan altyazılar kesimden sonra da senkron kalır. Altyazıda kelime süreleri yoksa süreler tahmin edilir ve pencerede bu belirtilir. Henüz altyazı yoksa pencere seni Altyazı aracına yönlendirir; orada Oluştur ile konuşmayı otomatik yazıya dökebilir ya da SRT dosyası ekleyebilirsin. Her kesim tek adımda geri alınır. "Geri al" bildirimi artık açık pencerelerin içinde de görünür ve dokunulabilir.
+
+**İki parmakla düzenleme.** Önizlemede bir yazı, görsel ya da şekil katmanını iki parmakla tutup büyütebilir, küçültebilir ve döndürebilirsin; parmakları birlikte kaydırınca katman da taşınır. Döndürme 0°, 90°, 180° ve 270° yakınında hafifçe yerine oturur. Tutulan katmanın çevresinde köşe noktalı bir çerçeve görünür. Altyazı seçiliyken iki parmak yazı boyutunu değiştirir (20–48). Masaüstünde fare tekerleği katmanı büyütür, Shift+tekerlek döndürür. Her hareket tek geri alma adımıdır; anahtar kare kullanan katmanda o andaki anahtar kare güncellenir.
+
+**Düzenleme geçmişi.** Geri al ve yinele düğmelerinin yanındaki saat simgesi yapılan bütün adımları adlarıyla listeler: "Klip bölündü", "Geçiş: 3D Küp", "Kurgu kısaldı: −2,0 sn", "Altyazı metni düzenlendi" gibi. En yeni adım en üsttedir. Bir adıma dokununca proje o adımdaki hâline döner. Geri alınan adımlar yinele simgesiyle gösterilir ve aynı şekilde geri getirilebilir. Video ve altyazı düzenlemeleri tek bir zaman sırasında görünür.
+
+### 2.7.0 doğrulaması
+
+TypeScript ve 153 AURA birim testi geçti. Yeni 10 test şunları kapsıyor: kelime zamanları ve tahmini, duraksama tanıma, seçilen kelimelerden kesim aralığı çıkarma, uzun duraklamalar, kaynak aralıklarını kliplerden çıkarma (geçiş, animasyon ve ses açılışı ilk parçada, kapanışı son parçada kalır; parça sınırı aşılmaz) ve adım adları.
+
+Tarayıcıda telefon ve masaüstü ekranında denenenler:
+- 12 saniyelik konuşma projesinde duraksamalar kesilince süre 10 saniyeye, ardından uzun duraklamalar kısaltılınca 7 saniyeye indi.
+- Aralık seçimi, seçimi dinleme, satırdan oynatma ve pencere içinden Geri al çalıştı.
+- Yazı katmanı iki parmakla 2 kat büyütüldü ve 45° döndürüldü; tek Geri al ile eski hâline döndü.
+- Masaüstünde tekerlek ve Shift+tekerlek çalıştı.
+- Altyazı boyutu iki parmakla 30'dan 48'e çıktı.
+- Geçmiş panelinde adımlar doğru sırada listelendi; 3 adım geri ve yeniden ileri gidildi.
+
+Önceki testler de yeniden geçti: ekran turları (320 ve 390 piksel, 1280 piksel açık tema), Projelerim, güvenli alan, aralık araçları, altyazı yerleşimi, Pro galerileri, Oto Kurgu, kesim geçişi ve akıcı önizleme. Fiziksel telefonda denenmedi.
+
 ## 2.6.0 — akıcı önizleme, favoriler, tüm kliplere uygula ve "Geri al" bildirimi
 
 **Akıcı önizleme.** Oynatma ayarlarında (hoparlör düğmesi) yeni **Akıcı önizleme** seçeneği: düzenlerken görüntü telefon ekranına yetecek boyutta (kısa kenar 480 piksel) çizilir; bu, özellikle 1080p projelerde ve Pro efektlerde önizlemeyi rahatlatır. Dışa aktarma ve "Sahneyi PNG olarak indir" her zaman tam boyutta çizilir (akıcı önizleme açıkken de 1080p video 1080×1920, fotoğraf 1920×1080 çıkar). Önizleme oynarken saniyede 20 karenin altına düşerse, önizlemenin altında bir kez "Önizleme takılıyor mu? · Akıcı önizlemeyi aç" önerisi çıkar. Seçim cihazda hatırlanır.

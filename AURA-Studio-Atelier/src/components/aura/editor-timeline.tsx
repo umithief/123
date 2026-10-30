@@ -144,6 +144,7 @@ export function EditorTimeline({
   onPlayEdit,
   loopSpan = null,
   onLoopRange,
+  onTranscript,
 }: {
   editor: Editor;
   file: File | null;
@@ -170,6 +171,8 @@ export function EditorTimeline({
   loopSpan?: readonly [number, number] | null;
   /** Starts (or with null stops) playing a range over and over. */
   onLoopRange: (span: readonly [number, number] | null) => void;
+  /** Opens text-based editing. */
+  onTranscript?: () => void;
   /** Shared decode of the source: waveform, onsets and the steady beat grid
    *  (marks, snapping and beat cuts use the grid rather than every onset). */
   analysis: AudioAnalysis;
@@ -1385,6 +1388,7 @@ export function EditorTimeline({
         onBeatImages={() => setBeatImagesOpen(true)}
         onTemplates={onTemplates}
         onAutoEdit={() => setAutoEditOpen(true)}
+        onTranscript={onTranscript}
       />
       <AutoEditPanel
         open={autoEditOpen}

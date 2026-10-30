@@ -806,5 +806,14 @@ export function useEditor(
     undoAt: history.past.at(-1)?.at ?? 0,
     /** Stamp of the step redo would restore (0 = none). */
     redoAt: redoable(history.future[0]?.at) ? history.future[0].at : 0,
+    /** The undo and redo steps, for the history list. */
+    past: history.past,
+    future: history.future,
+    /** The same stamps as undoAt/redoAt, read now (between several undos). */
+    peekUndoAt: () => historyRef.current.past.at(-1)?.at ?? 0,
+    peekRedoAt: () => {
+      const next = historyRef.current.future[0];
+      return next && redoable(next.at) ? next.at : 0;
+    },
   };
 }
