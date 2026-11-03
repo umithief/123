@@ -1,4 +1,37 @@
-AURA Studio Atelier 2.7.0
+AURA Studio Atelier 2.8.0
+
+## 2.8.0 — AURA 3.0 "Lumen": arayüz yeniden tasarlandı
+
+Bütün ekranlar tek bir tasarım sistemiyle yeniden düzenlendi. Hiçbir özellik, düğme ya da akış kaldırılmadı veya yer değiştirmedi. Tokenlar, bileşen durumları ve kurallar `DESIGN-SYSTEM.md`'de.
+
+**Yön.** Kurgu ekranı karanlık bir oda gibi tasarlandı; içindeki tek ışık video. Nötr renkler siyaha yakın ve hafif sıcak. Tek vurgu rengi Aura kehribarı; yalnızca ana eylemde (Dışa aktar, Tamam, Videoyu hazırla), geçerli seçimde ve oynatma çizgisinde kullanılıyor. Seçili ya da odaklanmış her denetim aynı kehribar hale ile çevreleniyor.
+
+**Tipografi.** Başlıklardaki serif yazı kaldırıldı. Bütün arayüz tek ailede (Outfit) ve tek bir ölçekte: ana sayfa başlığı, pencere başlığı, panel başlığı, gövde metni, düğme ve etiket.
+
+**Bileşenler.**
+- Ana düğme kehribar ve hap şeklinde; ikincil düğmeler 12 piksel köşeli, yükseltilmiş yüzeyde.
+- Segmentli seçimlerde seçili sekme yüzeyden hafifçe kalkıyor.
+- Kaydırıcılar ince; tutamak kehribar.
+- Pencereler 24 piksel köşeli; açılır menüler gölgeli.
+- Basıldığında düğmeler hafifçe küçülüyor.
+- İkonlar ince çizgili.
+
+**Telefonda araç çubuğu.** Araç çubuğu artık ekranın altına yapışık değil; güvenli alanın üstünde yüzen, yuvarlak köşeli bir çubuk. Araçların hepsi nötr renkte; yalnızca açık araç kehribar renkte ve üstünde küçük bir gösterge çizgisi var. Masaüstünde gösterge rayın solunda duruyor.
+
+**Ana sayfa.** Başlık sade ve güçlü bir yazıyla yeniden yazıldı. Etiket kehribar bir ışık noktasıyla başlıyor. Oluşturma kartları üzerine gelince yükseliyor; okları kehribara dönüyor.
+
+**Açık tema.** Yeşil vurgu, koyu temayla aynı ailede bronz bir renkle değiştirildi; zaman çizelgesindeki ses dalgası açık zeminde de net görünüyor.
+
+**Erişilebilirlik.**
+- Bütün metin ve vurgu renkleri her iki temada WCAG AA kontrastını (≥ 4,5:1) geçiyor.
+- Başlık ve oynatma denetimleri en az 44 piksel.
+- Klavye odağı kehribar hale ile görünüyor.
+- Cihazda "hareketi azalt" açıksa geçişler ve basılma animasyonları kapanıyor.
+- 375 pikselden dar ekranlarda başlıktaki logo, denetimlere yer açmak için gizleniyor.
+
+### 2.8.0 doğrulaması
+
+TypeScript ve 153 AURA birim testi geçti. Tarayıcıda 320, 360, 390 ve 1280 piksel genişlikte, koyu ve açık temada ana sayfa, kurgu ekranı, bütün araç panelleri, şablonlar, Hazır araçlar ve Dışa aktar ekranları incelendi; yatay taşma ve sayfa hatası yok. Önceki bütün testler yeniden geçti: Metinle Kurgu, düzenleme geçmişi, iki parmakla düzenleme, altyazı boyutu, Projelerim, güvenli alan, aralık araçları, altyazı yerleşimi, Pro galerileri, Oto Kurgu, kesim geçişi ve akıcı önizleme. Fiziksel telefonda denenmedi.
 
 ## 2.7.0 — Metinle Kurgu, iki parmakla düzenleme ve düzenleme geçmişi
 

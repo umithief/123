@@ -1,0 +1,759 @@
+/* AURA 3.0 — Lumen design system.
+ *
+ * The editor is a dark room and the video is its only light source. The
+ * interface steps back: near-black neutrals with a trace of warmth, one
+ * typeface (Outfit) on one scale, and a single amber accent kept for what
+ * matters — the primary action, the current selection and the playhead.
+ * The signature detail is the halo: a selected or focused control is
+ * outlined in amber with a soft glow, the same everywhere.
+ *
+ * Loaded after aura-2.css. It defines the tokens (DESIGN-SYSTEM.md lists
+ * them) and refines the shared components; layout stays in aura-2.css.
+ * Rules use the same four-class root as aura-2.css; dialogs and popovers are
+ * portalled outside the app root, so their rules are unscoped.
+ */
+
+/* ---------- Tokens ---------- */
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  /* Neutrals */
+  --color-canvas: #0b0b0d;
+  --color-panel: #131316;
+  --color-raised: #1b1b20;
+  --color-hover: #24242a;
+  --color-selected: #2c2c33;
+  --color-ink: #f5f3ef;
+  --color-mute: #aaa69f;
+  --color-soft: #8b877f;
+  --color-line: #222228;
+  --color-line-strong: #383840;
+  --color-glass: rgb(19 19 22 / 0.88);
+  --color-preview: #050506;
+  /* Accent: Aura amber */
+  --color-accent: #f2c27e;
+  --color-accent-strong: #f8d6a4;
+  --color-accent-ink: #1c1307;
+  --color-accent-soft: rgb(242 194 126 / 0.13);
+  --color-accent-glow: rgb(242 194 126 / 0.28);
+  /* Status */
+  --color-danger: #ff8473;
+  --color-danger-ink: #1d0a07;
+  --color-success: #7bd9a6;
+  /* Timeline tracks */
+  --color-track-source: #29272b;
+  --color-clip-ink: #e9e4da;
+  --color-track-text: #3b3121;
+  --color-track-caption: #272b3d;
+  --color-track-sound: #1e3134;
+  /* Elevation */
+  --elevation-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elevation-2: 0 10px 28px rgb(0 0 0 / 0.42);
+  --elevation-3: 0 24px 64px rgb(0 0 0 / 0.55);
+  --a2-shadow: var(--elevation-3);
+  --a2-sheet-shadow: 0 -16px 44px rgb(0 0 0 / 0.55);
+  --sheen: inset 0 1px 0 rgb(255 255 255 / 0.22);
+
+  /* Typography: one family, one scale */
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --text-display: clamp(2.25rem, 7.4vw, 4.25rem);
+  --text-title-1: 1.375rem;
+  --text-title-2: 1.0625rem;
+  --text-body: 0.9375rem;
+  --text-callout: 0.875rem;
+  --text-footnote: 0.8125rem;
+  --text-caption: 0.75rem;
+  --text-label: 0.6875rem;
+
+  /* Spacing: 4-point grid */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* Shape */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 999px;
+  --radius-control: var(--radius-md);
+  --radius-surface: var(--radius-lg);
+  --radius-card: var(--radius-lg);
+  --a2-radius: var(--radius-md);
+  --a2-radius-lg: var(--radius-xl);
+
+  /* Touch and motion */
+  --touch: 2.75rem;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-ui: var(--duration-base);
+  --halo: 0 0 0 1px var(--color-accent), 0 0 0 4px var(--color-accent-soft);
+}
+html[data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #f4f2ee;
+  --color-panel: #fdfcfa;
+  --color-raised: #eeebe5;
+  --color-hover: #e5e1d9;
+  --color-selected: #ffffff;
+  --color-ink: #17171a;
+  --color-mute: #57544e;
+  --color-soft: #6b675f;
+  --color-line: #e2ded6;
+  --color-line-strong: #c4bfb4;
+  --color-glass: rgb(253 252 250 / 0.92);
+  --color-preview: #111113;
+  --color-accent: #8a560c;
+  --color-accent-strong: #6f4407;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: rgb(138 86 12 / 0.1);
+  --color-accent-glow: rgb(138 86 12 / 0.22);
+  --color-danger: #b3321f;
+  --color-danger-ink: #ffffff;
+  --color-success: #1f7a4d;
+  --color-track-source: #ddd6c9;
+  --color-clip-ink: #4d453a;
+  --color-track-text: #ecdfc2;
+  --color-track-caption: #dadcec;
+  --color-track-sound: #cfe1de;
+  --elevation-1: 0 1px 2px rgb(23 23 26 / 0.08);
+  --elevation-2: 0 10px 28px rgb(23 23 26 / 0.1);
+  --elevation-3: 0 24px 64px rgb(23 23 26 / 0.16);
+  --a2-shadow: var(--elevation-3);
+  --a2-sheet-shadow: 0 -12px 36px rgb(23 23 26 / 0.12);
+  --sheen: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+/* ---------- Base ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout {
+  font-family: var(--font-sans);
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout ::selection {
+  background: var(--color-accent-glow);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout svg.lucide,
+:is(.transition-dialog, .atelier-dialog, .studio-popover) svg.lucide {
+  stroke-width: 1.75;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout :focus-visible,
+:is(.transition-dialog, .atelier-dialog, .studio-popover) :focus-visible {
+  outline: none;
+  box-shadow: var(--halo);
+}
+
+/* ---------- Buttons ---------- */
+/* Primary: the one amber pill per screen. Secondary: a raised, rounded
+ * rectangle. Icon: ghost until hovered or pressed. */
+.aura-2.aura-studio.atelier-studio.calm-layout :is(.studio-button, .studio-icon, .studio-primary),
+:is(.transition-dialog, .atelier-dialog) .studio-primary {
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-button {
+  border-radius: var(--radius-md);
+  border-color: var(--color-line);
+  background: var(--color-raised);
+  font-weight: 500;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-icon {
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-primary,
+:is(.transition-dialog, .atelier-dialog) .studio-primary {
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  box-shadow: var(--sheen);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-primary:not(:disabled):hover,
+:is(.transition-dialog, .atelier-dialog) .studio-primary:not(:disabled):hover {
+  filter: none;
+  background: var(--color-accent-strong);
+}
+html[data-theme="light"]
+  .aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-primary:not(:disabled):hover,
+html[data-theme="light"]
+  :is(.transition-dialog, .atelier-dialog)
+  .studio-primary:not(:disabled):hover {
+  color: #fff;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  :is(.studio-button, .studio-icon, .studio-primary, .aura-toolbar button):not(:disabled):active,
+:is(.transition-dialog, .atelier-dialog) button:not(:disabled):active {
+  transform: scale(0.97);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  :is(.studio-button, .studio-icon, .studio-primary):disabled {
+  opacity: 0.38;
+}
+
+/* Segmented control: a quiet track, the choice lifted onto it. */
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-segments {
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-segments > button {
+  min-height: 2.25rem;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: var(--text-footnote);
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-segments
+  > button:not([aria-pressed="true"]):not([aria-selected="true"]):hover {
+  color: var(--color-ink);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-segments > button[aria-pressed="true"],
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-segments > button[aria-selected="true"] {
+  background: var(--color-selected);
+  color: var(--color-ink);
+  font-weight: 600;
+  box-shadow: var(--elevation-1);
+}
+html[data-theme="light"]
+  .aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-segments
+  > button[aria-pressed="true"] {
+  box-shadow:
+    var(--elevation-1),
+    0 0 0 1px var(--color-line);
+}
+
+/* Sliders: a thin track, an amber thumb ringed by the surface. */
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-line-strong);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-range::-webkit-slider-thumb {
+  background: var(--color-accent);
+  box-shadow:
+    0 0 0 3px var(--color-canvas),
+    var(--elevation-1);
+}
+
+/* ---------- Header ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-header {
+  gap: var(--space-3);
+  background: var(--color-canvas);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-monogram {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(150deg, var(--color-accent-strong), var(--color-accent) 60%);
+  color: var(--color-accent-ink);
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  box-shadow:
+    var(--sheen),
+    0 0 18px var(--color-accent-soft);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-brand p {
+  font-family: var(--font-sans);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-brand small {
+  color: var(--color-soft);
+  font-weight: 500;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-back {
+  width: var(--touch);
+  height: var(--touch);
+  border: 0;
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) ease;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-back:hover {
+  background: var(--color-raised);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout :is(.appearance-switch, .language-switch) {
+  height: var(--touch);
+  min-width: var(--touch);
+  border-radius: var(--radius-md);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-header-actions .studio-button {
+  border-color: transparent;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-header-actions
+  .studio-button:not(:disabled):hover {
+  border-color: var(--color-line);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-header-actions
+  :is(.studio-button, .studio-icon) {
+  min-height: var(--touch);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-header-actions .studio-icon {
+  min-width: var(--touch);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-header-actions .studio-primary {
+  min-height: 2.5rem;
+}
+
+/* ---------- Tool bar / rail ---------- */
+/* Tools are neutral; only the open tool is lit. */
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button {
+  position: relative;
+  gap: 0.375rem;
+  border-radius: var(--radius-md);
+  color: var(--color-mute);
+  font-size: var(--text-label);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) var(--ease-out);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-toolgroup.is-start button {
+  color: var(--color-ink);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button svg {
+  width: 1.3125rem;
+  height: 1.3125rem;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0.25rem;
+  left: 50%;
+  width: 1rem;
+  height: 3px;
+  margin-left: -0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+@media (min-width: 700px) {
+  .aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button[aria-pressed="true"]::after {
+    top: 50%;
+    left: 0;
+    width: 3px;
+    height: 1.25rem;
+    margin: -0.625rem 0 0;
+  }
+}
+
+/* ---------- Stage ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout .preview-fit {
+  border-radius: var(--radius-lg);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .canvas-frame {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.05);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .source-name {
+  min-height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .format-quick {
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .easy-preview-controls :is(button, .studio-icon) {
+  border-radius: var(--radius-md);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .compact-transport .studio-play {
+  width: var(--touch);
+  height: var(--touch);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  box-shadow: var(--elevation-2);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .compact-transport .studio-play:active {
+  transform: scale(0.94);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .compact-transport .transport-time {
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .studio-message {
+  border-color: var(--color-line-strong);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- Timeline ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout .timeline-toggle {
+  color: var(--color-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .timeline-clip .source-clip-button {
+  border-color: var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-track-source);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .timeline-clip.is-selected .source-clip-button {
+  border-color: var(--color-accent);
+  box-shadow:
+    inset 0 0 0 1px var(--color-accent),
+    0 0 0 3px var(--color-accent-soft);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout :is(.timeline-clip, .timeline-item) {
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Tool panel / sheet ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout .editor-tool-heading {
+  min-height: 3.5rem;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .editor-tool-heading h2 {
+  font-size: var(--text-title-2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .editor-tool-heading .editor-done {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  box-shadow: var(--sheen);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .inspector-scroll {
+  padding: var(--space-4) var(--space-4) var(--space-6);
+}
+/* Choices in panels: rounded tiles, the selection haloed. */
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-inspector
+  .choice-strip:not(.studio-segments)
+  > button {
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-inspector
+  .choice-strip:not(.studio-segments)
+  > button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  box-shadow: var(--halo);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .studio-inspector
+  :is(input[type="text"], input[type="number"], input:not([type]), textarea, select) {
+  border-radius: var(--radius-sm);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .easy-details {
+  border-radius: var(--radius-lg);
+}
+@media (max-width: 699.98px) {
+  .aura-2.aura-studio.atelier-studio.calm-layout.tool-open .studio-inspector {
+    border-top-color: var(--color-line);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout .editor-tool-heading::before {
+    width: 2.5rem;
+    background: var(--color-line-strong);
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout .studio-main {
+    padding: 0 var(--space-3);
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout .project-timeline {
+    margin: 0 calc(-1 * var(--space-3));
+  }
+  /* The tool bar floats as a dock above the safe area. */
+  .aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar {
+    margin: var(--space-1) var(--space-2) max(var(--space-2), env(safe-area-inset-bottom));
+    padding: var(--space-1);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    background: var(--color-panel);
+    box-shadow: var(--elevation-2);
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout .aura-toolbar button {
+    min-width: 3.875rem;
+    min-height: 3.375rem;
+    border-radius: calc(var(--radius-xl) - var(--space-1));
+  }
+}
+
+/* ---------- Dialogs and popovers ---------- */
+.atelier-dialog,
+.transition-dialog {
+  border-color: var(--color-line-strong);
+  border-radius: var(--radius-xl);
+  background: var(--color-panel);
+  box-shadow: var(--elevation-3);
+}
+.atelier-dialog-overlay {
+  background: rgb(5 5 6 / 0.6);
+  backdrop-filter: blur(6px);
+}
+:is(.atelier-dialog, .transition-heading, .easy-export-dialog, .easy-export-options) h2,
+:is(.easy-task-heading, .studio-guide-heading, .library-heading) h2 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.atelier-dialog h2,
+.transition-heading h2 {
+  font-size: var(--text-title-1);
+  line-height: 1.2;
+}
+.transition-heading p,
+.atelier-dialog p {
+  color: var(--color-mute);
+  font-size: var(--text-footnote);
+  line-height: 1.5;
+}
+.easy-export-dialog h2,
+.easy-export-options h2 {
+  font-size: var(--text-title-1) !important;
+}
+.library-heading h2 {
+  font-size: clamp(1.625rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+.drop-overlay p {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.studio-popover {
+  border-color: var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-raised);
+  box-shadow: var(--elevation-2);
+}
+html[data-theme="light"] .studio-popover {
+  background: var(--color-panel);
+}
+
+/* Ready-made tools: list cards; the featured ones carry a lit icon. */
+.quick-tool {
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  transition: border-color var(--duration-fast) ease;
+}
+.quick-tool:hover {
+  border-color: var(--color-line-strong);
+}
+.quick-tool-icon {
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+}
+.quick-tool h3 {
+  font-size: var(--text-callout);
+  letter-spacing: -0.005em;
+}
+.quick-tool p {
+  font-size: var(--text-caption);
+}
+.quick-tool-feature .quick-tool {
+  border-color: var(--color-line-strong);
+  background: linear-gradient(160deg, var(--color-raised), var(--color-panel) 70%);
+}
+.quick-tool-feature .quick-tool-icon {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  box-shadow: var(--sheen);
+}
+.transition-dialog .quick-tool-actions button {
+  border-color: var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-raised);
+  color: var(--color-ink);
+  font-weight: 600;
+  transition: background-color var(--duration-fast) ease;
+}
+.transition-dialog .quick-tool-actions button:not(:disabled):hover {
+  background: var(--color-hover);
+}
+.transition-dialog .quick-tool-actions button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: var(--halo);
+}
+
+/* ---------- Home ---------- */
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-home {
+  gap: var(--space-8);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-mute);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .atelier-eyebrow::before {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  box-shadow: 0 0 10px var(--color-accent-glow);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-intro h1 {
+  margin: var(--space-4) 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-display);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-intro h1 em {
+  font-style: normal;
+  color: var(--color-accent);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-intro p {
+  font-size: var(--text-body);
+  line-height: 1.55;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-feature {
+  border-color: var(--color-line);
+  border-radius: var(--radius-xl);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout :is(.home-current, .home-recovery) {
+  border-color: var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, var(--color-raised), var(--color-panel) 75%);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .current-symbol {
+  border-radius: var(--radius-md);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-current > div small {
+  color: var(--color-accent);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-current > button:last-child {
+  box-shadow: var(--sheen);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-section-heading h2 {
+  font-size: var(--text-title-2);
+  letter-spacing: -0.01em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-grid > button {
+  border-color: var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  transition:
+    border-color var(--duration-base) ease,
+    background-color var(--duration-base) ease,
+    transform var(--duration-base) var(--ease-out);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-grid > button:not(:disabled):hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-grid > button:not(:disabled):active {
+  transform: scale(0.985);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-top svg {
+  border-radius: var(--radius-md);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-top small {
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-grid > button > strong {
+  font-size: var(--text-title-2);
+  letter-spacing: -0.01em;
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .creation-arrow {
+  color: var(--color-soft);
+  transition:
+    color var(--duration-base) ease,
+    transform var(--duration-base) var(--ease-out);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout
+  .creation-grid
+  > button:not(:disabled):hover
+  .creation-arrow {
+  color: var(--color-accent);
+  transform: translateX(3px);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-look-strip > button {
+  border-radius: var(--radius-lg);
+}
+.aura-2.aura-studio.atelier-studio.calm-layout .home-footer {
+  font-weight: 500;
+}
+
+/* ---------- Toast ---------- */
+.edit-toast {
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-2);
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .aura-2.aura-studio.atelier-studio.calm-layout *,
+  .aura-2.aura-studio.atelier-studio.calm-layout *::before,
+  .aura-2.aura-studio.atelier-studio.calm-layout *::after,
+  :is(.transition-dialog, .atelier-dialog, .studio-popover, .edit-toast),
+  :is(.transition-dialog, .atelier-dialog, .studio-popover) * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout
+    :is(
+      .studio-button,
+      .studio-icon,
+      .studio-primary,
+      .aura-toolbar button,
+      .studio-play,
+      .creation-grid > button
+    ):active,
+  :is(.transition-dialog, .atelier-dialog) button:active {
+    transform: none !important;
+  }
+}
+
+/* ---------- Narrow phones ---------- */
+/* Header controls keep their 44 px targets; the brand gives way instead. */
+@media (max-width: 374.98px) {
+  .aura-2.aura-studio.atelier-studio.calm-layout:not(.at-home) .studio-brand {
+    display: none;
+  }
+  .aura-2.aura-studio.atelier-studio.calm-layout.at-home .studio-brand small {
+    display: none;
+  }
+}
