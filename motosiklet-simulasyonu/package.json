@@ -9,7 +9,8 @@
     "build": "node build.mjs",
     "test": "node --test test/*.test.mjs",
     "test:e2e": "node test/e2e.mjs",
-    "lighthouse": "node test/lighthouse.mjs"
+    "lighthouse": "node test/lighthouse.mjs",
+    "worker": "node deploy/worker-olustur.mjs"
   },
   "devDependencies": {
     "axe-core": "4.10.3",

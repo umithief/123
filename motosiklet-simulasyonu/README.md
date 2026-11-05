@@ -60,12 +60,27 @@ uygundur: "geçmeyen"). kW beygirden çevrildiyse ve sınır %3'ten az aşılıy
 Faz 2: tork eğrisi tepe güç ve tork değerlerinden türetilir; vites oranları yayımlanmadığı için 6 vitesli
 varsayımsal kutu; sabitler `src/fizik.js` içinde belgelidir.
 
-## Deploy (onay gerektirir)
+## Deploy
 
-Production deploy ve git push yalnızca onaydan sonra yapılır.
+Canlı Pages deploy'u başka bir çalışma ağacından yapılıyor ve o ağacın `_redirects`/`_headers`
+dosyaları bu depodaki sürümden farklı (canlıda `/telemetri → /surus-modu` gibi ek kurallar var).
+Bu yüzden sayfa, Pages'e yeni deploy yapılmadan, yalnızca belirli route'larda çalışan bir
+Cloudflare Worker'ıyla yayına alınır (sitede `/api/*` için `motonom-visits` aynı yöntemi kullanır):
 
-1. Canlı deploy ile aynı site ağacını alın (son production deploy: `4c25386b`, 2026-11-05 11:08 UTC; geri
-   dönüş noktası olarak Cloudflare panelinden bu deploy'a "Rollback" yapılabilir).
-2. `node build.mjs --site <ağaç> --out dist` → `dist/yedek/<zaman>/` üzerine yazılacak dosyaların yedeğini içerir.
-3. `cp -r dist/site/. <ağaç>/` ve `wrangler pages deploy <ağaç> --project-name=motonom-landing`.
-4. `dist/indexnow-urls.txt` içindeki adresleri IndexNow'a gönderin.
+| Route (motonom.app) | Worker davranışı |
+|---|---|
+| `/motosiklet-simulasyonu*` | Sayfa; `.html` ve sonda `/` → 308 eğik çizgisiz adres |
+| `/assets/msim-*` | Hash'li JS/CSS (1 yıl önbellek) |
+| `/veri/motosiklet-modelleri.json` | Veri dosyası |
+| `/sitemap-diger.xml`, `/sitemap.xml`, `/llms.txt` | Canlı dosya Pages'ten alınır, yama anında eklenir |
+
+Diğer tüm istekler dokunulmadan Pages'e gider. Sonraki Pages deploy'ları sayfayı kaldırmaz.
+Kalıcı çözüm olarak `dist/site` içeriği ana site ağacına eklendiğinde Worker route'ları silinebilir.
+
+```bash
+node build.mjs --site test/canli-anlik     # şablon = canlı deploy'un kaynak dosyası (blake3 hash'i manifestle aynı)
+node deploy/worker-olustur.mjs             # deploy/worker.mjs
+node --test test/worker.test.mjs
+```
+
+Geri alma: Cloudflare → motonom.app → Workers Routes'tan `motonom-simulasyon` route'larını silin.
