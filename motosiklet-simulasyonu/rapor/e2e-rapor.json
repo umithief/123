@@ -1,0 +1,250 @@
+{
+  "tarih": "2026-11-05T14:58:22.941Z",
+  "profiller": {
+    "masaustu": {
+      "kontroller": [
+        {
+          "baslik": "Sayfa hatasız açılır; Faz 2 kodu yüklenmez",
+          "durum": "geçti",
+          "sure_ms": 6,
+          "veri": {
+            "js_istekleri": [
+              "/assets/msim-chunk-G624UIJJ.js",
+              "/assets/msim-3WESM346.js",
+              "/assets/early-access-6b376a32.js"
+            ]
+          }
+        },
+        {
+          "baslik": "SSG HTML ile istemci DOM'u birebir aynı (varsayılan durum)",
+          "durum": "geçti",
+          "sure_ms": 30,
+          "veri": {
+            "karakter": 33538
+          }
+        },
+        {
+          "baslik": "Parametreli adreste istemci çıktısı Node SSG render'ı ile birebir aynı",
+          "durum": "geçti",
+          "sure_ms": 714,
+          "veri": {
+            "cls": 0.0004160021279529992
+          }
+        },
+        {
+          "baslik": "Model arama, marka/yıl filtresi ve seçim",
+          "durum": "geçti",
+          "sure_ms": 129,
+          "veri": {
+            "a_390_secenek": 4
+          }
+        },
+        {
+          "baslik": "İki model yan yana; daha iyi değer vurgulanır",
+          "durum": "geçti",
+          "sure_ms": 327
+        },
+        {
+          "baslik": "Paylaşım URL'i aynı karşılaştırmayı açar; kopyalama çalışır",
+          "durum": "geçti",
+          "sure_ms": 722,
+          "veri": {
+            "url": "https://motonom.app/motosiklet-simulasyonu?a=yamaha-mt-07&b=honda-cb650r"
+          }
+        },
+        {
+          "baslik": "Rota yakıt maliyeti (km ve litre fiyatı kullanıcıdan)",
+          "durum": "geçti",
+          "sure_ms": 107
+        },
+        {
+          "baslik": "Klavye ile gezinme ve seçim, görünür odak",
+          "durum": "geçti",
+          "sure_ms": 189,
+          "veri": {
+            "sekme_sirasi": [
+              "msim-a-marka",
+              "msim-a-yil",
+              "msim-a-model",
+              "msim-b-ara",
+              "msim-b-marka",
+              "msim-b-yil",
+              "msim-b-model",
+              "Karşılaştır",
+              "motosiklet rotaları",
+              "rotalar",
+              "msim-km",
+              "msim-fiyat"
+            ]
+          }
+        },
+        {
+          "baslik": "Erişilebilirlik: axe-core WCAG 2.1 A/AA (araç, simülasyon, metin, SSS)",
+          "durum": "geçti",
+          "sure_ms": 640,
+          "veri": {
+            "ihlal": [],
+            "gecen": 27
+          }
+        },
+        {
+          "baslik": "Faz 2: başlatınca yüklenir, yarış biter, kare hızı",
+          "durum": "geçti",
+          "sure_ms": 15695,
+          "veri": {
+            "fps": 60.2,
+            "panel": "400 m bitti. A · Yamaha MT-07: 12,38 s, çizgide 173 km/s, 0-100: 4,0 s · B · Honda CB650R: 11,89 s, çizgide 185 km/s, 0-100: 3,9 s. Sonuçlar tahminidir."
+          }
+        },
+        {
+          "baslik": "Erken erişim formu korunur; /api/early-access mock'lanır",
+          "durum": "geçti",
+          "sure_ms": 7,
+          "veri": {
+            "not": "Masaüstünde bu şablonda satır içi form yok; yapışkan form yalnızca ≤720 px’te görünür (sitenin mevcut davranışı)."
+          }
+        },
+        {
+          "baslik": "Açılışta yerleşim kayması (CLS) ≈ 0",
+          "durum": "geçti",
+          "sure_ms": 3794,
+          "veri": {
+            "cls": 0
+          }
+        },
+        {
+          "baslik": "Dış ağ isteği yok (gerçek form gönderimi yok)",
+          "durum": "geçti",
+          "sure_ms": 0
+        }
+      ],
+      "olcumler": {
+        "cls_parametreli": 0.0004,
+        "axe": {
+          "ihlal": [],
+          "gecen": 27
+        },
+        "fps": 60.2,
+        "fps_kosulu": "masaüstü",
+        "cls_acilis": 0
+      }
+    },
+    "mobil": {
+      "kontroller": [
+        {
+          "baslik": "Sayfa hatasız açılır; Faz 2 kodu yüklenmez",
+          "durum": "geçti",
+          "sure_ms": 6,
+          "veri": {
+            "js_istekleri": [
+              "/assets/msim-chunk-G624UIJJ.js",
+              "/assets/msim-3WESM346.js",
+              "/assets/early-access-6b376a32.js"
+            ]
+          }
+        },
+        {
+          "baslik": "SSG HTML ile istemci DOM'u birebir aynı (varsayılan durum)",
+          "durum": "geçti",
+          "sure_ms": 24,
+          "veri": {
+            "karakter": 33538
+          }
+        },
+        {
+          "baslik": "Parametreli adreste istemci çıktısı Node SSG render'ı ile birebir aynı",
+          "durum": "geçti",
+          "sure_ms": 663,
+          "veri": {
+            "cls": 0
+          }
+        },
+        {
+          "baslik": "Model arama, marka/yıl filtresi ve seçim",
+          "durum": "geçti",
+          "sure_ms": 115,
+          "veri": {
+            "a_390_secenek": 4
+          }
+        },
+        {
+          "baslik": "İki model yan yana; daha iyi değer vurgulanır",
+          "durum": "geçti",
+          "sure_ms": 656
+        },
+        {
+          "baslik": "Paylaşım URL'i aynı karşılaştırmayı açar; kopyalama çalışır",
+          "durum": "geçti",
+          "sure_ms": 754,
+          "veri": {
+            "url": "https://motonom.app/motosiklet-simulasyonu?a=yamaha-mt-07&b=honda-cb650r"
+          }
+        },
+        {
+          "baslik": "Rota yakıt maliyeti (km ve litre fiyatı kullanıcıdan)",
+          "durum": "geçti",
+          "sure_ms": 124
+        },
+        {
+          "baslik": "Erişilebilirlik: axe-core WCAG 2.1 A/AA (araç, simülasyon, metin, SSS)",
+          "durum": "geçti",
+          "sure_ms": 564,
+          "veri": {
+            "ihlal": [],
+            "gecen": 27
+          }
+        },
+        {
+          "baslik": "Faz 2: başlatınca yüklenir, yarış biter, kare hızı",
+          "durum": "geçti",
+          "sure_ms": 15978,
+          "veri": {
+            "fps": 60.2,
+            "panel": "400 m bitti. A · Yamaha MT-07: 12,38 s, çizgide 173 km/s, 0-100: 4,0 s · B · Honda CB650R: 11,89 s, çizgide 185 km/s, 0-100: 3,9 s. Sonuçlar tahminidir."
+          }
+        },
+        {
+          "baslik": "Erken erişim formu korunur; /api/early-access mock'lanır",
+          "durum": "geçti",
+          "sure_ms": 87,
+          "veri": {
+            "mock_istek": {
+              "yontem": "POST",
+              "govde": "{\"email\":\"test@example.com\"}"
+            }
+          }
+        },
+        {
+          "baslik": "Açılışta yerleşim kayması (CLS) ≈ 0",
+          "durum": "geçti",
+          "sure_ms": 3770,
+          "veri": {
+            "cls": 0
+          }
+        },
+        {
+          "baslik": "Dış ağ isteği yok (gerçek form gönderimi yok)",
+          "durum": "geçti",
+          "sure_ms": 0
+        }
+      ],
+      "olcumler": {
+        "cls_parametreli": 0,
+        "axe": {
+          "ihlal": [],
+          "gecen": 27
+        },
+        "fps": 60.2,
+        "fps_kosulu": "Pixel 7 emülasyonu, CPU 4x yavaşlatılmış",
+        "cls_acilis": 0
+      }
+    }
+  },
+  "genel": {
+    "html_uzantili_adres": "308 → /motosiklet-simulasyonu",
+    "veri_dosyasi": "200 · 45 model",
+    "title_karakter": 66,
+    "title_piksel_arial20": 601
+  },
+  "hata_sayisi": 0
+}

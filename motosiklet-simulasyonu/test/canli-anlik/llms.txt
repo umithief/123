@@ -1,0 +1,119 @@
+# Motonom
+
+> Motonom (motonom.app), Türkiye'deki motosikletliler için Türkçe bir rota ve rehber sitesi ile ücretsiz (uygulama içi satın alımlı) bir motosiklet uygulamasıdır. Uygulama erken erişim aşamasındadır ve henüz Google Play'de yayında değildir. Sitede 81 il için rota sayfaları, dağ geçitleri, ehliyet/sigorta/mevzuat rehberleri ve motosiklet servis dizini bulunur.
+
+Son güncelleme: 2026-11-05. Mevzuat ve ücret bilgileri sayfalarda kaynak linkleri ve güncelleme tarihleriyle verilir; güncel değer için ilgili sayfayı ve resmî kaynağı esas alın.
+
+## Hakkında
+- [Motonom hakkında](https://motonom.app/hakkimizda): Motonom hakkında: motosiklet süper uygulaması çerçevesi, içerik yaklaşımı ve iletisim@motonom.app iletişimi. Doğrulanmamış ekip bilgisi yok.
+- [Motonom nedir?](https://motonom.app/motonom-nedir): Motonom nedir? Sürüş telemetrisi, 3D rota, hava radarı, SOS ve topluluğu birleştiren motosiklet süper uygulaması. Erken erişim; indirme vaadi yok.
+- [Motosiklet uygulaması: keşif, topluluk ve planlı sürüş](https://motonom.app/motosiklet-uygulamasi): Motonom motosiklet uygulaması: rota çizme ve kaydetme, sürüş modu, 3D harita, hava radarı, kaza algılama/SOS ve klanlar. Her özelliğin durumu açıkça yazılı.
+- İletişim: iletisim@motonom.app
+- Instagram (doğrulanmış tek resmî sosyal hesap): https://www.instagram.com/motonom.app
+
+## Ehliyet, sigorta ve mevzuat rehberleri
+- [Motor ehliyeti sınıfları: M, A1, A2, A ve B farkları](https://motonom.app/rehber/motosiklet-ehliyeti-siniflari): Motor ehliyeti sınıfları: M, A1, A2, A ve B ile hangi motosiklet kullanılır? cc, kW ve güç/ağırlık sınırları, yaş şartları ve geçişler tek tabloda.
+- [A1 ehliyet: 125 cc ve 11 kW sınırı, yaş şartı ve A2–B farkı](https://motonom.app/rehber/a1-ehliyet): A1 ehliyet kaç cc? 125 cm³, 11 kW ve 0,1 kW/kg sınırı, 16 yaş şartı. A1 ehliyetle neler kullanılır, nasıl alınır, A2 ve B ehliyetten farkı ne?
+- [A2 ehliyet kaç cc? Güç sınırı, yaş şartı ve A’ya geçiş](https://motonom.app/rehber/a2-ehliyet): A2 ehliyet kaç cc? A2’de cc sınırı yok: güç en fazla 35 kW, güç/ağırlık 0,2 kW/kg. Yaş şartı, hangi motorlar kullanılır, nasıl alınır, fiyatı ve A’ya geçiş.
+- [M sınıfı ehliyet: 50 cc moped ve scooter rehberi](https://motonom.app/rehber/m-sinifi-ehliyet): M sınıfı ehliyet hangi araçları kapsar, kaç yaşında alınır? 50 cc moped, scooter ve elektrikli motorlu bisiklet için şartlar ve B ehliyetle ilişkisi.
+- [B ehliyetle motosiklet: 125 cc şartları ve 250 cc son durum](https://motonom.app/rehber/b-ehliyetle-motosiklet): B ehliyetle 125 cc motosiklet kullanılır mı? 2 yıl şartı, direksiyon eğitimi ve sınav, ticari kullanım yasağı ve ceza. B ehliyete 250 cc iddiasının son durumu.
+- [Kaç cc motor hangi ehliyetle kullanılır?](https://motonom.app/rehber/kac-cc-motor-hangi-ehliyet): 125, 250, 500 ve 1000 cc motor için hangi ehliyet gerekir? cc tek başına yetmez; kW ve güç/ağırlık sınırıyla M, A1, A2 ve A tablosu ve örnekler.
+- [Ehliyet gerektirmeyen motorlar: neler ehliyetsiz, neler değil?](https://motonom.app/rehber/ehliyet-gerektirmeyen-motorlar): Ehliyetsiz motor var mı? Elektrikli bisiklet ve e-skuter ehliyet istemez (15 yaş); 50 cc moped için M gerekir. B ehliyetle neler kullanılır, cezalar.
+- [A2 ehliyet fiyatı 2026: Motor ehliyeti kaç para?](https://motonom.app/rehber/motosiklet-ehliyeti-ucreti): A2 ehliyet fiyatı 2026: A1, A2 ve A için harç, değerli kâğıt ve vakıf payı toplam 4.354,90 TL, e-sınav oturum başına 1.250 TL. Kurs ve sınav ücreti kuralları.
+- [Motosiklet trafik sigortası ve kasko: neyi karşılar, fiyat neye göre değişir?](https://motonom.app/rehber/motosiklet-trafik-sigortasi-ve-kasko): Motosiklet trafik sigortası ne kadar? SBM’nin güncel azami prim tablosu, basamağa göre fiyat, kasko farkı ve ikinci el alırken poliçe sırası.
+- [Motosiklet MTV 2026: resmî tablo, yaş hesabı ve ödeme takvimi](https://motonom.app/rehber/motosiklet-mtv): 2026 motosiklet MTV tutarları Resmî Gazete’deki 58 Seri No.lu tebliğden: silindir hacmi ve yaşa göre tablo, taksitler, elektrikli ve ikinci el durumu.
+- [Motosiklet muayene ücreti 2026 ve kaç yılda bir yapılır?](https://motonom.app/rehber/motosiklet-muayenesi): 2026 motosiklet muayene ücreti 1.674 TL (TÜVTÜRK). Kaç yılda bir yapılır, randevu nasıl alınır, gecikme bedeli ve muayeneden kalınca ne olur?
+- [Motosiklet cezaları 2026: tek tabloda güncel tutarlar](https://motonom.app/rehber/motosiklet-cezalari): Motosiklette 2026 ceza tutarları tek tabloda: ehliyetsiz kullanma, kask ve eldiven, plaka, hız, egzoz ve akrobatik sürüş. Ek yaptırımlar ve ilgili rehberler.
+- [Motosiklet hız sınırları 2026: şehir içi, şehirlerarası ve otoyol](https://motonom.app/rehber/motosiklet-hiz-sinirlari): Motosiklet hız sınırları Karayolları Trafik Yönetmeliği md. 100’den: L3 motosiklet için 50/80/90/100 km/s, motorlu bisiklet ve 7574 sonrası hız cezaları.
+- [Motosiklette kask ve eldiven zorunluluğu: ECE 22.06, TS EN 13594 ve cezalar](https://motonom.app/rehber/motosiklet-kask-ve-eldiven-zorunlulugu): Motosiklette standartlı kask ve eldiven zorunlu. 4 Kasım 2025 düzenlemesi, güncel ceza tutarları, ECE kask ve TS EN 13594 eldiven etiketleri.
+- [İkinci el motosiklet alırken: noter satışı, trafik sigortası ve plaka](https://motonom.app/rehber/ikinci-el-motosiklet-alirken-noter-sigorta-plaka): İkinci el motosiklet alırken ekspertiz, hasar kaydı sorgulama, noter satış ücreti, trafik sigortası ve plaka: doğru sıra ve kontrol listesi.
+
+## A2 ve model seçimi
+- [A2 ehliyetle kullanılabilecek motosikletler](https://motonom.app/a2-uyumlu-motosikletler): A2 ehliyetle kullanılabilecek motosikletler: 35 kW ve 0,2 kW/kg sınırına standart hâliyle uyan modeller, üretici verisiyle güç, ağırlık ve oran tablosu.
+- [kW beygir çevirme ve A2 uygunluk hesaplama](https://motonom.app/a2-uygun-mu): Ruhsattaki kW değerini beygire çevirin, motosikletinizin A2 ehliyete uygun olup olmadığını görün: 35 kW ve 0,2 kW/kg sınırı tek ekranda.
+- [125 cc motosikletler](https://motonom.app/125-cc-motosikletler): 125 cc motosiklet modelleri üretici verisiyle: güç, ağırlık ve A1 sınırına uygunluk. B ehliyetle kullanım şartları ve markaların servis ağı.
+- [Türkiye’de satılan motosiklet markaları](https://motonom.app/motosiklet-markalari): Türkiye'de satılan motosiklet markaları tek tabloda: menşei, distribütör, segment ve servis ağı. Her markanın il il yetkili servis listesine bağlantı.
+
+## Rota ve sürüş rehberleri
+- [Akdeniz sahil yolu motosiklet rehberi](https://motonom.app/rehber/akdeniz-sahil-yolu-motosiklet): Akdeniz sahil yolu motosikletle: Antalya–Alanya, virajlı Gazipaşa–Anamur kıyısı ve Silifke’ye uzanan etaplar, sezon, sıcak, yakıt ve güvenlik notları.
+- [D915 ve Derebaşı virajları: “dünyanın en tehlikeli yolu” motosikletle](https://motonom.app/rehber/d915-derebasi-virajlari): D915 Of–Bayburt yolu ve Derebaşı virajları nerede, neden “dünyanın en tehlikeli yolu” deniyor? Açık olduğu aylar, zemin ve motosikletle geçiş listesi.
+- [Ege kıyı motosiklet rehberi](https://motonom.app/rehber/ege-kiyi-motosiklet): Ege kıyı motosiklet rehberi: İzmir–Çeşme–Foça–Ayvalık/Balıkesir–Kaz Dağları koridoru için gün planı, yol–mevsim, güvenlik ve Motonom planlama notları.
+- [İlk grup sürüşüne çıkmadan önce](https://motonom.app/rehber/ilk-grup-surusu-oncesi): İlk grup sürüşü öncesi kontrol listesi: ekipman, tempo, mola, buluşma iletişimi. Pack Ride oturumu; sürüş arkadaşı çerçevesi. Rehber ürün yerine geçmez.
+- [İstanbul’dan hafta sonu motosiklet kaçamağı](https://motonom.app/rehber/istanbul-hafta-sonu-motosiklet-kacamagi): İstanbul’dan yakın mesafe hafta sonu motosiklet kaçamağı: Sapanca–Maşukiye ve kıyı alternatifleri, gün planı, trafik ve güvenlik notları.
+- [Kadın motorcular: topluluk, ilk motor ve ekipman](https://motonom.app/rehber/kadin-motorcular): Kadın motorcular için rehber: toplulukları bulmak, boya ve deneyime göre ilk motor seçimi, kadın kalıbı ekipman, grup sürüşüne katılmak ve güvenli sürüş.
+- [Kapadokya motosiklet rotası](https://motonom.app/rehber/kapadokya-motosiklet-rotasi): Kapadokya motosiklet rotası: Göreme çevresi, peri bacaları ve kısa gün turu için mesafe, süre, mola, toz ve güvenlik ipuçları. Nevşehir planlama rehberi.
+- [Karadeniz motosiklet rehberi](https://motonom.app/rehber/karadeniz-motosiklet): Karadeniz motosiklet rehberi: Trabzon–Rize–Artvin–Ordu–Samsun–Sinop–Kastamonu koridorunda kıyı ve yayla seçenekleri, çok günlük plan ve tünel notları.
+- [Karadeniz sahil yolu motosiklet rotası](https://motonom.app/rehber/karadeniz-sahil-yolu-motosiklet): Karadeniz sahil yolu motosiklet rotası: Trabzon, Rize, Ordu ve Sinop için kıyı–yayla planı, mesafe, sis, yağmur ve güvenlik notları.
+- [Kaz Dağları motosiklet rotası](https://motonom.app/rehber/kaz-daglari-motosiklet-rotasi): Kaz Dağları motosiklet rotası için mesafe, süre, seviye, mola ve güvenlik ipuçları. Edremit–Kalkım orman yolları ve körfez güzergâhı planlama rehberi.
+- [Kemaliye Taş Yolu ve Karanlık Kanyon: motosikletle geçiş](https://motonom.app/rehber/kemaliye-tas-yolu): Kemaliye Taş Yolu nerede, neden “132 yılda yapılan yol” deniyor? Karanlık Kanyon, tüneller, uçurum kenarı kesimler ve motosikletle geçiş için hazırlık listesi.
+- [Kışın motosiklet: sürüş mü, saklama mı? Bölgeye göre karar ve kış bakım listesi](https://motonom.app/rehber/kisin-motosiklet-surus-ve-saklama): Kışın motosiklet kullanılır mı? Bölgeye göre karar, kış sürüşü öncesi kontrol ve üretici önerileriyle motosiklet ile akünün kışa hazırlanması.
+- [Kurye motoru seçimi: ehliyet, yakıt, bakım ve sigorta](https://motonom.app/rehber/kurye-motoru-secimi): Kurye motoru seçerken neye bakılır? 50 cc mi 125 cc mi, hangi ehliyet gerekir, yakıt ve bakım maliyeti nasıl hesaplanır, sigorta ve güvenlik ekipmanı.
+- [Motorcu arkadaş nasıl bulunur?](https://motonom.app/rehber/motorcu-arkadas-nasil-bulunur): Motorcu arkadaş ve birlikte motor sürecek arkadaş arayanlar için rehber: tempo, bölge, güvenlik ve Motonom’da arkadaş bulma akışı.
+- [Motosiklet bakımı: periyodik bakım listesi ve aralıkları](https://motonom.app/rehber/motosiklet-bakimi): Motosiklet bakımı adım adım: yağ değişimi, zincir temizleme ve yağlama, fren, lastik ve akü kontrolü. Hangi işi kendiniz yaparsınız, hangisi servise kalır?
+- [Motosiklet lastik basıncı kaç olmalı? Doğru değer, doğru ölçüm](https://motonom.app/rehber/motosiklet-lastik-basinci): Motosiklet lastik basıncı kaç bar olmalı? Doğru değeri nerede bulursunuz, soğuk lastikte nasıl ölçülür, yolcu ve yükte ne değişir? Michelin önerileriyle.
+- [Motosiklet türleri: 7 çeşit, ehliyet sınıfı ve uygun yollar](https://motonom.app/rehber/motosiklet-turleri): Motosiklet türleri: naked, sport, touring, adventure, enduro, chopper ve scooter nedir, hangi ehliyet sınıfı gerekir, hangi yola uygundur? Örnek rotalarla.
+- [Motosikletle nereye gidilir?](https://motonom.app/rehber/motosikletle-nereye-gidilir): Motosikletle nereye gidilir: Türkiye’de hafta sonu ve günübirlik fikirler. İstanbul, Kapadokya, Karadeniz ve şehir sayfalarıyla planlama rehberi.
+- [Motosikletle uzun yola çıkmadan önce: hazırlık listesi](https://motonom.app/rehber/motosikletle-uzun-yol-hazirlik-listesi): Motosikletle uzun yol öncesi yapılması gerekenler: belgeler, motosiklet kontrolü, etap planı, hava ve yol durumu, bagaj ve ekipman için kontrol listesi.
+- [Toros motosiklet rehberi](https://motonom.app/rehber/toros-motosiklet): Toros motosiklet rehberi: Antalya–Mersin–Adana–Isparta koridoru için gün planı, yol–mevsim ve güvenlik notları; Alanya, Anamur, Silifke ve yayla günleri.
+- [Yeni başlayanlar için kolay motosiklet rotaları: 7 bölgeden 14 kısa hat](https://motonom.app/rehber/yeni-baslayanlar-icin-kolay-motosiklet-rotalari): Yeni başlayanlar için Motonom rotalarından “Kolay” seviyedeki 14 kısa hat: 7 bölgeden ikişer rota, mesafe, süre, viraj karakteri ve dikkat noktaları.
+
+## Dağ geçitleri
+- [Bolu Dağı Tüneli ve eski yolu: motosikletle geçiş](https://motonom.app/gecit/bolu-dagi): Bolu Dağı Tüneli mi, eski D100 yolu mu? Tünel uzunluğu, eski yolun viraj karakteri, kış ve sis, motosikletle geçiş için sezon ve mola notları.
+- [Cankurtaran Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/cankurtaran): Cankurtaran Geçidi, Artvin’de Hopa ile Borçka arasında D010 üzerinde 690 m rakımda. Tünel mi eski yol mu; motosikletle sezon, yol ve yakıt notları.
+- [Gülek Boğazı: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/gulek-bogazi): Gülek Boğazı nerede, rakımı kaç metre, kışın kapanır mı? Tünel mi eski yol mu; motosikletle geçiş için sezon, yol ve yakıt notları.
+- [Ilgaz Dağı ve tüneli: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/ilgaz): Ilgaz Dağı geçidi rakımı kaç, Ilgaz Tüneli kaç km, kışın açık mı? Tünel mi eski yol mu; motosikletle geçiş için sezon, yol ve yakıt notları.
+- [Kırkdilim virajları ve tünelleri: motosikletle geçiş](https://motonom.app/gecit/kirkdilim): Kırkdilim nerede, kaç viraj, tüneller kaç metre? 2026’da açılan Kırkdilim Tünelleri, eski yol, sezon ve motosikletle geçiş için yol ve yakıt notları.
+- [Kızıldağ Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/kizildag): Kızıldağ Geçidi, Erzincan–Sivas il sınırında, Refahiye ile İmranlı arasında D200 üzerinde 2.190 m rakımda. Kış durumu, sezon, yol ve yakıt notları.
+- [Kop Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/kop): Kop Geçidi, Bayburt ili sınırlarında Bayburt–Erzurum arasında, D915 üzerinde yaklaşık 2.409 m rakımda; Bayburt’a ≈36 km. Tünel, kış ve sezon notları.
+- [Ovit Tüneli ve Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/ovit): Ovit Tüneli ve 2.600 m’yi aşan Ovit Geçidi nerede, kışın açık mı? Rize–İspir hattında 14,3 km’lik tünel, sezon, yol ve yakıt notları.
+- [Sahara Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/sahara): Sahara Geçidi nerede, rakımı kaç metre, kışın kapanır mı? Tünel mi eski yol mu; motosikletle geçiş için sezon, yol ve yakıt notları.
+- [Sertavul Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/sertavul): Sertavul Geçidi, Karaman ile Mersin’in Mut ilçesi arasında, Toroslar’da D715 üzerinde yaklaşık 1.650 m rakımda. Sezon, kış durumu ve yakıt notları.
+- [Zigana Geçidi: rakım, sezon ve motosikletle geçiş](https://motonom.app/gecit/zigana): Zigana Geçidi nerede, rakımı kaç metre, kışın kapanır mı? Tünel mi eski yol mu; motosikletle geçiş için sezon, yol ve yakıt notları.
+
+## Rotalar
+- [Türkiye’nin en iyi motosiklet rotaları](https://motonom.app/motosiklet-rotalari): Türkiye motosiklet rotaları: 81 il ve 7 bölge sayfası; kıyı, yayla, dağ, vadi, göl, orman ve tarih yol karakteri sayfaları, örnek rotalar ve rehberler.
+- [81 İl Motosiklet Rotaları Haritası](https://motonom.app/motosiklet-rotalari-haritasi): Türkiye’nin 81 ilinde 393 editoryal motosiklet rotası tek haritada: il başına rota sayısı, ortalama km, filtreler. GeoJSON ve CSV olarak indirin.
+- [Sürüşünüze uygun motosiklet rotasını bulun](https://motonom.app/rotalar): Türkiye’den örnek motosiklet rotalarını mesafe, süre ve zorluk seviyesine göre inceleyin.
+- [Hangi ay nereye sürülür? Motosiklet rota takvimi](https://motonom.app/motosiklet-rota-takvimi): 12 ay için Türkiye motosiklet rotaları: her ay bölgelere dağıtılmış uygun rotalar, kar, sıcak ve yağış uyarıları. Rota notları ve MGM iklim bilgisine dayanır.
+- [İstanbul motosiklet rotaları](https://motonom.app/motosiklet-rotalari/istanbul): İstanbul motosiklet rotaları: Riva, Şile, Ağva, Polonezköy, İğneada, Kilyos ve Belgrad Ormanı için 7 rota; 17–235 km kıyı, orman ve uzun gün, süre ve seviye.
+- [İstanbul Anadolu yakası motosiklet rotaları](https://motonom.app/motosiklet-rotalari/istanbul/anadolu-yakasi): İstanbul Anadolu yakası motosiklet rotaları: Kadıköy çıkışlı Polonezköy, Riva, Şile ve Ağva. Ölçülen tek yön ve gidiş-dönüş mesafe, yol karakteri ve molalar.
+- [Ankara motosiklet rotaları](https://motonom.app/motosiklet-rotalari/ankara): Ankara motosiklet rotaları: Kızılcahamam, Beypazarı, Nallıhan, Gölbaşı ve Elmadağ için 5 rota; 30–160 km viraj ve dağ, süre ve seviye.
+- [İzmir motosiklet rotaları](https://motonom.app/motosiklet-rotalari/izmir): İzmir motosiklet rotaları: Karaburun, Çeşme, Foça, Şirince–Selçuk ve Spil Dağı için 5 örnek rota; 55–95 km yarımada, kıyı ve dağ, virajlı tip sayfasıyla.
+- [Antalya motosiklet rotaları](https://motonom.app/motosiklet-rotalari/antalya): Antalya motosiklet rotaları: Kaş, Kalkan, Demre, Alanya ve Çıralı–Olympos için 5 kıyı rotası; 30–180 km, virajlı serpantin, tahmini süre ve seviye.
+- [Bursa motosiklet rotaları](https://motonom.app/motosiklet-rotalari/bursa): Bursa motosiklet rotaları: Uludağ, İznik, Mudanya, Cumalıkızık–Gölyazı ve Yenişehir–İnegöl için 5 kısa rota; 30–80 km dağ, göl ve kıyı, süre ve seviye.
+- [Muğla motosiklet rotaları](https://motonom.app/motosiklet-rotalari/mugla): Muğla motosiklet rotaları: Datça, Bodrum, Fethiye–Ölüdeniz, Marmaris–Datça ve Köyceğiz–Dalyan için 5 rota; 90–140 km viraj ve yarımada, süre ve seviye.
+- [Trabzon motosiklet rotaları](https://motonom.app/motosiklet-rotalari/trabzon): Trabzon motosiklet rotaları: Uzungöl, Sümela, Of–Çaykara, Sürmene ve Akçaabat için 5 rota; 25–100 km yayla, kıyı ve tarih, süre ve seviye.
+- [Nevşehir motosiklet rotaları](https://motonom.app/motosiklet-rotalari/nevsehir): Nevşehir motosiklet rotaları: Göreme, Ürgüp–Ortahisar, Avanos, Derinkuyu ve Ihlara için 5 Kapadokya rotası; 35–110 km, kolay–orta seviye, süreyle.
+- [Rize motosiklet rotaları](https://motonom.app/motosiklet-rotalari/rize): Rize motosiklet rotaları: Ayder–Çamlıhemşin, Fırtına Vadisi, İkizdere, Çayeli ve Pazar–Hemşin için 5 rota; 30–95 km yayla, vadi ve kıyı, süre ve seviye.
+- 81 il ve 7 bölge için ayrı rota sayfası vardır (ör. https://motonom.app/motosiklet-rotalari/ankara); tam liste: https://motonom.app/sitemap-il-bolge-tip.xml
+
+## Servis dizini
+- [Motosiklet servisleri](https://motonom.app/motosiklet-servisleri): Markaların resmî listelerinden motosiklet servisleri: İstanbul, Ankara, İzmir ve 62 şehirde daha, toplam 503 servis noktası, 31 marka.
+- [Ankara motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/ankara): Ankara’da 22 motosiklet yetkili servisi ve satış+servis noktası: 23 marka, 9 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 29 Ekim 2026.
+- [Antalya motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/antalya): Antalya’da 19 motosiklet yetkili servisi ve satış+servis noktası: 23 marka, 8 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 29 Ekim 2026.
+- [Aydın motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/aydin): Aydın’da 17 motosiklet yetkili servisi ve satış+servis noktası: 26 marka, 7 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Balıkesir motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/balikesir): Balıkesir’de 21 motosiklet yetkili servisi ve satış+servis noktası: 25 marka, 9 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Bursa motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/bursa): Bursa’da 20 motosiklet yetkili servisi ve satış+servis noktası: 21 marka, 6 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 29 Ekim 2026.
+- [Denizli motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/denizli): Denizli’de 13 motosiklet yetkili servisi ve satış+servis noktası: 18 marka, 6 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Eskişehir motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/eskisehir): Eskişehir’de 11 motosiklet yetkili servisi ve satış+servis noktası: 21 marka, 4 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [İstanbul motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/istanbul): İstanbul’da 89 motosiklet yetkili servisi ve satış+servis noktası: 24 marka, 32 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 28 Ekim 2026.
+- [İzmir motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/izmir): İzmir’de 28 motosiklet yetkili servisi ve satış+servis noktası: 23 marka, 13 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 29 Ekim 2026.
+- [Kocaeli motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/kocaeli): Kocaeli’de 15 motosiklet yetkili servisi ve satış+servis noktası: 22 marka, 6 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Konya motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/konya): Konya’da 12 motosiklet yetkili servisi ve satış+servis noktası: 21 marka, 7 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Manisa motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/manisa): Manisa’da 10 motosiklet yetkili servisi ve satış+servis noktası: 19 marka, 5 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Mersin motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/mersin): Mersin’de 12 motosiklet yetkili servisi ve satış+servis noktası: 21 marka, 8 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Muğla motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/mugla): Muğla’da 26 motosiklet yetkili servisi ve satış+servis noktası: 29 marka, 8 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+- [Tekirdağ motosiklet servisleri ve tamircileri](https://motonom.app/motosiklet-servisleri/tekirdag): Tekirdağ’da 11 motosiklet yetkili servisi ve satış+servis noktası: 22 marka, 5 ilçe. Adres, telefon ve resmî kaynak bağlantısı; son kontrol 31 Ekim 2026.
+
+## Etkinlikler ve topluluk
+- [Motosiklet etkinlikleri 2026–2027: Türkiye takvimi](https://motonom.app/motosiklet-etkinlikleri): 2026–2027 motosiklet etkinlikleri: motofestler, TMF yarışları ve Motobike fuarı. Kaynaklı tarihler, ay ay takvim ve yakın rotalar.
+- [Motosiklet fuarı 2027: Motobike İstanbul ve EICMA tarihleri](https://motonom.app/motosiklet-fuari-2027): Motosiklet fuarı 2027: Motobike İstanbul 21–24 Nisan 2027’de İstanbul Fuar Merkezi’nde. EICMA ve diğer fuarların tarihleri, bilet ve ulaşım notları.
+- [Motofest 2027: Türkiye’deki motosiklet festivalleri ve tarihleri](https://motonom.app/motofest-2027): 2027 motofest ve motosiklet festivali tarihleri: Afyon, Balıkesir, Ankara, Motobike İstanbul ve diğerleri. Tarihler açıklandıkça güncellenir.
+- [Motosiklet kulüpleri ve topluluk rehberi](https://motonom.app/motosiklet-kulupleri): Motosiklet kulübü seçerken tempo, bölge, iletişim ve kurallar. İstanbul, İzmir, Ankara, Bursa, Antalya ve diğer 5 şehir sayfasıyla seçim rehberi.
+
+## Veri ve raporlar
+- [Türkiye Motosiklet Rotaları Raporu 2026](https://motonom.app/motosiklet-rotalari-raporu-2026): 393 editoryal rotadan hesaplandı: 81 il, ≈ 27.080 km, mesafe, seviye, viraj ve bölge dağılımı. Grafikler ve CC BY 4.0 CSV.
+
+## İsteğe bağlı
+- [llms-full.txt](https://motonom.app/llms-full.txt): Ana rehberlerin ve geçit sayfalarının "Kısa cevap" metinleri, sayfalardan birebir.
+- [Site haritası](https://motonom.app/sitemap.xml)

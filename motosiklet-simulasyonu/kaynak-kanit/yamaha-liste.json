@@ -1,0 +1,25 @@
+{
+ "aciklama": "https://www.yamaha-motor.eu/tr/tr/motorcycles/ sayfasının render edilmiş DOM'undaki PDP bağlantıları (a[href*='/pdp/']), 2026-11-05 tarihinde alındı. Bağlantı sonundaki # parçası model yılı ve model kodunu içerir.",
+ "u": "https://www.yamaha-motor.eu/tr/tr/motorcycles/",
+ "accessed": "2026-11-05",
+ "pdp": [
+  "motorcycles/supersport/pdp/r7/#2026-YZF700R7-DPBMC",
+  "motorcycles/supersport/pdp/r3/#2026-YZFR320-DPBMC",
+  "motorcycles/supersport/pdp/r25/#2026-YZFR250-DPBMC",
+  "motorcycles/supersport/pdp/r125/#2026-YZF-R125A-DPBMC",
+  "motorcycles/supersport/pdp/r1m/#2024-YZF1000R1SPL-SMX",
+  "motorcycles/supersport/pdp/r9/#2025-YZF900R9-DPBMC",
+  "motorcycles/hyper-naked/pdp/mt-09-sp/#2027-MT09DX-BWM2",
+  "motorcycles/hyper-naked/pdp/mt-09/#2027-MT09A-MLNM4",
+  "motorcycles/hyper-naked/pdp/mt-07/#2027-MT07AIN-MLNM4",
+  "motorcycles/hyper-naked/pdp/mt-03/#2027-MT320-MLNM4",
+  "motorcycles/hyper-naked/pdp/mt-25/#2027-MT250-MLNM4",
+  "motorcycles/hyper-naked/pdp/mt-125-2027/#2027-MT125A-MLNM4",
+  "motorcycles/hyper-naked/pdp/mt-125-2026/#2026-MT125A-MLNM4",
+  "motorcycles/sport-heritage/pdp/xsr900-gp/#2024-XS850GP-SW",
+  "motorcycles/sport-heritage/pdp/xsr900/#2025-XS850-SW",
+  "motorcycles/adventure/pdp/t-n-r-700-world-raid/#2026-XTZ700D-BWP1",
+  "motorcycles/sport-touring/pdp/tracer-9-gt-plus-y-amt/#2027-MT09ATRDXCS-DPBML",
+  "motorcycles/sport-touring/pdp/tracer-9-gt/#2027-MT09ATRDX-BNC2"
+ ]
+}

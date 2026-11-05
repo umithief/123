@@ -1,0 +1,19 @@
+{
+  "name": "motonom-motosiklet-simulasyonu",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "motonom.app /motosiklet-simulasyonu: model karşılaştırma, 0-100 tahmini, menzil, A2 uygunluğu ve lazy-load 2D sürüş simülasyonu",
+  "scripts": {
+    "veri": "node kaynak-kanit/derle.mjs",
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "node test/e2e.mjs",
+    "lighthouse": "node test/lighthouse.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.10.3",
+    "esbuild": "0.25.10",
+    "lighthouse": "12.8.2"
+  }
+}
