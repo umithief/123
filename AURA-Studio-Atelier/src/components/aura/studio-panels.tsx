@@ -2,6 +2,7 @@ import { PanelTabs, PanelPage } from "./panel-layout";
 import { ui } from "./interface-copy";
 import { createId } from "./id.ts";
 import { ChoiceStrip } from "./choice-strip";
+import { ProBadge } from "./pro-badge";
 import * as Popover from "@radix-ui/react-popover";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import {
   MODES,
+  isCoutureSpectrum,
   isLuxuryMode,
   isSignatureSpectrum,
   THEMES,
@@ -133,6 +135,7 @@ export function VisualPanel({
       (filter === "all" ||
         m.kind === filter ||
         (filter === "luxury" && isLuxuryMode(m.id)) ||
+        (filter === "pro" && isCoutureSpectrum(m.id)) ||
         (filter === "signature" && isSignatureSpectrum(m.id))) &&
       searchText(m.label).includes(searchText(query)),
   );
@@ -177,7 +180,8 @@ export function VisualPanel({
               >
                 {[
                   { id: "all", label: "Tümü" },
-                  { id: "signature", label: "Yeni" },
+                  { id: "pro", label: "Pro" },
+                  { id: "signature", label: "İmza" },
                   { id: "luxury", label: "Lüks" },
                   { id: "spectrum", label: "Spektrum" },
                   { id: "scene", label: "Sahne" },
@@ -185,6 +189,7 @@ export function VisualPanel({
                   <button
                     key={item.id}
                     type="button"
+                    className={item.id === "pro" ? "pro-chip" : undefined}
                     aria-pressed={filter === item.id}
                     onClick={() => setFilter(item.id)}
                   >
@@ -211,10 +216,12 @@ export function VisualPanel({
                 key={m.id}
                 type="button"
                 className={`mode-card ${mode === m.id ? "is-selected" : ""}`}
+                data-pro={isCoutureSpectrum(m.id) || undefined}
                 aria-label={ui(m.label)}
                 aria-pressed={mode === m.id}
                 onClick={() => onMode(m.id)}
               >
+                {isCoutureSpectrum(m.id) && <ProBadge />}
                 <ModePreview mode={m.id} theme={theme} />
                 <span className="flex min-h-11 items-center justify-between gap-1 px-3 text-xs">
                   {ui(m.label)}

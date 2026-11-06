@@ -1,5 +1,54 @@
 export const VIDEO_MOTIONS = [
   { id: "none", label: "Yok", group: "Temel", description: "Görüntüyü sabit tut" },
+  // AURA Pro Couture: optics, paper and light that reshape the picture itself.
+  {
+    id: "pro-bokeh",
+    label: "Bokeh Odak",
+    group: "Pro",
+    description: "Işıklar yumuşak bokeh dairelerine dağılır, odak yavaşça netleşir",
+  },
+  {
+    id: "pro-neon",
+    label: "Neon Kontur",
+    group: "Pro",
+    description: "Görüntü önce parlayan neon çizgilerle çizilir, sonra renkleri dolar",
+  },
+  {
+    id: "pro-kaleido",
+    label: "Kaleydoskop",
+    group: "Pro",
+    description: "Aynalı kaleydoskop desenine bölünüp dönerek tek kareye toplanır",
+  },
+  {
+    id: "pro-fold",
+    label: "Origami Açılış",
+    group: "Pro",
+    description: "Akordeon gibi katlanmış kâğıttan ışık ve gölgeyle açılır",
+  },
+  {
+    id: "pro-echo",
+    label: "Yankı İzi",
+    group: "Pro",
+    description: "Renkli yankılarını arkasında bırakarak kadraja süzülür",
+  },
+  {
+    id: "pro-ripple",
+    label: "Su Yüzeyi",
+    group: "Pro",
+    description: "Dalgalanan su yüzeyinden ışık yansımalarıyla durulur",
+  },
+  {
+    id: "pro-holo",
+    label: "Hologram Kart",
+    group: "Pro",
+    description: "3D eğilen kartın üzerinden gökkuşağı yansıması geçer",
+  },
+  {
+    id: "pro-triptych",
+    label: "Üçlü Kadraj",
+    group: "Pro",
+    description: "Üç dikey panel sırayla zıt yönlerden kayıp birleşir",
+  },
   // AURA Pro: real motion blur, light and lens effects.
   {
     id: "pro-warp",
@@ -276,6 +325,27 @@ export type MotionFrame = {
   burn: number;
   /** Pro: anamorphic flare (0..1). */
   flare: number;
+  /** Couture: mirrored kaleidoscope (0..1). */
+  kaleido: number;
+  /** Couture: water-surface ripple (0..1). */
+  ripple: number;
+  /** Couture: accordion paper fold (0..1). */
+  fold: number;
+  /** Couture: glowing neon outline instead of the picture (0..1). */
+  neon: number;
+  /** Couture: coloured echoes behind the picture (0..1), each one moved and scaled. */
+  echo: number;
+  echoX: number;
+  echoY: number;
+  echoZoom: number;
+  /** Couture: bokeh discs from the picture's lights (0..1). */
+  bokeh: number;
+  /** Couture: holographic sheen (0..1). */
+  holo: number;
+  /** Couture: three panels sliding apart (0..1), one after another. */
+  panels: number;
+  /** Couture: the three panels drift together, as a share of the frame (loops). */
+  panelDrift: number;
 };
 export const identityMotion = (): MotionFrame => ({
   x: 0,
@@ -305,6 +375,18 @@ export const identityMotion = (): MotionFrame => ({
   bloom: 0,
   burn: 0,
   flare: 0,
+  kaleido: 0,
+  ripple: 0,
+  fold: 0,
+  neon: 0,
+  echo: 0,
+  echoX: 0,
+  echoY: 0,
+  echoZoom: 0,
+  bokeh: 0,
+  holo: 0,
+  panels: 0,
+  panelDrift: 0,
 });
 export function motionEffect(
   id: VideoMotionId,
@@ -321,7 +403,53 @@ export function motionEffect(
     reveal = 1 - a;
   if (a < 1e-8) return f;
   const oscillate = (speed: number) => Math.sin(p * Math.PI * speed);
-  if (id === "pro-warp") {
+  const combo = section === "combo";
+  if (id === "pro-bokeh") {
+    f.blur = a * 14;
+    f.bokeh = a;
+    f.brightness = 1 + a * 0.12;
+    f.scale = 1 + a * 0.05;
+  } else if (id === "pro-neon") {
+    f.neon = a;
+    f.brightness = 1 + a * 0.15;
+    f.scale = 1 + a * 0.03;
+  } else if (id === "pro-kaleido") {
+    f.kaleido = a;
+    f.scale = 1 + a * 0.12;
+    f.brightness = 1 + a * 0.1;
+  } else if (id === "pro-fold") {
+    f.fold = combo ? a * 0.45 : a;
+    f.scale = 1 - a * 0.08;
+    if (!combo) f.opacity = Math.min(1, reveal * 4);
+  } else if (id === "pro-echo") {
+    if (combo) {
+      f.scale = 1 + a * 0.1;
+      f.echo = a;
+      f.echoZoom = a * 0.05;
+    } else {
+      // The echoes fill the way between the picture and its place in the frame.
+      f.x = a * 0.55;
+      f.echo = a;
+      f.echoX = -a * 0.092;
+      f.opacity = Math.min(1, reveal * 3 + 0.25);
+    }
+  } else if (id === "pro-ripple") {
+    f.ripple = a;
+    f.scale = 1 + a * 0.06;
+    f.brightness = 1 + a * 0.08;
+    if (!combo) f.opacity = Math.min(1, reveal * 2.5);
+  } else if (id === "pro-holo") {
+    f.holo = a;
+    f.perspective = combo ? Math.sin(p * Math.PI * 2) * amount * 0.2 : a * 0.3;
+    f.scale = 1 - a * 0.14;
+    f.rotation = a * 0.04;
+  } else if (id === "pro-triptych") {
+    if (combo) {
+      // The zoom keeps the drifting panels' ends outside the frame.
+      f.panelDrift = a * 0.04;
+      f.scale = 1 + a * 0.1;
+    } else f.panels = a;
+  } else if (id === "pro-warp") {
     f.scale = 1 + a * 1.4;
     f.zoomBlur = a * 0.9;
     f.chroma = a * 0.5;
@@ -484,6 +612,17 @@ function combine(a: MotionFrame, b: MotionFrame): MotionFrame {
     bloom: Math.max(a.bloom, b.bloom),
     burn: Math.max(a.burn, b.burn),
     flare: Math.max(a.flare, b.flare),
+    kaleido: Math.max(a.kaleido, b.kaleido),
+    ripple: Math.max(a.ripple, b.ripple),
+    fold: Math.max(a.fold, b.fold),
+    neon: Math.max(a.neon, b.neon),
+    ...(b.echo > a.echo
+      ? { echo: b.echo, echoX: b.echoX, echoY: b.echoY, echoZoom: b.echoZoom }
+      : { echo: a.echo, echoX: a.echoX, echoY: a.echoY, echoZoom: a.echoZoom }),
+    bokeh: Math.max(a.bokeh, b.bokeh),
+    holo: Math.max(a.holo, b.holo),
+    panels: Math.max(a.panels, b.panels),
+    panelDrift: Math.max(a.panelDrift, b.panelDrift),
   };
 }
 export function videoMotionAt(

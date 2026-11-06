@@ -1115,6 +1115,18 @@ html[data-theme="light"] .aura-2.aura-studio.atelier-studio.calm-layout.at-home 
   aspect-ratio: 5 / 3;
 }
 
+/* ---------- AURA Pro Couture: the Pro mark on spectra and caption templates ---------- */
+.mode-card[data-pro],
+.caption-template-strip > button[data-pro] {
+  position: relative;
+}
+.mode-card[data-pro] .mode-preview,
+.caption-template-strip > button[data-pro] canvas {
+  box-shadow:
+    0 0 0 1px rgb(226 178 90 / 0.55),
+    0 6px 18px rgb(185 133 47 / 0.18);
+}
+
 /* ---------- Toast ---------- */
 .edit-toast {
   border-radius: var(--radius-full);

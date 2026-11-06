@@ -95,6 +95,19 @@ export const PREMIUM_SPECTRA = [
 ] as const;
 export const isPremiumSpectrum = (id: string) => PREMIUM_SPECTRA.some((mode) => mode === id);
 
+/** The AURA Pro Couture collection (pro-couture-spectra.ts), in gallery order. */
+export const COUTURE_SPECTRA = [
+  "saturn",
+  "plasma",
+  "galaxy",
+  "iznik",
+  "skyline",
+  "synthwave",
+  "hyperspace",
+  "led",
+] as const;
+export const isCoutureSpectrum = (id: string) => COUTURE_SPECTRA.some((mode) => mode === id);
+
 /** The Signature collection (signature-spectra.ts). */
 export const SIGNATURE_SPECTRA = [
   "fan",
@@ -111,6 +124,14 @@ export const SIGNATURE_SPECTRA = [
 export const isSignatureSpectrum = (id: string) => SIGNATURE_SPECTRA.some((mode) => mode === id);
 
 export const MODES = [
+  { id: "saturn", label: "Satürn", kind: "spectrum" },
+  { id: "plasma", label: "Plazma Küre", kind: "spectrum" },
+  { id: "galaxy", label: "Sarmal Galaksi", kind: "scene" },
+  { id: "iznik", label: "İznik Çini", kind: "spectrum" },
+  { id: "skyline", label: "Gece Şehri", kind: "scene" },
+  { id: "synthwave", label: "Retro Dalga", kind: "scene" },
+  { id: "hyperspace", label: "Hiper Uzay", kind: "scene" },
+  { id: "led", label: "LED Pano", kind: "spectrum" },
   { id: "fan", label: "İpek Yelpaze", kind: "spectrum" },
   { id: "brilliant", label: "Pırlanta", kind: "spectrum" },
   { id: "tourbillon", label: "Turbiyon", kind: "spectrum" },
@@ -157,6 +178,7 @@ export const MODES = [
 
 export type ModeId = (typeof MODES)[number]["id"];
 export const LUXURY_MODES: readonly ModeId[] = [
+  ...COUTURE_SPECTRA,
   ...SIGNATURE_SPECTRA,
   ...PREMIUM_SPECTRA,
   "vinyl",

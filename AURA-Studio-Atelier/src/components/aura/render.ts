@@ -2,6 +2,7 @@ import {
   colorAt,
   rgba,
   isLuxuryMode,
+  isCoutureSpectrum,
   isPremiumSpectrum,
   isSignatureSpectrum,
   type ModeId,
@@ -29,6 +30,7 @@ import { paintLuxuryScene, luxuryLayout } from "./luxury-scenes";
 
 import { paintPremiumSpectrum } from "./premium-spectra";
 import { paintSignatureSpectrum } from "./signature-spectra";
+import { paintCoutureSpectrum } from "./pro-couture-spectra";
 
 const BARS = 96;
 const WAVE = 192;
@@ -1256,7 +1258,8 @@ export function paint(
     ctx.shadowColor = rgba(theme.mid, finish === "vivid" ? 0.7 : 0.4);
     ctx.shadowBlur = finish === "vivid" ? 16 : 7;
   }
-  if (isSignatureSpectrum(mode))
+  if (isCoutureSpectrum(mode)) paintCoutureSpectrum(ctx, width, height, theme, mode, state, reduce);
+  else if (isSignatureSpectrum(mode))
     paintSignatureSpectrum(ctx, width, height, theme, mode, state, reduce);
   else if (isPremiumSpectrum(mode))
     paintPremiumSpectrum(ctx, width, height, theme, mode, state, reduce);

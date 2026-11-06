@@ -17,22 +17,23 @@ import { isPro } from "../src/components/aura/pro-paint.ts";
 
 const pro = (list) => list.filter((item) => isPro(item.id));
 
-test("AURA Pro has 12 transitions, 9 animations and 8 effects, all with names and descriptions", () => {
-  assert.equal(pro(SCENE_TRANSITIONS).length, 12);
-  assert.equal(pro(VIDEO_MOTIONS).length, 9);
+test("AURA Pro has 20 transitions, 17 animations and 8 effects, all with names and descriptions", () => {
+  assert.equal(pro(SCENE_TRANSITIONS).length, 20);
+  assert.equal(pro(VIDEO_MOTIONS).length, 17);
   assert.equal(pro(VIDEO_EFFECTS).length, 8);
   for (const item of [...pro(SCENE_TRANSITIONS), ...pro(VIDEO_MOTIONS), ...pro(VIDEO_EFFECTS)]) {
     assert.ok(item.label && item.description, item.id);
   }
   const ids = [...SCENE_TRANSITIONS, ...VIDEO_MOTIONS, ...VIDEO_EFFECTS].map((i) => i.id);
-  assert.equal(new Set(pro(SCENE_TRANSITIONS).map((t) => t.id)).size, 12, "unique ids");
+  assert.equal(new Set(pro(SCENE_TRANSITIONS).map((t) => t.id)).size, 20, "unique ids");
   assert.ok(ids.filter((id) => !isPro(id)).every((id) => !id.startsWith("pro-")));
 });
 
 test("Pro transitions lead the list, in their own collection, and survive a project round trip", () => {
   assert.equal(SCENE_TRANSITIONS[0].id, "none");
+  // The newest (Couture) collection comes first, then the first Pro collection.
   assert.deepEqual(
-    SCENE_TRANSITIONS.slice(1, 13).map((t) => t.id),
+    SCENE_TRANSITIONS.slice(9, 21).map((t) => t.id),
     PRO_TRANSITIONS.map((t) => t.id),
   );
   assert.ok(pro(SCENE_TRANSITIONS).every((t) => t.group === "Pro"));

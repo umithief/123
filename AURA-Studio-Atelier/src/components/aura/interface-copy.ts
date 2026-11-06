@@ -1234,6 +1234,83 @@ Altyazı şablonu|Caption template
 Üç boyutlu|Three-dimensional
 Koyu|Dark
 Açık ton|Light
+Sayfa Çevirme|Page Turn
+Kare, kitap sayfası gibi köşesinden kıvrılarak çevrilir|The frame curls from its corner and turns like a book page
+3D Jaluzi|3D Blinds
+Yatay şeritler sırayla dönüp arkalarındaki yeni sahneyi gösterir|Horizontal slats turn in sequence to show the next scene behind them
+Işık Bıçağı|Light Blade
+Prizma kenarlı ince bir ışık bıçağı kareyi çapraz keser|A thin blade of light with prismatic edges slices across the frame
+Film Şeridi|Film Strip
+Kare film şeridine dönüşür, şerit kayarak yeni sahneyi getirir|The frame becomes a film strip that rolls in the next scene
+Mozaik Dönüş|Mosaic Flip
+Kareler çapraz bir dalgayla tek tek dönerek yeni sahneyi kurar|Tiles flip one by one in a diagonal wave to build the next scene
+Anı Karesi|Snapshot Toss
+Görüntü beyaz çerçeveli bir fotoğrafa dönüşüp savrularak uçar|The picture becomes a framed photo print and is tossed away
+3D Karusel|3D Carousel
+İki sahne yansımalı bir döner sahnede yer değiştirir|Both scenes swap places on a reflective rotating stage
+Derin Ayrılış|Deep Split
+Kare çapraz bir ışık çizgisinden ikiye ayrılır, yeni sahne derinden gelir|The frame splits along a diagonal line of light and the next scene rises from depth
+Bokeh Odak|Bokeh Focus
+Işıklar yumuşak bokeh dairelerine dağılır, odak yavaşça netleşir|Lights bloom into soft bokeh discs while the focus slowly pulls sharp
+Neon Kontur|Neon Outline
+Görüntü önce parlayan neon çizgilerle çizilir, sonra renkleri dolar|The picture is first drawn in glowing neon lines, then its colours flow in
+Aynalı kaleydoskop desenine bölünüp dönerek tek kareye toplanır|Breaks into a turning mirrored kaleidoscope and gathers into one frame
+Origami Açılış|Origami Unfold
+Akordeon gibi katlanmış kâğıttan ışık ve gölgeyle açılır|Unfolds from accordion-folded paper with light and shadow
+Yankı İzi|Echo Trail
+Renkli yankılarını arkasında bırakarak kadraja süzülür|Glides into frame leaving coloured echoes behind
+Su Yüzeyi|Water Surface
+Dalgalanan su yüzeyinden ışık yansımalarıyla durulur|Settles out of a rippling water surface with glints of light
+Hologram Kart|Hologram Card
+3D eğilen kartın üzerinden gökkuşağı yansıması geçer|A rainbow sheen sweeps across a card tilting in 3D
+Üçlü Kadraj|Triptych
+Üç dikey panel sırayla zıt yönlerden kayıp birleşir|Three vertical panels slide in from opposite sides and join
+Holografik|Holographic
+Neon tüp|Neon tube
+Fırça darbesi|Brush stroke
+Kolaj kâğıdı|Collage paper
+Buzlu cam|Frosted glass
+Retro krom|Retro chrome
+Yıldız tozu|Stardust
+Spektral birleşme|Spectral merge
+Camgöbeği ve pembe yansımalar kelimede birleşir|Cyan and pink reflections merge into each word
+Kıvılcım|Spark
+Bir kıvılcım harfleri soldan sağa yakar|A spark lights the letters from left to right
+Sıcak hava|Heat haze
+Kelimeler titreşen sıcak havayla aşağıdan yükselir|Words rise from below through shimmering heat
+Fırça açılışı|Brush reveal
+Fırça satırı boyarken kelimeler ortaya çıkar|Words appear as the brush paints the line
+Kâğıt düşüşü|Paper drop
+Kelimeler dönerek düşer ve yerine oturur|Words tumble down and settle into place
+Cam açılış|Glass unfold
+Cam panel açılır, kelimeler bulanıktan netleşir|A glass panel opens and the words come into focus
+Retro uçuş|Retro flight
+Kelimeler uzaktan gelir, 3D derinlikleri büyür|Words fly in from afar as their 3D depth grows
+Yıldız parıltısı|Star twinkle
+Harfler rastgele sırayla parıldayarak belirir|Letters twinkle into view in random order
+Neon Tabela|Neon Sign
+Kor Işığı|Ember Glow
+Fırça Darbesi|Brush Stroke
+Kolaj|Collage
+Buzlu Cam|Frosted Glass
+Retro Gün Batımı|Retro Sunset
+Yıldız Tozu|Stardust
+Gökkuşağı yansıması · spektral birleşme|Rainbow sheen · spectral merge
+Neon tüp · kıvılcımla yanan harfler|Neon tube · letters lit by a spark
+Ateş renkleri ve uçuşan kıvılcımlar · sıcak hava|Fire colours and drifting sparks · heat haze
+Elle boyanmış fırça izi · fırça açılışı|Hand-painted brush stroke · brush reveal
+Renkli kâğıt kesikleri · dönerek düşen kelimeler|Coloured paper cutouts · tumbling words
+Cam panel · bulanıktan netleşen kelimeler|Glass panel · words coming into focus
+Krom gün batımı ve 3D derinlik · retro uçuş|Chrome sunset and 3D depth · retro flight
+Şampanya ışıltısı · harf harf parıldayan giriş|Champagne sparkle · letter-by-letter twinkle
+Satürn|Saturn
+Plazma Küre|Plasma Globe
+Sarmal Galaksi|Spiral Galaxy
+İznik Çini|İznik Tile
+Gece Şehri|Night City
+Retro Dalga|Retrowave
+Hiper Uzay|Hyperspace
+LED Pano|LED Wall
 `
     .trim()
     .split("\n")

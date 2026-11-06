@@ -1,3 +1,5 @@
+import { COUTURE_FINISHES } from "./pro-couture-captions.ts";
+
 /** Signature typography: deterministic Canvas effects shared by preview and export. */
 export const CAPTION_FINISHES = [
   { id: "none", label: "Orijinal" },
@@ -11,6 +13,8 @@ export const CAPTION_FINISHES = [
   { id: "constellation", label: "Yıldız hattı" },
   { id: "blueprint", label: "Mimari köşe" },
   { id: "laser", label: "Lazer çizgi" },
+  // AURA Pro Couture finishes (pro-couture-captions.ts).
+  ...COUTURE_FINISHES,
 ] as const;
 export type CaptionFinish = (typeof CAPTION_FINISHES)[number]["id"];
 export const SIGNATURE_ANIMATIONS = [

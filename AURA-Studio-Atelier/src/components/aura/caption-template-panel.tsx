@@ -10,6 +10,7 @@ import {
   type CaptionTemplate,
 } from "./caption-templates";
 import { paintCaptions } from "./caption-paint";
+import { ProBadge } from "./pro-badge";
 
 function TemplateThumbnail({ preset }: { preset: CaptionTemplate }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -20,7 +21,7 @@ function TemplateThumbnail({ preset }: { preset: CaptionTemplate }) {
       last = -Infinity;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const start = performance.now();
-    const animated = preset.category === "İmza";
+    const animated = preset.category === "İmza" || preset.category === "Pro";
     const draw = (now = performance.now()) => {
       const canvas = canvasRef.current,
         ctx = canvas?.getContext("2d");
@@ -141,13 +142,13 @@ export function CaptionTemplateGallery({
           aria-label={ui("Şablon kategorisi")}
           value={category}
         >
-          {["Tümü", "İmza", "Türler", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
+          {["Tümü", "Pro", "İmza", "Türler", "Sosyal", "Müzik", "Sinema", "Sade"].map((name) => (
             <button
               type="button"
               key={name}
               aria-pressed={category === name}
               onClick={() => setCategory(name)}
-              className={`min-h-11 rounded-full border px-3 text-xs ${category === name ? "border-accent text-ink" : "border-line text-mute"}`}
+              className={`min-h-11 rounded-full border px-3 text-xs ${name === "Pro" ? "pro-chip " : ""}${category === name ? "border-accent text-ink" : "border-line text-mute"}`}
             >
               {ui(name)}
             </button>
@@ -178,8 +179,10 @@ export function CaptionTemplateGallery({
             aria-label={`${ui(preset.name)} ${ui("şablonu")}`}
             aria-pressed={selected?.id === preset.id}
             onClick={() => apply(preset.options)}
+            data-pro={preset.category === "Pro" || undefined}
             className={`min-w-0 rounded-xl border p-2 text-left ${selected?.id === preset.id ? "border-accent bg-glass" : "border-line"}`}
           >
+            {preset.category === "Pro" && <ProBadge />}
             <TemplateThumbnail preset={preset} />
             <span className="mt-2 block text-xs font-medium text-ink">{ui(preset.name)}</span>
             <span className="mt-1 block text-xs leading-relaxed text-mute">

@@ -9,7 +9,10 @@ import {
   timedCaptionWords,
   DEFAULT_CAPTIONS,
 } from "../src/components/aura/captions.ts";
-import { CAPTION_TEMPLATES, matchingCaptionTemplate } from "../src/components/aura/caption-templates.ts";
+import {
+  CAPTION_TEMPLATES,
+  matchingCaptionTemplate,
+} from "../src/components/aura/caption-templates.ts";
 test("word cues keep timestamps and split at vocal gaps", () => {
   const cues = cuesFromWords(
     [
@@ -98,7 +101,9 @@ test("manual word timing covers the cue while preserving authoritative ASR gaps"
   assert.deepEqual(timedCaptionWords({ ...cue, words: timed }), timed);
 });
 test("appearance imports sanitize fonts, colors and drawing bounds", () => {
-  const options = restoreCaptionOptions('{"font":"injected","textColor":"url(bad)","highlightColor":"red","outline":99,"glow":-4,"weight":999,"background":"bad"}');
+  const options = restoreCaptionOptions(
+    '{"font":"injected","textColor":"url(bad)","highlightColor":"red","outline":99,"glow":-4,"weight":999,"background":"bad"}',
+  );
   assert.equal(options.font, "sans");
   assert.equal(options.textColor, "#fff9ee");
   assert.equal(options.highlightColor, "theme");
@@ -108,8 +113,8 @@ test("appearance imports sanitize fonts, colors and drawing bounds", () => {
   assert.equal(options.background, "auto");
 });
 test("all templates round-trip, reset previous appearance and preserve timing", () => {
-  assert.equal(CAPTION_TEMPLATES.length, 46);
-  assert.equal(new Set(CAPTION_TEMPLATES.map((p) => p.id)).size, 46);
+  assert.equal(CAPTION_TEMPLATES.length, 54);
+  assert.equal(new Set(CAPTION_TEMPLATES.map((p) => p.id)).size, 54);
   let current = { ...DEFAULT_CAPTIONS, offset: 1.5, enabled: false, place: "top" };
   for (const preset of CAPTION_TEMPLATES) {
     current = { ...current, ...preset.options };

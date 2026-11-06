@@ -1,9 +1,16 @@
 import type { EditClip } from "./editor.ts";
 import { PRO_TRANSITIONS, paintProTransition } from "./pro-transitions.ts";
+import {
+  COUTURE_TRANSITIONS,
+  isCoutureTransition,
+  paintCoutureTransition,
+} from "./pro-couture-transitions.ts";
 import { isPro } from "./pro-paint.ts";
 export const SCENE_TRANSITIONS = [
   { id: "none", label: "Yok", group: "Temel" },
   // AURA Pro: premium transitions, first in the list and in their own collection.
+  // The newest Couture collection leads.
+  ...COUTURE_TRANSITIONS.map((t) => ({ ...t, group: "Pro" as const })),
   ...PRO_TRANSITIONS.map((t) => ({ ...t, group: "Pro" as const })),
   { id: "dissolve", label: "Çapraz çözülme", group: "Temel" },
   { id: "fade-black", label: "Siyaha geçiş", group: "Temel" },
@@ -65,6 +72,10 @@ export function paintSceneTransition(
   w: number,
   h: number,
 ) {
+  if (isCoutureTransition(type)) {
+    paintCoutureTransition(ctx, outgoing, incoming, type, progress, w, h);
+    return;
+  }
   if (isPro(type)) {
     paintProTransition(ctx, outgoing, incoming, type, progress, w, h);
     return;

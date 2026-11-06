@@ -21,7 +21,7 @@ test("ten signature templates each have their own selectable motion and finish",
   assert.equal(new Set(collection.map((p) => p.options.animation)).size, 10);
   assert.equal(new Set(collection.map((p) => p.options.textEffect)).size, 10);
   assert.equal(SIGNATURE_ANIMATIONS.length, 10);
-  assert.equal(CAPTION_FINISHES.length, 11);
+  assert.equal(CAPTION_FINISHES.length, 19);
   assert.equal(new Set(CAPTION_ANIMATIONS.map((a) => a.id)).size, CAPTION_ANIMATIONS.length);
   for (const p of collection) {
     assert.ok(SIGNATURE_ANIMATIONS.some((a) => a.id === p.options.animation));
@@ -85,7 +85,7 @@ test("new effects and motions can be mixed independently and old templates reset
       assert.equal(v.textEffect, effect.id);
       assert.equal(v.animation, animation.id);
     }
-  const old = CAPTION_TEMPLATES.find((p) => p.category !== "İmza");
+  const old = CAPTION_TEMPLATES.find((p) => p.category !== "İmza" && p.category !== "Pro");
   const options = { ...DEFAULT_CAPTIONS, ...collection[0].options, ...old.options };
   assert.equal(options.textEffect, "none");
   assert.equal(matchingCaptionTemplate(options)?.id, old.id);

@@ -5,6 +5,16 @@ import {
   signatureInk,
   type SignatureWord,
 } from "./caption-signatures";
+import {
+  coutureInk,
+  drawCoutureLetters,
+  moveCoutureWord,
+  paintCoutureLine,
+  paintCoutureOver,
+  paintCoutureUnder,
+  poseCoutureWord,
+  type CoutureWord,
+} from "./pro-couture-captions";
 import { motionFrame, REST } from "./caption-motion";
 import {
   activeCaption,
@@ -87,6 +97,7 @@ export function paintCaptions(
     tokens = [spoken[spoken.length - 1] ?? tokens[0]].filter(Boolean);
   }
   const space = ctx.measureText(" ").width;
+  const totalLetters = tokens.reduce((n, word) => n + Array.from(word.text).length, 0);
   const lines: Array<
     Array<{ text: string; start: number; end: number; width: number; sequence: number }>
   > = [[]];
@@ -234,7 +245,8 @@ export function paintCaptions(
     ctx.rect((width * (1 - ease)) / 2, 0, width * ease, height);
     ctx.clip();
   }
-  let characterCursor = 0;
+  let characterCursor = 0,
+    letterCursor = 0;
   for (let index = 0; index < shown.length; index++) {
     const line = shown[index],
       total = line.reduce((n, w) => n + w.width, 0) + space * Math.max(0, line.length - 1);
@@ -295,6 +307,28 @@ export function paintCaptions(
       signaturePhase,
       options.intensity,
     );
+    paintCoutureLine(
+      ctx,
+      options.textEffect,
+      animation,
+      {
+        x,
+        y,
+        width: total,
+        size,
+        index,
+        lines: shown.length,
+        lineHeight,
+        blockWidth,
+        elapsed: at - cue.start,
+        cueDuration: cue.end - cue.start,
+        speed: options.speed,
+        intensity: options.intensity,
+      },
+      accent,
+      signaturePhase,
+    );
+    const lineX = x;
     for (const [lineIndex, word] of line.entries()) {
       const progress = Math.max(
         0,
@@ -329,6 +363,27 @@ export function paintCaptions(
         progress: reducedMotion ? 0.5 : progress,
       };
       moveSignatureWord(ctx, animation, signatureWord);
+      const coutureWord: CoutureWord = {
+        x,
+        y,
+        width: word.width,
+        size,
+        elapsed: at - cue.start,
+        cueDuration: cue.end - cue.start,
+        speed: options.speed,
+        intensity: options.intensity,
+        order: word.sequence,
+        line: index,
+        lineX,
+        lineWidth: total,
+        active,
+        progress: reducedMotion ? 0.5 : progress,
+        letterStart: letterCursor,
+        letters: totalLetters,
+      };
+      letterCursor += Array.from(word.text).length;
+      moveCoutureWord(ctx, animation, coutureWord);
+      poseCoutureWord(ctx, options.textEffect, coutureWord);
       if (animation === "orbit") {
         ctx.globalAlpha *= wordEnter;
         ctx.translate(
@@ -502,6 +557,7 @@ export function paintCaptions(
         ctx.fillStyle = "#ff4f9a";
         ctx.fillText(text, x + split, y);
       }
+      paintCoutureUnder(ctx, options.textEffect, animation, text, coutureWord, accent);
       paintSignatureWord(ctx, options.textEffect, text, signatureWord, accent, signaturePhase);
       ctx.lineJoin = "round";
       ctx.fillStyle =
@@ -526,7 +582,27 @@ export function paintCaptions(
         accent,
         signaturePhase,
       );
-      if (animation === "cascade") {
+      ctx.fillStyle = coutureInk(
+        ctx,
+        options.textEffect,
+        coutureWord,
+        ctx.fillStyle,
+        accent,
+        signaturePhase,
+      );
+      if (
+        drawCoutureLetters(
+          ctx,
+          animation,
+          options.textEffect,
+          text,
+          coutureWord,
+          accent,
+          options.outline > 0,
+        )
+      ) {
+        // Drawn letter by letter.
+      } else if (animation === "cascade") {
         // Letters fall into place one after another across the whole cue.
         const step = Math.min(0.035 / options.speed, ((cue.end - cue.start) * 0.45) / 60);
         let cursor = x;
@@ -563,6 +639,7 @@ export function paintCaptions(
         if (options.outline > 0) ctx.strokeText(text, x, y);
         ctx.fillText(text, x, y);
       }
+      paintCoutureOver(ctx, options.textEffect, animation, text, coutureWord, signaturePhase);
       if (animation === "shimmer") {
         ctx.save();
         const phase = ((at - cue.start) * options.speed * 0.45) % 1;

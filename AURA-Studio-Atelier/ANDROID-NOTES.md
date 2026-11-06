@@ -1,5 +1,74 @@
 # AURA Studio Android
 
+## 2.11.0 — AURA Pro "Couture" koleksiyonu: 32 yeni premium öğe
+
+Pro koleksiyonuna sekiz yeni sahne geçişi, sekiz video animasyonu, sekiz altyazı şablonu ve sekiz spektrum eklendi. Her biri ayrı bir fikirle çizildi; uygulamadaki hiçbir öğenin renk, ad ya da ayar değişikliği değil. Hepsi altın **PRO** rozetiyle işaretli. Galerilerin **Pro** sekmesinde ve **Tümü** listesinde en başta yer alıyorlar. Önizleme, galeri küçük resmi ve dışa aktarılan video aynı çizim kodunu kullanıyor. Seçimler proje dosyasında saklanıyor.
+
+**8 sahne geçişi** (Geçiş penceresi → Pro):
+- **Sayfa Çevirme:** kare köşesinden kıvrılan bir kitap sayfası gibi çevrilir. Kıvrımda ışık ve gölge oluşur, kâğıdın arkasından görüntü soluk ve ters seçilir.
+- **3D Jaluzi:** yatay şeritler yukarıdan aşağı sırayla döner ve arkalarındaki yeni sahneyi gösterir.
+- **Işık Bıçağı:** prizma kenarlı, camgöbeği ve pembe saçaklı ince bir ışık bıçağı kareyi çapraz keser.
+- **Film Şeridi:** kare, delikli bir film şeridine dönüşür; şerit hareket bulanıklığıyla kayıp yeni sahneyi getirir.
+- **Mozaik Dönüş:** kareler çapraz bir dalgayla tek tek dönerek yeni sahneyi kurar.
+- **Anı Karesi:** görüntü beyaz çerçeveli, parlak bir fotoğrafa dönüşür ve dönerek uçar.
+- **3D Karusel:** iki sahne parlak zeminde yansıyan bir döner sahnede yer değiştirir.
+- **Derin Ayrılış:** kare çapraz bir ışık çizgisinden ikiye ayrılır, yeni sahne derinden gelir.
+
+**8 video animasyonu** (Hareket → Pro; giriş, çıkış ve karma olarak kullanılabilir):
+- **Bokeh Odak:** görüntünün kendi ışıkları yumuşak bokeh dairelerine dağılır, odak yavaşça netleşir.
+- **Neon Kontur:** görüntü önce parlayan neon çizgilerle çizilir, sonra renkleri dolar.
+- **Kaleydoskop:** görüntü aynalı, dönen bir kaleydoskop desenine bölünür ve tek kareye toplanır.
+- **Origami Açılış:** akordeon gibi katlanmış kâğıttan ışık ve gölgeyle açılır.
+- **Yankı İzi:** sıcak ve soğuk renkli yankıları yolunu doldurarak kadraja süzülür. Karmada yankılar dışa doğru büyür.
+- **Su Yüzeyi:** dalgalanan su yüzeyinden, dalga tepelerinde ışık yansımalarıyla durulur.
+- **Hologram Kart:** 3D eğilen kartın üzerinden gökkuşağı yansıması geçer.
+- **Üçlü Kadraj:** üç dikey panel sırayla, zıt yönlerden kayarak birleşir. Karmada paneller birlikte salınır.
+
+**8 altyazı şablonu** (Altyazılar → Görünüm → Şablonlar → Pro). Her şablonun kendine ait bir yazı efekti ve animasyonu var:
+- **Holografik:** gökkuşağı yansımalı yazı ve kelimelerin üzerinden geçen ışık; camgöbeği ve pembe yansımalar kelimede birleşir.
+- **Neon Tabela:** neon tüp harfler ve tabela çerçevesi; bir kıvılcım harfleri soldan sağa yakar.
+- **Kor Işığı:** ateş renkli yazı ve yükselen kıvılcımlar; kelimeler titreşen sıcak havayla aşağıdan yükselir.
+- **Fırça Darbesi:** elle boyanmış fırça izi; fırça satırı boyarken kelimeler ortaya çıkar.
+- **Kolaj:** her kelime ayrı, renkli bir kâğıt kesiğinde durur; kelimeler dönerek düşer.
+- **Buzlu Cam:** altyazıyı saran tek bir cam panel; panel açılır, kelimeler bulanıktan netleşir.
+- **Retro Gün Batımı:** krom gün batımı renkleri ve 3D derinlik; kelimeler uzaktan gelir.
+- **Yıldız Tozu:** şampanya ışıltısı ve yıldız parıltıları; harfler rastgele sırayla parıldayarak belirir.
+
+Bu sekiz yazı efekti Özelleştir → Efekt bölümünde, sekiz animasyon da Animasyonlar → Kombo bölümünde ayrı ayrı seçilebilir.
+
+**8 spektrum** (Spektrumlar → Görseller → Pro). Bas, orta ve tiz sesler, tepe değerleri ve vuruşlarla hareket eder:
+- **Satürn:** dört halkasının her biri spektrumun bir bölümünü taşır. Gezegen basla nefes alır, iki uydu zamanı tutar.
+- **Plazma Küre:** cam kürenin içindeki elektrik telleri kendi bantlarıyla uzanır ve camda parlar.
+- **Sarmal Galaksi:** bas çekirdekte, tiz kolların uçlarında; vuruşlar galaksiyi aydınlatır.
+- **İznik Çini:** sekiz köşeli yıldız madalyon, laleler, karanfiller, kıvrık saz yaprakları ve inci bordürden oluşan sırlı bir çini.
+- **Gece Şehri:** kuleler kendi bantlarıyla yükselir, pencereler müzikle yanar, şehir suda yansır.
+- **Retro Dalga:** çizgili güneş, spektrumdan oluşan dağlar ve tempoyla akan ızgara zemin.
+- **Hiper Uzay:** yıldızlar merkezden akar; bantları ne kadar güçlüyse izleri o kadar uzar.
+- **LED Pano:** tutulan tepe noktalarıyla nokta vuruşlu bir kulüp LED ekranı.
+
+Spektrumlarda önceki **Yeni** filtresinin adı **İmza** oldu; aynı 10 spektrumu gösteriyor. Yeni koleksiyon **Pro** filtresinde. Lüks filtresi ve otomatik DJ yeni spektrumları da kapsıyor. Bu sürümde de Pro öğeler herkese açık; satın alma bağlı değil.
+
+### 2.11.0 doğrulaması
+
+- TypeScript denetimi geçti. 158 AURA birim testi geçti; bunların 5'i yeni:
+  - koleksiyon sayıları ve adları;
+  - geçişlerin listede önce gelmesi ve proje kaydı;
+  - her animasyonun giriş, çıkış ve karma olarak çalışıp sonunda görüntüyü olduğu gibi bırakması;
+  - her şablonun kendi efekti ve animasyonu ile kayıt ve geri yükleme;
+  - spektrumların ayar kaydı.
+- 32 öğenin hepsi kare kare çizilip incelendi:
+  - 16:9 ve 9:16 oranlarında;
+  - spektrumlar dört renk paletinde;
+  - altyazılar kısa ve üç satırlık uzun Türkçe metinle.
+- Geçişlerin ilk ve son kareleri, önceki ve sonraki sahneyle piksel düzeyinde aynı.
+- 1080p çizim süreleri ölçüldü. En ağır dört öğe (Yankı İzi, Neon Kontur, Hologram Kart, Anı Karesi) hafifletildi; hepsi mevcut Pro öğelerin süre aralığında.
+- Uygulamada 390 ve 1280 piksel genişlikte denendi:
+  - galerilerin Pro sekmelerinde 20 geçiş, 17 animasyon, 8 şablon ve 8 spektrum göründü ve seçildi;
+  - yana kayan alan ve sayfa hatası yok.
+- Işık Bıçağı + Hologram Kart + Kor Işığı içeren bir proje dışa aktarıldı; karelerde üçü de görüldü.
+- Önceki testler yeniden geçti: Pro galerileri, düzenleme geçmişi, Metinle Kurgu, kesim araçları, altyazı yerleşimi ve diğerleri.
+- Fiziksel telefonda denenmedi.
+
 ## 2.10.0 — Galeriler artık aşağı kayıyor
 
 Araç panellerindeki ve pencerelerdeki bütün galeriler ve seçenek sıraları artık yana değil aşağı kayıyor. Öğeler alt alta satırlara diziliyor; panel aşağı kaydırılarak hepsine ulaşılıyor. Bu düzen şu galerilerde geçerli:

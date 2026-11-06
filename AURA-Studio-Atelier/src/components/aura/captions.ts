@@ -4,6 +4,7 @@ import {
   type CaptionFinish,
 } from "./caption-signatures.ts";
 import { NO_MOTION, parseCaptionMotion, type CaptionMotion } from "./caption-motion.ts";
+import { COUTURE_CAPTION_ANIMATIONS } from "./pro-couture-captions.ts";
 export type CaptionWord = { text: string; start: number; end: number };
 export type CaptionCue = {
   id: string;
@@ -44,6 +45,8 @@ export type CaptionOptions = {
   shadow: boolean;
 };
 export const CAPTION_ANIMATIONS = [
+  // AURA Pro Couture first, then the Signature collection.
+  ...COUTURE_CAPTION_ANIMATIONS,
   ...SIGNATURE_ANIMATIONS,
   { id: "none", label: "Sabit", description: "Sade ve okunaklı" },
   { id: "fade", label: "Sinema", description: "Yumuşak giriş ve çıkış" },

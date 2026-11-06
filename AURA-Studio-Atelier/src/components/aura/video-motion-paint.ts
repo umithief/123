@@ -1,5 +1,6 @@
 import type { MotionFrame } from "./video-motion";
 import { drawChromatic, filmBurn, glow, lensFlare, smear, surface, anamorphic } from "./pro-paint";
+import { coutureImage, coutureSource, paintBokeh, paintEchoes } from "./pro-couture-motion";
 
 /** The Pro looks that change the picture itself: blur along the move, colour split. */
 function proSource(source: HTMLCanvasElement, f: MotionFrame): HTMLCanvasElement {
@@ -108,9 +109,12 @@ export function paintVideoMotion(
   reveal(ctx, f, w, h);
   const inherited = ctx.filter === "none" ? "" : ctx.filter;
   ctx.filter = `${inherited} brightness(${f.brightness}) blur(${(f.blur * Math.min(w, h)) / 360}px)`;
-  let picture = proSource(source, f);
-  if (Math.abs(f.perspective) >= 0.001 && ctx.filter !== "none") {
-    // Perspective draws many strips: filter the picture once, not every strip.
+  let picture = coutureSource(proSource(source, f), f, time);
+  if (
+    (Math.abs(f.perspective) >= 0.001 || f.fold > 0.001 || f.panels > 0.001 || f.panelDrift > 0) &&
+    ctx.filter !== "none"
+  ) {
+    // Perspective, folds and panels draw many strips: filter the picture once, not every strip.
     const { canvas, ctx: c } = surface("motion-filtered", picture.width, picture.height);
     c.clearRect(0, 0, canvas.width, canvas.height);
     c.filter = ctx.filter.replace(
@@ -122,7 +126,10 @@ export function paintVideoMotion(
     picture = canvas;
     ctx.filter = inherited || "none";
   }
-  image(ctx, picture, f, w, h);
+  paintEchoes(ctx, picture, f, w, h, true);
+  if (!coutureImage(ctx, picture, f, w, h)) image(ctx, picture, f, w, h);
+  paintEchoes(ctx, picture, f, w, h, false);
+  if (f.bokeh > 0.01) paintBokeh(ctx, source, f.bokeh, w, h, time);
   if (f.split) {
     ctx.save();
     ctx.globalAlpha *= 0.4;
