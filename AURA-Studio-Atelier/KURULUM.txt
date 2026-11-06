@@ -1,4 +1,29 @@
-AURA Studio Atelier 2.9.0
+AURA Studio Atelier 2.10.0
+
+## 2.10.0 — Galeriler artık aşağı kayıyor
+
+Araç panellerindeki ve pencerelerdeki bütün galeriler ve seçenek sıraları artık yana değil aşağı kayıyor. Öğeler alt alta satırlara diziliyor; panel aşağı kaydırılarak hepsine ulaşılıyor. Bu düzen şu galerilerde geçerli:
+- video animasyonları (Giriş, Çıkış, Karma);
+- efektler ve filtreler;
+- altyazı şablonları ve altyazı animasyonları;
+- sahne geçişleri;
+- spektrum görselleri;
+- renk temaları;
+- video şablonlarının kategorileri;
+- medya ve ses listeleri;
+- kayıtlı görünümler ve video boyutları.
+
+Resimli galeriler panel genişliğini dolduran ızgaralara dönüştü: telefonda 2–4 sütun, masaüstünde daha fazla. Kategori çipleri ve sekmeler sığmadığında ikinci satıra geçiyor. Zaman çizelgesi ve alttaki araç çubuğu doğası gereği yatay kalıyor. Hiçbir seçenek, düğme ya da akış değişmedi.
+
+320 piksel gibi dar ekranlarda Hareket panelinin Giriş / Çıkış / Karma sekmeleri artık ikonların altındaki kendi satırında duruyor; önceden arama düğmesinin altına kayıyordu.
+
+### 2.10.0 doğrulaması
+
+- TypeScript denetimi ve 153 AURA birim testi geçti.
+- 320, 390 ve 1280 piksel genişlikte şu ekranlar açıldı: Spektrumlar, filtreler, efektler, Hareket, altyazı şablonları, altyazı animasyonları, sahne geçişi, video şablonları ve Yazı ve şekil. Bunların hiçbirinde yana kayan alan kalmadı; yatay taşma ve sayfa hatası yok.
+- Fare tekerleği paneli aşağı kaydırıyor.
+- Önceki testler yeniden geçti: favoriler, Pro galerileri, altyazı animasyon şeridi, düzenleme geçmişi ve diğerleri.
+- Fiziksel telefonda denenmedi.
 
 ## 2.9.0 — AURA 3.0 "Prism": Figma'da yeniden tasarlanan arayüz
 

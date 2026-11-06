@@ -136,5 +136,6 @@ Yazı tipleri uygulamayla birlikte gelir; internet bağlantısı gerekmez.
 - Aura gradyanı bir ekranda tek ana eylemde kullanılır. Katman içindeki onay düğmesi `ink` haptır.
 - Pencere ve açılır menüler `<body>`'ye taşındığı için kuralları kök sınıfa bağlanmaz (`.transition-dialog`, `.atelier-dialog`, `.studio-popover`).
 - Gradyan çerçeveler `padding-box` / `border-box` arka plan katmanlarıyla yapılır; bu yöntem köşe yarıçapını korur.
+- Panellerde ve pencerelerde yana kayan alan yoktur: galeriler `repeat(auto-fill, minmax(--gallery-min, 1fr))` ızgarasıyla, çip ve sekme sıraları satır kaydırmayla aşağı doğru dizilir. Yalnızca zaman çizelgesi ve alttaki araç çubuğu yataydır.
 - Oynatma konumu kaydırıcısı ilerlemeyi `--range-progress` değişkeninden okur. Bu değişkeni `studio-panels.tsx` ayarlar.
 - Figma değişkenleri ve bu dosyadaki tokenlar aynı adları kullanır (`bg/panel` ↔ `--color-panel`). Değerler SwiftUI, Jetpack Compose ya da Flutter temasına doğrudan aktarılabilir.
