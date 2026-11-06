@@ -3,7 +3,7 @@ import { ui } from "./interface-copy";
 import { createId } from "./id.ts";
 import { ChoiceStrip } from "./choice-strip";
 import * as Popover from "@radix-ui/react-popover";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   Check,
   Download,
@@ -595,6 +595,11 @@ export function Transport({
           value={file ? time : 0}
           disabled={!file || duration <= 0}
           onChange={(event) => onSeek(Number(event.target.value))}
+          style={
+            {
+              "--range-progress": `${file && duration > 0 ? Math.min(100, (time / duration) * 100) : 0}%`,
+            } as CSSProperties
+          }
         />
         <span className="transport-time">{formatTime(duration)}</span>
         <Popover.Root>

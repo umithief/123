@@ -1,5 +1,56 @@
 # AURA Studio Android
 
+## 2.9.0 — AURA 3.0 "Prism": Figma'da yeniden tasarlanan arayüz
+
+Arayüz önce Figma'da yeniden tasarlandı, ardından uygulamaya birebir aktarıldı. Figma dosyası: **AURA Studio — Prism (3.0 tasarım)** (https://www.figma.com/design/XpaiN5CjTIopS5RqELC9qZ). Dosyada şunlar var:
+- Gece ve Gün modlu renk değişkenleri;
+- yazı ve gölge stilleri;
+- düğme, çip, segment, araç çubuğu öğesi, oran kutusu ve marka işareti bileşenleri;
+- 43 ikon;
+- koyu ve açık temada beş telefon ekranı.
+
+Hiçbir özellik, düğme ya da akış kaldırılmadı veya yer değiştirmedi. Tokenlar, bileşen durumları ve kurallar `DESIGN-SYSTEM.md`'de.
+
+**Yön.** Uygulamanın adındaki "aura" artık görünür. Arayüz soğuk grafit tonlarında ve sakin; video ekranın en parlak öğesi. İridesan bir aura gradyanı (şeftali, pembe, lila, gök) yalnızca önemli anlarda görünüyor: ana eylem, oynatma halkası, marka işareti ve açık aracın gösterge çizgisi. Seçim ve odak, yumuşak ışıklı lila renkle gösteriliyor.
+
+**Tipografi.** Başlıklar artık özgün ve geniş harfli **Syne** yazı tipinde: ana sayfa başlığı, pencere ve katman başlıkları, kart başlıkları. Arayüzün geri kalanı **Outfit**. Ana sayfadaki "Senin imzan." aura gradyanıyla yazılıyor.
+
+**Bileşenler.**
+- Ana düğme (Dışa aktar, Videoyu hazırla, Devam et) aura gradyanlı, hafif ışıklı bir hap.
+- Katmanlardaki "Tamam" mürekkep renkli bir hap; böylece her ekranda tek gradyan düğme kalıyor.
+- Marka işareti, aura halkası içinde bir "A".
+- Oynatma düğmesi aura halkalı bir daire.
+- Oynatma çubuğu, video ilerledikçe aura renkleriyle doluyor.
+- İkon düğmeleri yuvarlak.
+- Çipler ve ikincil düğmeler yükseltilmiş yüzeyde.
+- Seçili kutular ve klipler lila çerçeve ve yumuşak ışıkla gösteriliyor.
+- Hazır araçlar penceresindeki sekmeler uygulamanın segment kontrolüyle aynı görünümde.
+
+**Telefonda araç çubuğu.** Araç çubuğu buzlu cam görünümlü, 28 piksel köşeli ve yüzen bir çubuk. Açık araç lila renkte, üstünde aura gradyanlı bir çizgi var. Masaüstünde çizgi rayın solunda dikey duruyor.
+
+**Ana sayfa.**
+- Başlığın arkasında hafif bir aura ışıması var.
+- "Ne yaratmak istersin?" kartları yeni bir düzende: "Müzik videosu" büyük ve aura ışıklı, "Video düzenle" ile "Altyazı ekle" yan yana.
+- "Hazır görünümleri keşfet" artık bir kart.
+
+**Açık tema ("Gün").** Beyaz yüzeyler ve derin mor bir vurgu rengi kullanılıyor. Gradyanlı başlık, açık zeminde okunabilsin diye daha koyu aura tonlarıyla yazılıyor.
+
+**Erişilebilirlik.**
+- Metin ve vurgu renkleri iki temada da WCAG AA kontrastını geçiyor: küçük metinde en az 4,5:1, büyük gradyanlı başlıkta en az 3,8:1.
+- Aura üzerindeki yazı en az 8,8:1 kontrastlı.
+- Başlık ve oynatma denetimleri en az 44 piksel.
+- Klavye odağı lila hale ile görünüyor.
+- Cihazda "hareketi azalt" açıksa geçişler, basılma ve ok kayması animasyonları kapanıyor.
+- 375 pikselden dar ekranlarda katman başlıkları küçülüyor ve "Tamam" düğmesine yer kalıyor.
+
+### 2.9.0 doğrulaması
+
+- TypeScript denetimi ve 153 AURA birim testi geçti.
+- Tarayıcıda 320, 360, 390 ve 1280 piksel genişlikte, koyu ve açık temada ana sayfa, kurgu ekranı, araç panelleri, şablonlar, Hazır araçlar ve Dışa aktar ekranları incelendi; yatay taşma ve sayfa hatası yok.
+- İlk incelemede çıkan üç sorun düzeltildi: başlık yazı tipinin yüklenmemesi, ana sayfa kartlarında ikon hizası ve 320 pikselde kısalan katman başlıkları.
+- Önceki bütün testler yeniden geçti: Metinle Kurgu, düzenleme geçmişi, iki parmakla düzenleme, altyazı boyutu, Projelerim, güvenli alan, aralık araçları, altyazı yerleşimi, Pro galerileri, Oto Kurgu, kesim geçişi ve akıcı önizleme.
+- Fiziksel telefonda denenmedi.
+
 ## 2.8.0 — AURA 3.0 "Lumen": arayüz yeniden tasarlandı
 
 Bütün ekranlar tek bir tasarım sistemiyle yeniden düzenlendi. Hiçbir özellik, düğme ya da akış kaldırılmadı veya yer değiştirmedi. Tokenlar, bileşen durumları ve kurallar `DESIGN-SYSTEM.md`'de.
