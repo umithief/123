@@ -656,6 +656,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                                                 <UserAvatar name={editForm.name || user.name} size={60} />
                                             </ProfileFrame>
                                             <span className="text-[10px] font-bold text-gray-700 text-center leading-tight">{option.name}</span>
+                                            {option.premium && <span className="text-[8px] font-black tracking-widest text-moto-accent leading-none">ULTRA</span>}
                                             {!unlocked && (
                                                 <span className="absolute top-1.5 right-1.5 bg-gray-900 text-white rounded-full p-1">
                                                     <Lock className="w-2.5 h-2.5" />

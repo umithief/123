@@ -1,5 +1,6 @@
-import React, { useId, useInsertionEffect } from 'react';
+import React, { useEffect, useId, useInsertionEffect, useRef } from 'react';
 import { ProfileFrameId, User } from '../../types';
+import { mountPremiumFrame, PremiumFrameId, PREMIUM_FRAME_IDS } from './premiumFrames';
 
 // Profil fotoğrafı için animasyonlu motosiklet kimlikli dış çerçeveler.
 // Tüm çerçeveler 200x200'lük bir SVG koordinat sisteminde çizilir; avatar ortadaki
@@ -10,6 +11,7 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
+    premium?: boolean; // Ultra premium (canvas tabanlı) çerçeve
 }
 
 export const DEFAULT_PROFILE_FRAME: ProfileFrameId = 'tachometer';
@@ -23,7 +25,16 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
     { id: 'brake-disc', name: 'Fren Diski', description: 'Frenlemede ısınan papatya disk', rank: 'Viraj Ustası' },
     { id: 'exhaust', name: 'Titanyum Egzoz', description: 'Yanık titanyum ve egzoz alevleri', rank: 'Yol Kaptanı' },
     { id: 'checkered', name: 'Damalı Bayrak', description: 'Yol kaptanlarına özel P1 çerçevesi', rank: 'Yol Kaptanı' },
+    { id: 'apex', name: 'Apex', description: 'Gece virajında uzun pozlama ışık izleri', rank: 'Scooter Çırağı', premium: true },
+    { id: 'redline', name: 'Redline', description: 'Altı vitesi kesiciye kadar çeken devir göstergesi', rank: 'Scooter Çırağı', premium: true },
+    { id: 'wind-tunnel', name: 'Rüzgar Tüneli', description: 'Etrafından akan hava ve basınç haritası', rank: 'Scooter Çırağı', premium: true },
+    { id: 'night-road', name: 'Gece Yolu', description: 'Far huzmesiyle aydınlanan asfalt', rank: 'Scooter Çırağı', premium: true },
+    { id: 'volt', name: 'Volt', description: 'Şarj dolar, terminaller arasında ark atlar', rank: 'Scooter Çırağı', premium: true },
+    { id: 'gold', name: 'Altın Seri', description: 'Giyoş işlemeli altın, elmas ve parıltı', rank: 'Scooter Çırağı', premium: true },
 ];
+
+const isPremiumFrame = (frame: ProfileFrameId): frame is PremiumFrameId =>
+    (PREMIUM_FRAME_IDS as ProfileFrameId[]).includes(frame);
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
@@ -375,7 +386,13 @@ const Checkered: React.FC<{ id: string }> = () => (
     </>
 );
 
-const FRAME_RENDERERS: Record<Exclude<ProfileFrameId, 'none'>, React.FC<{ id: string }>> = {
+const PremiumCanvas: React.FC<{ frame: PremiumFrameId }> = ({ frame }) => {
+    const ref = useRef<HTMLCanvasElement>(null);
+    useEffect(() => (ref.current ? mountPremiumFrame(ref.current, frame) : undefined), [frame]);
+    return <canvas ref={ref} className="mvf-canvas" aria-hidden="true" />;
+};
+
+const FRAME_RENDERERS: Record<Exclude<ProfileFrameId, 'none' | PremiumFrameId>, React.FC<{ id: string }>> = {
     'tachometer': Tachometer,
     'tire': Tire,
     'led-halo': LedHalo,
@@ -395,6 +412,7 @@ const FRAME_STYLES = `
     .mvf-root:hover .mvf-avatar { transform: scale(.96); }
     .mvf-plain { box-shadow: 0 0 0 4px #fff, 0 6px 16px rgba(0,0,0,.18); }
     .mvf-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+    .mvf-canvas { position: absolute; left: -15%; top: -15%; width: 130%; height: 130%; max-width: none; pointer-events: none; }
     .mvf-spin, .mvf-tach-needle, .mvf-brake-disc { transform-box: view-box; transform-origin: 50% 50%; }
 
     .mvf-spin { animation: mvf-spin 6s linear infinite; }
@@ -510,7 +528,9 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
 }) => {
     useFrameStyles();
     const id = `mvf${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-    const Frame = frame === 'none' ? null : FRAME_RENDERERS[frame];
+    const premium = isPremiumFrame(frame);
+    const Frame = frame === 'none' || premium ? null : FRAME_RENDERERS[frame as keyof typeof FRAME_RENDERERS];
+    const framed = premium || !!Frame;
     const style = {
         width: size,
         height: size,
@@ -519,9 +539,10 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
 
     return (
         <div className={`mvf-root ${className}`} style={style}>
-            <div className={`mvf-avatar ${Frame ? '' : 'mvf-plain'}`} style={{ inset: Frame ? '14.5%' : 0 }}>
+            <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
+            {premium && <PremiumCanvas frame={frame} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />

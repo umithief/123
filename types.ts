@@ -120,7 +120,10 @@ export interface UserBike {
 }
 
 // Profil fotoğrafı etrafındaki animasyonlu motosiklet çerçeveleri
-export type ProfileFrameId = 'none' | 'tachometer' | 'tire' | 'led-halo' | 'chain' | 'brake-disc' | 'exhaust' | 'checkered';
+export type ProfileFrameId =
+    | 'none' | 'tachometer' | 'tire' | 'led-halo' | 'chain' | 'brake-disc' | 'exhaust' | 'checkered'
+    // Ultra premium (canvas tabanlı) çerçeveler
+    | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold';
 
 export interface User {
   id: string;
