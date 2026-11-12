@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useInsertionEffect, useRef } from 'react';
 import { ProfileFrameId, User } from '../../types';
 import { mountPremiumFrame, PremiumFrameId, PREMIUM_FRAME_IDS } from './premiumFrames';
+import { mountShaderFrame, ShaderFrameId, SHADER_FRAME_IDS } from './shaderFrames';
 
 // Profil fotoğrafı için animasyonlu motosiklet kimlikli dış çerçeveler.
 // Tüm çerçeveler 200x200'lük bir SVG koordinat sisteminde çizilir; avatar ortadaki
@@ -11,7 +12,7 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    premium?: boolean; // Ultra premium (canvas tabanlı) çerçeve
+    badge?: 'ULTRA' | 'İMZA'; // ULTRA: canvas tabanlı, İMZA: WebGL shader tabanlı çerçeve
 }
 
 export const DEFAULT_PROFILE_FRAME: ProfileFrameId = 'tachometer';
@@ -25,16 +26,27 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
     { id: 'brake-disc', name: 'Fren Diski', description: 'Frenlemede ısınan papatya disk', rank: 'Viraj Ustası' },
     { id: 'exhaust', name: 'Titanyum Egzoz', description: 'Yanık titanyum ve egzoz alevleri', rank: 'Yol Kaptanı' },
     { id: 'checkered', name: 'Damalı Bayrak', description: 'Yol kaptanlarına özel P1 çerçevesi', rank: 'Yol Kaptanı' },
-    { id: 'apex', name: 'Apex', description: 'Gece virajında uzun pozlama ışık izleri', rank: 'Scooter Çırağı', premium: true },
-    { id: 'redline', name: 'Redline', description: 'Altı vitesi kesiciye kadar çeken devir göstergesi', rank: 'Scooter Çırağı', premium: true },
-    { id: 'wind-tunnel', name: 'Rüzgar Tüneli', description: 'Etrafından akan hava ve basınç haritası', rank: 'Scooter Çırağı', premium: true },
-    { id: 'night-road', name: 'Gece Yolu', description: 'Far huzmesiyle aydınlanan asfalt', rank: 'Scooter Çırağı', premium: true },
-    { id: 'volt', name: 'Volt', description: 'Şarj dolar, terminaller arasında ark atlar', rank: 'Scooter Çırağı', premium: true },
-    { id: 'gold', name: 'Altın Seri', description: 'Giyoş işlemeli altın, elmas ve parıltı', rank: 'Scooter Çırağı', premium: true },
+    { id: 'apex', name: 'Apex', description: 'Gece virajında uzun pozlama ışık izleri', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'redline', name: 'Redline', description: 'Altı vitesi kesiciye kadar çeken devir göstergesi', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'wind-tunnel', name: 'Rüzgar Tüneli', description: 'Etrafından akan hava ve basınç haritası', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'night-road', name: 'Gece Yolu', description: 'Far huzmesiyle aydınlanan asfalt', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'volt', name: 'Volt', description: 'Şarj dolar, terminaller arasında ark atlar', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'gold', name: 'Altın Seri', description: 'Giyoş işlemeli altın, elmas ve parıltı', rank: 'Scooter Çırağı', badge: 'ULTRA' },
+    { id: 'liquid-chrome', name: 'Sıvı Krom', description: 'Dalgalanan akışkan krom ve kayan stüdyo yansımaları', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    { id: 'iridium', name: 'İridyum Vizör', description: 'Açıya göre renk değiştiren iridyum kask vizörü', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    { id: 'carbon', name: 'Karbon', description: 'Işıkla yer değiştiren dimi dokuma karbon ve derin vernik', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    { id: 'nitro', name: 'Nitro', description: 'Egzoz jetlerinde mach elmasları ve geri tepme', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    { id: 'burnout', name: 'Burnout', description: 'Kızgın lastikten kopan girdap duman ve korlar', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    { id: 'hyperspeed', name: 'Hiper Hız', description: 'Dışarı fırlayan ışık çizgileri ve boost şok dalgası', rank: 'Scooter Çırağı', badge: 'İMZA' },
 ];
 
-const isPremiumFrame = (frame: ProfileFrameId): frame is PremiumFrameId =>
-    (PREMIUM_FRAME_IDS as ProfileFrameId[]).includes(frame);
+type CanvasFrameId = PremiumFrameId | ShaderFrameId;
+
+const isShaderFrame = (frame: ProfileFrameId): frame is ShaderFrameId =>
+    (SHADER_FRAME_IDS as ProfileFrameId[]).includes(frame);
+
+const isCanvasFrame = (frame: ProfileFrameId): frame is CanvasFrameId =>
+    isShaderFrame(frame) || (PREMIUM_FRAME_IDS as ProfileFrameId[]).includes(frame);
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
@@ -386,13 +398,16 @@ const Checkered: React.FC<{ id: string }> = () => (
     </>
 );
 
-const PremiumCanvas: React.FC<{ frame: PremiumFrameId }> = ({ frame }) => {
+const FrameCanvas: React.FC<{ frame: CanvasFrameId }> = ({ frame }) => {
     const ref = useRef<HTMLCanvasElement>(null);
-    useEffect(() => (ref.current ? mountPremiumFrame(ref.current, frame) : undefined), [frame]);
+    useEffect(() => {
+        if (!ref.current) return undefined;
+        return isShaderFrame(frame) ? mountShaderFrame(ref.current, frame) : mountPremiumFrame(ref.current, frame);
+    }, [frame]);
     return <canvas ref={ref} className="mvf-canvas" aria-hidden="true" />;
 };
 
-const FRAME_RENDERERS: Record<Exclude<ProfileFrameId, 'none' | PremiumFrameId>, React.FC<{ id: string }>> = {
+const FRAME_RENDERERS: Record<Exclude<ProfileFrameId, 'none' | CanvasFrameId>, React.FC<{ id: string }>> = {
     'tachometer': Tachometer,
     'tire': Tire,
     'led-halo': LedHalo,
@@ -528,9 +543,9 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
 }) => {
     useFrameStyles();
     const id = `mvf${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-    const premium = isPremiumFrame(frame);
-    const Frame = frame === 'none' || premium ? null : FRAME_RENDERERS[frame as keyof typeof FRAME_RENDERERS];
-    const framed = premium || !!Frame;
+    const canvasFrame = isCanvasFrame(frame);
+    const Frame = frame === 'none' || canvasFrame ? null : FRAME_RENDERERS[frame as keyof typeof FRAME_RENDERERS];
+    const framed = canvasFrame || !!Frame;
     const style = {
         width: size,
         height: size,
@@ -542,7 +557,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
             <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
-            {premium && <PremiumCanvas frame={frame} />}
+            {canvasFrame && <FrameCanvas frame={frame} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />

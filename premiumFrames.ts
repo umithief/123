@@ -7,7 +7,7 @@ export type PremiumFrameId = 'apex' | 'redline' | 'wind-tunnel' | 'night-road' |
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = ['apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold'];
 
-type RGB = [number, number, number];
+export type RGB = [number, number, number];
 
 interface Env {
     ctx: CanvasRenderingContext2D;
@@ -644,6 +644,30 @@ const parseColor = (ctx: CanvasRenderingContext2D, value: string, fallback: RGB)
     return m ? [+m[0], +m[1], +m[2]] : fallback;
 };
 
+// Tema rengini (--moto-accent) canvas'ın bulunduğu yerden okur
+export const readAccent = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): RGB =>
+    parseColor(ctx, getComputedStyle(canvas).getPropertyValue('--moto-accent').trim(), [242, 166, 25]);
+
+// Ortak sürücü: görünürlük, "hareketi azalt" ve duraklatma tüm canvas çerçeveleri için burada yönetilir.
+// "Hareketi azalt" açıksa tick hiç çağrılmaz, still() tek bir sabit kare çizer.
+export const driveFrame = (canvas: HTMLCanvasElement, hooks: { tick: (dt: number) => void; still: () => void }): (() => void) => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        hooks.still();
+        const ro = new ResizeObserver(() => hooks.still());
+        ro.observe(canvas);
+        return () => ro.disconnect();
+    }
+    const inst: Instance = { visible: true, tick: hooks.tick };
+    const io = new IntersectionObserver(entries => { inst.visible = entries[entries.length - 1].isIntersecting; });
+    io.observe(canvas);
+    instances.add(inst);
+    if (!rafId) { lastTime = performance.now(); rafId = requestAnimationFrame(loop); }
+    return () => {
+        io.disconnect();
+        instances.delete(inst);
+    };
+};
+
 export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId): (() => void) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return () => {};
@@ -651,10 +675,6 @@ export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId)
     const env: Env = { ctx, t: 0, dt: 0, accent: [242, 166, 25], rnd: mulberry32(id.length * 7919 + 13) };
     const state = def.init(env);
     let frames = 0;
-
-    const readAccent = () => {
-        env.accent = parseColor(ctx, getComputedStyle(canvas).getPropertyValue('--moto-accent').trim(), [242, 166, 25]);
-    };
 
     const render = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 3);
@@ -672,31 +692,18 @@ export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId)
 
     const advance = (dt: number) => { env.dt = dt; env.t += dt; def.step(state, env); };
 
-    readAccent();
-    // "Hareketi azalt" açıksa: sahneyi biraz ilerletip tek bir sabit kare çiz
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        for (let i = 0; i < 150; i++) advance(1 / 30);
-        render();
-        const ro = new ResizeObserver(() => { readAccent(); render(); });
-        ro.observe(canvas);
-        return () => ro.disconnect();
-    }
-
-    const inst: Instance = {
-        visible: true,
+    env.accent = readAccent(canvas, ctx);
+    return driveFrame(canvas, {
         tick: dt => {
-            if (frames++ % 45 === 0) readAccent();
+            if (frames++ % 45 === 0) env.accent = readAccent(canvas, ctx);
             advance(dt);
             render();
         },
-    };
-    const io = new IntersectionObserver(entries => { inst.visible = entries[entries.length - 1].isIntersecting; });
-    io.observe(canvas);
-    instances.add(inst);
-    if (!rafId) { lastTime = performance.now(); rafId = requestAnimationFrame(loop); }
-
-    return () => {
-        io.disconnect();
-        instances.delete(inst);
-    };
+        still: () => {
+            // Sahneyi biraz ilerletip anlamlı bir an göster
+            if (env.t === 0) for (let i = 0; i < 150; i++) advance(1 / 30);
+            env.accent = readAccent(canvas, ctx);
+            render();
+        },
+    });
 };
