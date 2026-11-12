@@ -3,9 +3,14 @@
 // Koordinat sistemi SVG çerçevelerle aynıdır: merkez (0,0), avatar yarıçapı 71, çerçeve bandı 72..100.
 // Canvas, çerçeve kutusunun %130'unu kaplar; 100..130 arası parlama ve parçacık taşması içindir.
 
-export type PremiumFrameId = 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold';
+export type PremiumFrameId =
+    | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
+    | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry';
 
-export const PREMIUM_FRAME_IDS: PremiumFrameId[] = ['apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold'];
+export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
+    'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
+    'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
+];
 
 export type RGB = [number, number, number];
 
@@ -606,6 +611,815 @@ const gold: FrameDef<{ glints: Glint[]; dust: Dust[]; next: number }> = {
     },
 };
 
+// Çerçeve ekranda yeterince büyükse küçük metinler (pusula harfleri, tur süresi) çizilir
+const showText = (ctx: CanvasRenderingContext2D) => ctx.getTransform().a * 200 > 140;
+
+// ============================================================================
+// 7) TİTANYUM KIVILCIM — tema renginde diz kaydırağı asfaltı sıyırır: kıvılcımlar yerçekimiyle savrulur,
+//    titanyum parçalar havada patlar, arkada beyazdan kızıla soğuyan bir iz kalır
+// ============================================================================
+
+interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number; burst: boolean }
+
+// k = 1 en sıcak (beyaz), k = 0 soğumuş (koyu kızıl)
+const heat = (k: number): RGB => k > 0.66 ? mix([255, 185, 70], [255, 250, 228], (k - 0.66) / 0.34)
+    : k > 0.33 ? mix([225, 60, 18], [255, 185, 70], (k - 0.33) / 0.33)
+    : mix([70, 12, 10], [225, 60, 18], k / 0.33);
+
+const SPARK_R = 92;
+
+const sparks: FrameDef<{ th: number; list: Spark[]; acc: number; speck: [number, number, number][] }> = {
+    init: ({ rnd }) => ({
+        th: -Math.PI / 2, list: [], acc: 0,
+        speck: Array.from({ length: 260 }, () => {
+            const a = rnd() * TAU, r = 73 + rnd() * 26;
+            return [r * Math.cos(a), r * Math.sin(a), rnd() < 0.5 ? 1 : 0] as [number, number, number];
+        }),
+    }),
+    step: (s, { dt, t, rnd }) => {
+        s.th += (1.6 + 1.1 * Math.sin(t * 0.8) ** 2) * dt;
+        s.acc += dt * 440 * (0.6 + 0.4 * Math.sin(t * 2.1) ** 2);
+        const c = Math.cos(s.th), sn = Math.sin(s.th);
+        while (s.acc >= 1) {
+            s.acc -= 1;
+            if (s.list.length > 700) continue;
+            // Kıvılcımlar hareketin tersine ve dışa doğru fırlar
+            const back = 80 + rnd() * 200, out = 10 + rnd() * 90, max = 0.35 + rnd() * 0.65;
+            s.list.push({
+                x: SPARK_R * c, y: SPARK_R * sn,
+                vx: sn * back + c * out + (rnd() - 0.5) * 40,
+                vy: -c * back + sn * out + (rnd() - 0.5) * 40,
+                life: max, max, w: 0.7 + rnd() * 1.1, burst: rnd() < 0.1,
+            });
+        }
+        const born: Spark[] = [];
+        const drag = 1 - 1.5 * dt;
+        for (const p of s.list) {
+            p.vy += 250 * dt; p.vx *= drag; p.vy *= drag;
+            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+            if (p.burst && p.life < p.max * 0.5) {
+                p.burst = false;
+                for (let i = 0; i < 5; i++) {
+                    const a = rnd() * TAU, v = 45 + rnd() * 95;
+                    born.push({ x: p.x, y: p.y, vx: p.vx * 0.3 + v * Math.cos(a), vy: p.vy * 0.3 + v * Math.sin(a), life: 0.12 + rnd() * 0.25, max: 0.37, w: 0.45, burst: false });
+                }
+            }
+        }
+        s.list = s.list.filter(p => p.life > 0 && p.x * p.x + p.y * p.y < 132 * 132);
+        for (const b of born) s.list.push(b);
+    },
+    draw: (s, { ctx, t, accent }) => {
+        substrate(ctx, '#2b2c31', '#18191d', '#232429');
+        for (const light of [1, 0]) {
+            ctx.fillStyle = light ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.3)';
+            ctx.beginPath();
+            for (const [x, y, l] of s.speck) if (l === light) ctx.rect(x, y, 0.9, 0.9);
+            ctx.fill();
+        }
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = rgba(accent, 0.55); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(0, 0, 79, 0, TAU); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Soğuyan kızgın iz: önce geniş ışıma, sonra iz
+        ctx.lineCap = 'butt';
+        const SEG = 64, span = 2.9;
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 20; i >= 0; i--) {
+            const d0 = (i / 20) * 1.2, d1 = ((i + 1.15) / 20) * 1.2;
+            const k = Math.exp(-d0 * 1.6);
+            ctx.strokeStyle = rgba(heat(0.4 + 0.6 * k), 0.22 * k);
+            ctx.lineWidth = 7 * k + 2;
+            ctx.beginPath(); ctx.arc(0, 0, SPARK_R, s.th - d1, s.th - d0); ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        for (let i = SEG - 1; i >= 0; i--) {
+            const d0 = (i / SEG) * span, d1 = ((i + 1.15) / SEG) * span;
+            const k = Math.exp(-d0 * 0.9);
+            ctx.strokeStyle = rgba(heat(k), 0.3 + 0.7 * k);
+            ctx.lineWidth = 1.6 + 1.8 * k;
+            ctx.beginPath(); ctx.arc(0, 0, SPARK_R, s.th - d1, s.th - d0); ctx.stroke();
+        }
+
+        // Kıvılcımlar: koyu turuncu kontur açık zeminde okunmayı sağlar, üstüne parlak çekirdek
+        ctx.lineCap = 'round';
+        for (const p of s.list) {
+            const k = clamp(p.life / p.max);
+            ctx.strokeStyle = rgba([150, 38, 0], 0.5 * k);
+            ctx.lineWidth = p.w + 1.3;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        for (const p of s.list) {
+            const k = clamp(p.life / p.max);
+            ctx.strokeStyle = rgba(heat(0.3 + 0.7 * k), 0.5 + 0.5 * k);
+            ctx.lineWidth = p.w;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); ctx.stroke();
+        }
+        const cx = SPARK_R * Math.cos(s.th), cy = SPARK_R * Math.sin(s.th);
+        bloom(ctx, cx, cy, 16 + 3 * Math.sin(t * 50), [255, 200, 120], 1);
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Diz kaydırağı
+        ctx.save();
+        ctx.translate(cx, cy); ctx.rotate(s.th + Math.PI / 2);
+        ctx.fillStyle = rgba(accent, 1); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.roundRect(-4.5, -3, 9, 6, 2.5); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    },
+};
+
+// ============================================================================
+// 8) KASK HUD — akıllı kask ekranı: dönen pusula, segmentli halkalar, radar taraması, yay üzerinde
+//    kayıp yatan motor simgesiyle yatış açısı, hız barı, hedef kilitleme ve ara sıra dijital parazit
+// ============================================================================
+
+const hudLean = (t: number) => 54 * Math.sin(t * 0.8) * (0.7 + 0.3 * Math.sin(t * 0.27));
+const hudSpeed = (t: number) => clamp(0.52 + 0.42 * Math.sin(t * 0.43 + 1.2));
+const COMPASS = ['K', 'D', 'G', 'B'];
+const leanAng = (deg: number) => Math.PI / 2 - deg * DEG * 0.95;
+
+interface HudState { glitch: number; next: number; peakL: number; peakR: number }
+
+const hudLayer = (s: HudState, { ctx, t }: Env, col: RGB, a: number) => {
+    const text = showText(ctx);
+    const hi = mix(col, WHITE, 0.55);
+    const heading = t * 0.18 + 0.7 * Math.sin(t * 0.21);
+
+    // Pusula: dönen çizgi halkası, yön harfleri ve sabit imleç
+    ctx.save();
+    ctx.rotate(-heading);
+    ctx.strokeStyle = rgba(col, 0.75 * a); ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    for (let i = 0; i < 72; i++) {
+        const ang = (i / 72) * TAU, r0 = i % 6 === 0 ? 94.5 : 96.8;
+        ctx.moveTo(r0 * Math.cos(ang), r0 * Math.sin(ang)); ctx.lineTo(99.2 * Math.cos(ang), 99.2 * Math.sin(ang));
+    }
+    ctx.stroke();
+    ctx.restore();
+    if (text) {
+        ctx.font = '800 6px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        COMPASS.forEach((c, i) => {
+            const ang = -Math.PI / 2 + (i * Math.PI) / 2 - heading;
+            ctx.fillStyle = rgba(i === 0 ? RED : hi, a);
+            ctx.fillText(c, 91 * Math.cos(ang), 91 * Math.sin(ang));
+        });
+    }
+    ctx.fillStyle = rgba(hi, a);
+    ctx.beginPath(); ctx.moveTo(0, -93.5); ctx.lineTo(-2.4, -100.6); ctx.lineTo(2.4, -100.6); ctx.closePath(); ctx.fill();
+
+    // Segmentli dönen yaylar (alt bölge yatış göstergesine ayrılmış)
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 130, 150 * DEG, 390 * DEG); ctx.closePath(); ctx.clip();
+    ctx.setLineDash([3, 1.6]); ctx.lineWidth = 2.2;
+    for (const [len, sp, off, al] of [[1.5, 0.55, 0, 0.9], [0.8, -1.05, 2, 0.6], [2.2, 0.22, 4, 0.4]]) {
+        const st = off + t * sp;
+        ctx.strokeStyle = rgba(col, al * a);
+        ctx.beginPath(); ctx.arc(0, 0, 86.5, st, st + len); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Radar taraması ve iç halka
+    if (ctx.createConicGradient) {
+        const g = ctx.createConicGradient(-t * 1.6, 0, 0);
+        g.addColorStop(0, rgba(col, 0.3 * a));
+        g.addColorStop(0.14, rgba(col, 0));
+        g.addColorStop(1, rgba(col, 0));
+        annulus(ctx, 72, 93); ctx.fillStyle = g; ctx.fill();
+    }
+    ctx.strokeStyle = rgba(col, 0.35 * a); ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.arc(0, 0, 74.2, 0, TAU); ctx.stroke();
+
+    // Yatış açısı: alt yay, 15 derecelik çentikler, tepe değer izleri ve yay üzerinde yatan motor simgesi
+    const lean = hudLean(t);
+    ctx.strokeStyle = rgba(col, 0.55 * a); ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.arc(0, 0, 78, leanAng(60), leanAng(-60)); ctx.stroke();
+    ctx.beginPath();
+    for (let d = -60; d <= 60; d += 15) {
+        const g = leanAng(d), r0 = d % 30 === 0 ? 75.5 : 76.6;
+        ctx.moveTo(r0 * Math.cos(g), r0 * Math.sin(g)); ctx.lineTo(78 * Math.cos(g), 78 * Math.sin(g));
+    }
+    ctx.stroke();
+    ctx.strokeStyle = rgba(RED, 0.9 * a); ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (const d of [-s.peakL, s.peakR]) {
+        const g = leanAng(d);
+        ctx.moveTo(76 * Math.cos(g), 76 * Math.sin(g)); ctx.lineTo(80.5 * Math.cos(g), 80.5 * Math.sin(g));
+    }
+    ctx.stroke();
+    const g = leanAng(lean);
+    ctx.save();
+    ctx.translate(84.5 * Math.cos(g), 84.5 * Math.sin(g));
+    ctx.rotate(g - Math.PI / 2 + lean * DEG);
+    ctx.fillStyle = rgba(hi, a); ctx.strokeStyle = rgba(hi, a); ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.roundRect(-1.1, -0.4, 2.2, 4.8, 1.1); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -0.4); ctx.lineTo(0, -4.2); ctx.moveTo(-3, -2.3); ctx.lineTo(3, -2.3); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -5.7, 1.35, 0, TAU); ctx.fill();
+    ctx.restore();
+    if (text) {
+        ctx.font = '700 5.5px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillStyle = rgba(hi, a);
+        ctx.fillText(`${Math.abs(Math.round(lean))}°${lean > 2 ? ' S' : lean < -2 ? ' L' : ''}`, 0, 94.5);
+    }
+
+    // Hız barı (sağ yay) ve dijital hız (sol)
+    const spd = hudSpeed(t);
+    ctx.lineWidth = 3; ctx.lineCap = 'butt';
+    for (let i = 0; i < 16; i++) {
+        const a0 = -42 * DEG + (i / 16) * 70 * DEG;
+        const on = i / 16 < spd;
+        ctx.strokeStyle = on ? rgba(i > 12 ? RED : col, a) : rgba(col, 0.15 * a);
+        ctx.beginPath(); ctx.arc(0, 0, 79, a0, a0 + (70 * DEG) / 16 * 0.7); ctx.stroke();
+    }
+    if (text) {
+        ctx.font = '800 8px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillStyle = rgba(WHITE, 0.92 * a);
+        ctx.fillText(String(Math.round(40 + spd * 260)), -81, -1.5);
+        ctx.font = '700 3.6px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillStyle = rgba(hi, 0.8 * a);
+        ctx.fillText('KM/SA', -81, 4.5);
+    }
+
+    // Hedef kilitleme: köşe parantezleri dışarıdan gelip avatara kilitlenir
+    const lp = (t % 7) / 0.7;
+    const R = lp < 1 ? lerp(104, 75.5, 1 - (1 - lp) ** 3) : 75.5 + 0.8 * Math.sin(t * 6);
+    const flash = lp >= 1 && lp < 1.6 ? 1 - (lp - 1) / 0.6 : 0;
+    ctx.strokeStyle = rgba(mix(col, WHITE, flash), a); ctx.lineWidth = 1.2 + flash;
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+        const c = (45 + i * 90) * DEG;
+        const p = [R * Math.cos(c), R * Math.sin(c)];
+        const d1 = c + Math.PI / 2, d2 = c - Math.PI / 2;
+        ctx.moveTo(p[0] + 5 * Math.cos(d1), p[1] + 5 * Math.sin(d1));
+        ctx.lineTo(p[0], p[1]);
+        ctx.lineTo(p[0] + 5 * Math.cos(d2), p[1] + 5 * Math.sin(d2));
+    }
+    ctx.stroke();
+};
+
+const hud: FrameDef<HudState> = {
+    init: () => ({ glitch: 0, next: 3, peakL: 0, peakR: 0 }),
+    step: (s, { dt, t, rnd }) => {
+        if ((s.next -= dt) <= 0) { s.glitch = 0.2; s.next = 4 + rnd() * 4; }
+        s.glitch = Math.max(0, s.glitch - dt);
+        const lean = hudLean(t);
+        s.peakL = Math.max(s.peakL - dt * 3, -lean);
+        s.peakR = Math.max(s.peakR - dt * 3, lean);
+    },
+    draw: (s, env) => {
+        const { ctx } = env;
+        substrate(ctx, '#0c1218', '#05080c', '#0b1119');
+        ctx.save();
+        annulus(ctx, 72, 100.5); ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,.035)';
+        for (let y = -100; y < 100; y += 2.2) ctx.fillRect(-100, y, 200, 0.7);
+        ctx.restore();
+        if (s.glitch > 0) {
+            const j = 1 + env.rnd() * 2;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.save(); ctx.translate(-j, 0); hudLayer(s, env, [255, 40, 90], 0.55); ctx.restore();
+            ctx.save(); ctx.translate(j, 0.6); hudLayer(s, env, [40, 220, 255], 0.55); ctx.restore();
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        hudLayer(s, env, env.accent, s.glitch > 0 ? 0.8 : 1);
+    },
+};
+
+// ============================================================================
+// 9) MOTOR NABZI — çerçeve dairesel bir osiloskop: 45° V2 motorun düzensiz ateşlemesi fosfor izi olarak
+//    çizilir; gaz köklenince devir yükselir, dalga genliği ve tarama hızı artar
+// ============================================================================
+
+// Halka iki tam çevrimi (1440° krank) gösterir; ateşlemeler 0° ve 405°'de olduğu için aralıklar eşit değildir
+const FIRING = [0, 405, 720, 1125];
+const fhash = (n: number) => { const x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); };
+
+const pulseRpm = (c: number) => {
+    if (c < 3.2) return 1050 + 40 * Math.sin(c * 17);
+    if (c < 3.45) return lerp(1050, 7400, ((c - 3.2) / 0.25) ** 0.6);
+    return 1050 + 6350 * Math.exp(-(c - 3.45) * 3.2);
+};
+
+const engineWave = (deg: number, rk: number, sweep: number) => {
+    let v = 0;
+    for (let k = 0; k < FIRING.length; k++) {
+        let x = deg - FIRING[k];
+        if (x < 0) x += 1440;
+        if (x > 420) continue;
+        const amp = (0.8 + 0.35 * rk) * (0.82 + 0.36 * fhash(sweep * 7 + k));
+        v += amp * Math.exp(-x / (70 + 40 * rk)) * Math.sin(x / (8.5 - 3 * rk));
+        v += 0.12 * Math.exp(-(((x - 190) / 16) ** 2));
+    }
+    return v;
+};
+
+const PULSE_N = 300;
+
+const pulse: FrameDef<{ beam: number; rpm: number; cyc: number; flash: number; px: Float32Array; py: Float32Array }> = {
+    init: () => ({ beam: 0, rpm: 1050, cyc: 0, flash: 0, px: new Float32Array(PULSE_N + 1), py: new Float32Array(PULSE_N + 1) }),
+    step: (s, { dt }) => {
+        const prev = s.cyc;
+        s.cyc = (s.cyc + dt) % 6;
+        if (prev < 3.2 && s.cyc >= 3.2) s.flash = 1;
+        s.rpm = pulseRpm(s.cyc);
+        s.beam += (1.2 + s.rpm / 2600) * dt;
+        s.flash = Math.max(0, s.flash - dt * 1.6);
+    },
+    draw: (s, { ctx, accent }) => {
+        substrate(ctx, '#0b100e', '#040706', '#0a0f0d');
+        const rk = clamp((s.rpm - 1050) / 6350);
+        ctx.strokeStyle = rgba(accent, 0.13); ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (const r of [77, 86, 95]) { ctx.moveTo(r, 0); ctx.arc(0, 0, r, 0, TAU); }
+        for (let i = 0; i < 24; i++) {
+            const a = (i / 24) * TAU;
+            ctx.moveTo(73 * Math.cos(a), 73 * Math.sin(a)); ctx.lineTo(99 * Math.cos(a), 99 * Math.sin(a));
+        }
+        ctx.stroke();
+
+        // Izın her noktası, ışın oradan geçtiği andaki taramaya aittir; geride kaldıkça söner
+        const span = TAU * 0.93;
+        for (let i = 0; i <= PULSE_N; i++) {
+            const total = s.beam - (i / PULSE_N) * span;
+            const th = ((total % TAU) + TAU) % TAU;
+            const v = engineWave((th / TAU) * 1440, rk, Math.floor(total / TAU));
+            const r = 86 + 11 * clamp(v, -1.1, 1.1);
+            s.px[i] = r * Math.cos(th - Math.PI / 2);
+            s.py[i] = r * Math.sin(th - Math.PI / 2);
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        const CH = 30, core = mix(accent, WHITE, 0.45);
+        for (let c = CH - 1; c >= 0; c--) {
+            const i0 = Math.floor((c * PULSE_N) / CH), i1 = Math.floor(((c + 1) * PULSE_N) / CH);
+            const fade = Math.exp(-(c / CH) * 2.6);
+            for (const [w, al, colr] of [[5, 0.25, accent], [1.5, 1, core]] as [number, number, RGB][]) {
+                ctx.strokeStyle = rgba(colr, al * fade); ctx.lineWidth = w;
+                ctx.beginPath(); ctx.moveTo(s.px[i0], s.py[i0]);
+                for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(s.px[i], s.py[i]);
+                ctx.stroke();
+            }
+        }
+        bloom(ctx, s.px[0], s.py[0], 7 + 4 * rk, accent, 1);
+        ctx.globalCompositeOperation = 'source-over';
+        if (s.flash > 0) {
+            ctx.strokeStyle = rgba(accent, s.flash * 0.7); ctx.lineWidth = 1.5 + 3 * s.flash;
+            ctx.beginPath(); ctx.arc(0, 0, 100.5 + 6 * (1 - s.flash), 0, TAU); ctx.stroke();
+        }
+    },
+};
+
+// ============================================================================
+// 10) KUSTOM BOYA — tema renginden şeker (candy) boya; içindeki metal pullar dönen ışıkta parıldar,
+//     görünmez bir fırça Von Dutch tarzı simetrik pinstripe süslemesini çizer, bekletir ve yeniden çizer
+// ============================================================================
+
+type Pt = [number, number];
+
+// Motif yerel koordinatlarda: x halka boyunca yay uzunluğu, y yarıçaptan sapma
+const KUSTOM_MOTIF: Pt[][] = (() => {
+    const strokes: Pt[][] = [];
+    const curve = (f: (u: number) => Pt, n: number) => strokes.push(Array.from({ length: n + 1 }, (_, i) => f(i / n)));
+    curve(u => [-44 + 88 * u, 7.6 * Math.sin(Math.PI * u)], 40);
+    curve(u => [-44 + 88 * u, -7.6 * Math.sin(Math.PI * u)], 40);
+    curve(u => [-20 + 40 * u, 3.4 * Math.sin(Math.PI * u)], 22);
+    curve(u => [-20 + 40 * u, -3.4 * Math.sin(Math.PI * u)], 22);
+    for (const side of [1, -1]) {
+        curve(u => {
+            const a = u * 3.3 * Math.PI, rho = 5.2 * (1 - u * 0.85);
+            return [side * (49 - rho * Math.cos(a)), rho * Math.sin(a)];
+        }, 50);
+    }
+    curve(u => [1.6 * Math.sin(u * TAU), 1.6 * Math.cos(u * TAU)], 20);
+    return strokes;
+})();
+
+const KUSTOM_LEN = KUSTOM_MOTIF.map(st => st.reduce((sum, p, i) => i ? sum + Math.hypot(p[0] - st[i - 1][0], p[1] - st[i - 1][1]) : 0, 0));
+const KUSTOM_TOTAL = KUSTOM_LEN.reduce((a, b) => a + b, 0);
+const PINSTRIPE: RGB = [255, 241, 193];
+
+interface Flake { x: number; y: number; o: number; s: number }
+
+const kustom: FrameDef<{ flakes: Flake[]; cyc: number }> = {
+    init: ({ rnd }) => ({
+        cyc: 0,
+        flakes: Array.from({ length: 320 }, () => {
+            const a = rnd() * TAU, r = 73 + rnd() * 26;
+            return { x: r * Math.cos(a), y: r * Math.sin(a), o: rnd() * TAU, s: 0.6 + rnd() * 0.8 };
+        }),
+    }),
+    step: (s, { dt }) => { s.cyc = (s.cyc + dt) % 7; },
+    draw: (s, { ctx, t, accent }) => {
+        const deep = mix(accent, [0, 0, 0], 0.72), mid = mix(accent, [0, 0, 0], 0.35), hi = mix(accent, WHITE, 0.3);
+        const g = ctx.createRadialGradient(0, 0, 71.5, 0, 0, 100);
+        g.addColorStop(0, rgba(deep, 1)); g.addColorStop(0.1, rgba(hi, 1)); g.addColorStop(0.24, rgba(mid, 1));
+        g.addColorStop(0.55, rgba(deep, 1)); g.addColorStop(0.86, rgba(mid, 1)); g.addColorStop(0.94, rgba(hi, 1));
+        g.addColorStop(1, rgba(deep, 1));
+        annulus(ctx, 71.5, 100); ctx.fillStyle = g; ctx.fill();
+
+        // Metal pullar: yönleri ışığa denk geldiğinde parlar
+        const L = t * 0.8;
+        ctx.globalCompositeOperation = 'lighter';
+        for (const f of s.flakes) {
+            const b = Math.max(0, Math.cos(2 * (f.o - L))) ** 30;
+            const sz = f.s * (0.7 + 0.8 * b);
+            ctx.fillStyle = rgba(mix(accent, WHITE, 0.6 + 0.4 * b), 0.08 + 0.92 * b);
+            ctx.fillRect(f.x - sz / 2, f.y - sz / 2, sz, sz);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Vernik parlaması
+        if (ctx.createConicGradient) {
+            const sw = ctx.createConicGradient(t * 0.7, 0, 0);
+            for (const c of [0.25, 0.75]) {
+                sw.addColorStop(c - 0.06, 'rgba(255,255,255,0)');
+                sw.addColorStop(c, 'rgba(255,255,255,.4)');
+                sw.addColorStop(c + 0.06, 'rgba(255,255,255,0)');
+            }
+            annulus(ctx, 71.5, 100); ctx.fillStyle = sw; ctx.fill();
+        }
+        ctx.strokeStyle = rgba(PINSTRIPE, 0.85); ctx.lineWidth = 0.6;
+        for (const r of [72.7, 99.3]) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
+
+        // Pinstripe: 4 motif aynı anda, fırça ucu parlar
+        const ease = (x: number) => x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2;
+        const prog = s.cyc < 3.4 ? ease(s.cyc / 3.4) : 1;
+        const alpha = s.cyc < 6.1 ? 1 : 1 - (s.cyc - 6.1) / 0.9;
+        let budget = prog * KUSTOM_TOTAL;
+        let tip: Pt | null = null;
+        const toRing = (c: number, [x, y]: Pt): Pt => {
+            const a = c + x / 86, r = 86 + y;
+            return [r * Math.cos(a), r * Math.sin(a)];
+        };
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        const centers = [-90, 0, 90, 180].map(d => d * DEG);
+        for (let si = 0; si < KUSTOM_MOTIF.length && budget > 0; si++) {
+            const st = KUSTOM_MOTIF[si];
+            const take = Math.min(budget, KUSTOM_LEN[si]);
+            budget -= take;
+            for (const [w, col, al] of [[2.4, [0, 0, 0] as RGB, 0.55], [1.3, PINSTRIPE, 1]] as [number, RGB, number][]) {
+                ctx.strokeStyle = rgba(col, al * alpha); ctx.lineWidth = w;
+                ctx.beginPath();
+                for (const c of centers) {
+                    let used = 0;
+                    let p = toRing(c, st[0]);
+                    ctx.moveTo(p[0], p[1]);
+                    for (let i = 1; i < st.length && used < take; i++) {
+                        const seg = Math.hypot(st[i][0] - st[i - 1][0], st[i][1] - st[i - 1][1]);
+                        const k = Math.min(1, (take - used) / seg);
+                        p = toRing(c, [lerp(st[i - 1][0], st[i][0], k), lerp(st[i - 1][1], st[i][1], k)]);
+                        ctx.lineTo(p[0], p[1]);
+                        used += seg;
+                    }
+                    if (c === centers[0]) tip = p;
+                }
+                ctx.stroke();
+            }
+        }
+        if (tip && prog < 1) {
+            ctx.globalCompositeOperation = 'lighter';
+            for (const c of centers) {
+                const a = c - centers[0];
+                const [x, y] = tip;
+                bloom(ctx, x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a), 5, PINSTRIPE, 0.9);
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    },
+};
+
+// ============================================================================
+// 11) PODYUM — altın defne çelengi yapraklarını açarak büyür; altında tema renginde kurdele ve "1" madalyonu,
+//     her birkaç saniyede şampanya patlar ve konfeti yağar
+// ============================================================================
+
+interface Leaf { x: number; y: number; rot: number; len: number; u: number }
+interface Confetto { x: number; y: number; vx: number; vy: number; rot: number; vr: number; spin: number; vs: number; c: RGB; life: number }
+interface Drop { x: number; y: number; vx: number; vy: number; life: number; r: number }
+
+const LAUREL_R = 88;
+const LAUREL: Leaf[] = (() => {
+    const leaves: Leaf[] = [];
+    const N = 12;
+    for (const side of [1, -1]) {
+        for (let i = 0; i < N; i++) {
+            const u = i / (N - 1);
+            const ang = lerp(80, -58, u) * DEG;
+            const base = Math.atan2(-Math.cos(ang), side * Math.sin(ang));
+            for (const k of [1, -1]) {
+                leaves.push({ x: side * LAUREL_R * Math.cos(ang), y: LAUREL_R * Math.sin(ang), rot: base + side * k * 0.62, len: lerp(12.5, 7, u), u });
+            }
+        }
+    }
+    return leaves;
+})();
+
+const CONFETTI_COLORS: RGB[] = [[214, 168, 58], [239, 68, 68], [190, 196, 208], [59, 130, 246]];
+
+const podium: FrameDef<{ grow: number; burst: number; next: number; drops: Drop[]; confetti: Confetto[]; spray: number }> = {
+    init: () => ({ grow: 0, burst: 0, next: 1.4, drops: [], confetti: [], spray: 0 }),
+    step: (s, { dt, rnd, accent }) => {
+        s.grow = Math.min(1, s.grow + dt / 1.8);
+        if ((s.next -= dt) <= 0) {
+            s.next = 5;
+            s.spray = 0.4;
+            for (let i = 0; i < 80; i++) {
+                const a = (-170 + rnd() * 160) * DEG, r = 100 + rnd() * 18;
+                s.confetti.push({
+                    x: r * Math.cos(a), y: r * Math.sin(a), vx: Math.cos(a) * 30 + (rnd() - 0.5) * 40, vy: -40 - rnd() * 60,
+                    rot: rnd() * TAU, vr: (rnd() - 0.5) * 8, spin: rnd() * TAU, vs: 6 + rnd() * 8,
+                    c: rnd() < 0.3 ? accent : CONFETTI_COLORS[(rnd() * CONFETTI_COLORS.length) | 0], life: 2.6 + rnd(),
+                });
+            }
+        }
+        if (s.spray > 0) {
+            s.spray -= dt;
+            for (const src of [-125, -55]) {
+                for (let i = 0; i < 4; i++) {
+                    const a = src * DEG + (rnd() - 0.5) * 0.4, v = 80 + rnd() * 100;
+                    s.drops.push({ x: 100 * Math.cos(src * DEG), y: 100 * Math.sin(src * DEG), vx: Math.cos(a) * v, vy: Math.sin(a) * v - 50, life: 0.8 + rnd() * 0.6, r: 0.6 + rnd() * 1 });
+                }
+            }
+        }
+        for (const d of s.drops) { d.vy += 300 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; }
+        s.drops = s.drops.filter(d => d.life > 0);
+        for (const c of s.confetti) {
+            c.vy += 90 * dt; c.vx *= 1 - 1.8 * dt; c.vy *= 1 - 1.8 * dt;
+            c.x += (c.vx + 14 * Math.sin(c.spin)) * dt; c.y += c.vy * dt;
+            c.rot += c.vr * dt; c.spin += c.vs * dt; c.life -= dt;
+        }
+        s.confetti = s.confetti.filter(c => c.life > 0 && c.y < 130);
+    },
+    draw: (s, { ctx, t, accent }) => {
+        // Avatar kenarında altın halka
+        const ring = ctx.createLinearGradient(-72, -72, 72, 72);
+        ring.addColorStop(0, '#fff3c4'); ring.addColorStop(0.5, '#b8862a'); ring.addColorStop(1, '#f3d572');
+        ctx.strokeStyle = ring; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, 72.6, 0, TAU); ctx.stroke();
+
+        // Kurdele kuyrukları
+        const sway = 2 * Math.sin(t * 2.2);
+        ctx.fillStyle = rgba(mix(accent, [0, 0, 0], 0.15), 1);
+        for (const side of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(side * 2, 92);
+            ctx.lineTo(side * 7, 92);
+            ctx.lineTo(side * (12 + sway), 113);
+            ctx.lineTo(side * (8.5 + sway), 110);
+            ctx.lineTo(side * (5.5 + sway), 115);
+            ctx.closePath(); ctx.fill();
+        }
+
+        // Dallar ve yapraklar
+        const grow = s.grow;
+        ctx.strokeStyle = 'rgba(150,108,28,.9)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+        for (const side of [1, -1]) {
+            const end = lerp(80, -58, grow) * DEG;
+            ctx.beginPath();
+            if (side === 1) ctx.arc(0, 0, LAUREL_R, 80 * DEG, end, true);
+            else ctx.arc(0, 0, LAUREL_R, Math.PI - 80 * DEG, Math.PI - end, false);
+            ctx.stroke();
+        }
+        const leafGrad = ctx.createLinearGradient(0, -3, 0, 3);
+        leafGrad.addColorStop(0, '#fff1b8'); leafGrad.addColorStop(0.45, '#e2b54a'); leafGrad.addColorStop(1, '#8a6115');
+        const sweepPos = ((t * 0.45) % 1.8) - 0.2;
+        for (const l of LAUREL) {
+            const k = clamp((grow - l.u * 0.7) / 0.3);
+            if (k <= 0) continue;
+            const sc = 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
+            const len = l.len * sc;
+            ctx.save();
+            ctx.translate(l.x, l.y); ctx.rotate(l.rot);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(len * 0.45, -len * 0.36, len, 0);
+            ctx.quadraticCurveTo(len * 0.45, len * 0.36, 0, 0);
+            ctx.fillStyle = leafGrad; ctx.fill();
+            const sh = Math.exp(-(((l.u - sweepPos) / 0.09) ** 2));
+            if (sh > 0.02) { ctx.fillStyle = `rgba(255,255,255,${0.6 * sh})`; ctx.fill(); }
+            ctx.strokeStyle = 'rgba(120,80,10,.55)'; ctx.lineWidth = 0.45;
+            ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(len * 0.85, 0); ctx.stroke();
+            ctx.restore();
+        }
+
+        // Madalyon
+        const md = ctx.createRadialGradient(-2, 88, 1, 0, 91, 8);
+        md.addColorStop(0, '#fff6d0'); md.addColorStop(0.55, '#e0b043'); md.addColorStop(1, '#8a6115');
+        ctx.fillStyle = md;
+        ctx.beginPath(); ctx.arc(0, 91, 7.2, 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(110,72,8,.8)'; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(0, 91, 5.6, 0, TAU); ctx.stroke();
+        ctx.fillStyle = '#6b4708';
+        ctx.font = 'italic 900 8.5px system-ui, -apple-system, "Segoe UI", sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('1', 0, 91.6);
+
+        // Parıltılar
+        for (let i = 0; i < 5; i++) {
+            const ph = (t * 0.6 + i * 0.37) % 1;
+            const a = (-150 + i * 30 + 10 * Math.sin(i * 5)) * DEG;
+            star(ctx, 104 * Math.cos(a), 104 * Math.sin(a), 6 * Math.sin(Math.PI * ph), ph * 2, Math.sin(Math.PI * ph));
+        }
+
+        // Şampanya damlaları ve konfeti
+        for (const d of s.drops) {
+            const a = clamp(d.life * 2);
+            ctx.fillStyle = `rgba(250,236,170,${a})`; ctx.strokeStyle = `rgba(170,120,20,${0.6 * a})`; ctx.lineWidth = 0.4;
+            ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, TAU); ctx.fill(); ctx.stroke();
+        }
+        if (s.spray > 0) {
+            for (const src of [-125, -55]) bloom(ctx, 100 * Math.cos(src * DEG), 100 * Math.sin(src * DEG), 12, [250, 236, 170], s.spray * 1.6);
+        }
+        // Konfeti fotoğrafın arkasından geçer
+        ctx.save();
+        annulus(ctx, 72, 140); ctx.clip();
+        for (const c of s.confetti) {
+            ctx.save();
+            ctx.translate(c.x, c.y); ctx.rotate(c.rot); ctx.scale(1, Math.cos(c.spin));
+            ctx.fillStyle = rgba(mix(c.c, [0, 0, 0], Math.sin(c.spin) > 0 ? 0 : 0.25), clamp(c.life));
+            ctx.fillRect(-2.2, -1.2, 4.4, 2.4);
+            ctx.restore();
+        }
+        ctx.restore();
+    },
+};
+
+// ============================================================================
+// 12) TUR TELEMETRİSİ — avatarın etrafında virajlı bir pist: hız verisine göre renklenen yarış çizgisi,
+//     tema renginde sürücü ve hayalet tur, geçilen sektör mor/yeşil/sarı yanar, alt etikette tur süresi
+// ============================================================================
+
+const TRACK_N = 360;
+const SECTOR_COLORS: RGB[] = [[168, 85, 247], [34, 197, 94], [234, 179, 8]];
+const LAP_SECONDS = 7;
+
+interface Track { x: Float32Array; y: Float32Array; nx: Float32Array; ny: Float32Array; spd: Float32Array; kerb: Uint8Array }
+
+const TRACK: Track = (() => {
+    const x = new Float32Array(TRACK_N), y = new Float32Array(TRACK_N), nx = new Float32Array(TRACK_N), ny = new Float32Array(TRACK_N);
+    for (let i = 0; i < TRACK_N; i++) {
+        const th = (i / TRACK_N) * TAU + Math.PI / 2;
+        const r = 86 + 4.4 * Math.sin(3 * th + 0.5) + 2.6 * Math.sin(5 * th - 1.2) + 1.1 * Math.sin(9 * th + 2);
+        x[i] = r * Math.cos(th); y[i] = r * Math.sin(th);
+        nx[i] = Math.cos(th); ny[i] = Math.sin(th);
+    }
+    const curv = new Float32Array(TRACK_N);
+    for (let i = 0; i < TRACK_N; i++) {
+        const a = (i + TRACK_N - 1) % TRACK_N, b = (i + 1) % TRACK_N;
+        const h1 = Math.atan2(y[i] - y[a], x[i] - x[a]), h2 = Math.atan2(y[b] - y[i], x[b] - x[i]);
+        let d = h2 - h1;
+        d = Math.atan2(Math.sin(d), Math.cos(d));
+        curv[i] = Math.abs(d) / Math.hypot(x[b] - x[i], y[b] - y[i]);
+    }
+    const raw = new Float32Array(TRACK_N), spd = new Float32Array(TRACK_N), kerb = new Uint8Array(TRACK_N);
+    for (let i = 0; i < TRACK_N; i++) raw[i] = 1 - clamp(curv[i] * 9);
+    let lo = 1, hi = 0;
+    for (let i = 0; i < TRACK_N; i++) {
+        let sum = 0;
+        for (let j = -12; j <= 12; j++) sum += raw[(i + j + TRACK_N) % TRACK_N];
+        spd[i] = sum / 25;
+        lo = Math.min(lo, spd[i]); hi = Math.max(hi, spd[i]);
+    }
+    const sorted = Array.from(curv).sort((p, q) => p - q);
+    const kerbAt = sorted[Math.floor(TRACK_N * 0.82)];
+    for (let i = 0; i < TRACK_N; i++) {
+        spd[i] = (spd[i] - lo) / (hi - lo || 1);
+        kerb[i] = curv[i] >= kerbAt ? 1 : 0;
+    }
+    return { x, y, nx, ny, spd, kerb };
+})();
+
+const telemetryColor = (v: number): RGB => v < 0.5 ? mix([239, 68, 68], [250, 204, 21], v / 0.5) : mix([250, 204, 21], [34, 197, 94], (v - 0.5) / 0.5);
+
+const trackPath = (ctx: CanvasRenderingContext2D, i0: number, i1: number) => {
+    ctx.beginPath();
+    for (let i = i0; i <= i1; i++) {
+        const k = i % TRACK_N;
+        i === i0 ? ctx.moveTo(TRACK.x[k], TRACK.y[k]) : ctx.lineTo(TRACK.x[k], TRACK.y[k]);
+    }
+};
+
+const fmtLap = (sec: number) => {
+    const m = Math.floor(sec / 60), s = sec - m * 60;
+    return `${m}:${s < 10 ? '0' : ''}${s.toFixed(3)}`;
+};
+
+const telemetry: FrameDef<{ q: number; lapT: number; sector: number; flash: number[]; colors: RGB[]; avg: number }> = {
+    init: () => {
+        let sum = 0;
+        for (let i = 0; i < TRACK_N; i++) sum += 1 / (0.45 + 0.55 * TRACK.spd[i]);
+        return { q: 0, lapT: 0, sector: 0, flash: [0, 0, 0], colors: [SECTOR_COLORS[1], SECTOR_COLORS[1], SECTOR_COLORS[1]], avg: sum / TRACK_N };
+    },
+    step: (s, { dt, rnd }) => {
+        const i = ((Math.floor(s.q * TRACK_N) % TRACK_N) + TRACK_N) % TRACK_N;
+        s.q += ((0.45 + 0.55 * TRACK.spd[i]) * dt) / (LAP_SECONDS * s.avg);
+        s.lapT += dt;
+        if (s.q >= 1) { s.q -= 1; s.lapT = 0; }
+        const sector = Math.floor(s.q * 3);
+        if (sector !== s.sector) {
+            const r = rnd();
+            s.colors[s.sector] = SECTOR_COLORS[r < 0.3 ? 0 : r < 0.75 ? 1 : 2];
+            s.flash[s.sector] = 1;
+            s.sector = sector;
+        }
+        for (let k = 0; k < 3; k++) s.flash[k] = Math.max(0, s.flash[k] - dt * 0.6);
+    },
+    draw: (s, { ctx, t, accent }) => {
+        substrate(ctx, '#121519', '#090b0e', '#111418');
+        ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+
+        // Pist: beyaz kenar çizgileri, asfalt, viraj kerbleri
+        trackPath(ctx, 0, TRACK_N);
+        ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 10.4; ctx.stroke();
+        ctx.strokeStyle = '#2a2d33'; ctx.lineWidth = 8.8; ctx.stroke();
+        for (let i = 0; i < TRACK_N; i++) {
+            if (!TRACK.kerb[i]) continue;
+            const j = (i + 1) % TRACK_N;
+            for (const side of [4.9, -4.9]) {
+                ctx.strokeStyle = (i >> 1) % 2 ? '#ef4444' : '#f8fafc'; ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(TRACK.x[i] + TRACK.nx[i] * side, TRACK.y[i] + TRACK.ny[i] * side);
+                ctx.lineTo(TRACK.x[j] + TRACK.nx[j] * side, TRACK.y[j] + TRACK.ny[j] * side);
+                ctx.stroke();
+            }
+        }
+
+        // Geçilen sektör kendi renginde yanar
+        for (let k = 0; k < 3; k++) {
+            if (s.flash[k] <= 0) continue;
+            trackPath(ctx, (k * TRACK_N) / 3, ((k + 1) * TRACK_N) / 3);
+            ctx.strokeStyle = rgba(s.colors[k], 0.5 * s.flash[k]); ctx.lineWidth = 8.8; ctx.stroke();
+        }
+
+        // Hız verisiyle renklenen yarış çizgisi
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < TRACK_N; i += 4) {
+            trackPath(ctx, i, i + 4);
+            ctx.strokeStyle = rgba(telemetryColor(TRACK.spd[(i + 2) % TRACK_N]), 0.9); ctx.stroke();
+        }
+
+        // Start/finiş çizgisi (alt) ve sektör çizgileri
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 2; c++) {
+                ctx.fillStyle = (r + c) % 2 ? '#0a0a0a' : '#f8fafc';
+                ctx.fillRect(-2.2 + c * 2.2, TRACK.y[0] - 4.4 + r * 2.2, 2.2, 2.2);
+            }
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (const k of [TRACK_N / 3, (2 * TRACK_N) / 3]) {
+            ctx.moveTo(TRACK.x[k] - TRACK.nx[k] * 5.5, TRACK.y[k] - TRACK.ny[k] * 5.5);
+            ctx.lineTo(TRACK.x[k] + TRACK.nx[k] * 5.5, TRACK.y[k] + TRACK.ny[k] * 5.5);
+        }
+        ctx.stroke();
+
+        const at = (q: number): [number, number] => {
+            const f = (((q % 1) + 1) % 1) * TRACK_N, i = Math.floor(f), k = f - i, j = (i + 1) % TRACK_N;
+            return [lerp(TRACK.x[i], TRACK.x[j], k), lerp(TRACK.y[i], TRACK.y[j], k)];
+        };
+
+        // Hayalet tur
+        const gap = 0.022 * Math.sin(t * 0.37);
+        const [gx, gy] = at(s.q + gap);
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(gx, gy, 2.2, 0, TAU); ctx.fill(); ctx.stroke();
+
+        // Sürücü ve izi
+        ctx.lineCap = 'round';
+        for (let j = 24; j > 0; j--) {
+            const [x0, y0] = at(s.q - j * 0.0035), [x1, y1] = at(s.q - (j - 1) * 0.0035);
+            ctx.strokeStyle = rgba(accent, (1 - j / 24) * 0.9); ctx.lineWidth = 3 * (1 - j / 30);
+            ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        }
+        const [rx, ry] = at(s.q);
+        ctx.globalCompositeOperation = 'lighter';
+        bloom(ctx, rx, ry, 8, accent, 0.9);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = rgba(accent, 1);
+        ctx.beginPath(); ctx.arc(rx, ry, 2.6, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(rx, ry, 1.1, 0, TAU); ctx.fill();
+
+        // Yayın etiketi: tur süresi ve hayalete göre fark
+        if (showText(ctx)) {
+            ctx.fillStyle = 'rgba(10,12,16,.92)'; ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 0.6;
+            ctx.beginPath(); ctx.roundRect(-36, 106, 72, 14, 7); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = rgba(accent, 1);
+            ctx.beginPath(); ctx.roundRect(-36, 106, 4, 14, [7, 0, 0, 7]); ctx.fill();
+            ctx.textBaseline = 'middle';
+            ctx.font = '700 7px ui-monospace, SFMono-Regular, Menlo, monospace';
+            ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
+            ctx.fillText(fmtLap(s.lapT * (99.4 / LAP_SECONDS)), -29, 113.4);
+            const delta = -gap * 18;
+            ctx.font = '700 5px ui-monospace, SFMono-Regular, Menlo, monospace';
+            ctx.textAlign = 'right'; ctx.fillStyle = delta <= 0 ? '#a855f7' : '#facc15';
+            ctx.fillText(`${delta <= 0 ? '−' : '+'}${Math.abs(delta).toFixed(3)}`, 32, 113.4);
+        }
+    },
+};
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -613,6 +1427,12 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'night-road': nightRoad,
     'volt': volt,
     'gold': gold,
+    'sparks': sparks,
+    'hud': hud,
+    'pulse': pulse,
+    'kustom': kustom,
+    'podium': podium,
+    'telemetry': telemetry,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---
@@ -628,7 +1448,8 @@ let paused = false;
 export const setPremiumFramesPaused = (value: boolean) => { paused = value; };
 
 const loop = (now: number) => {
-    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    // rAF zaman damgası döngü başlangıcından önce olabilir: dt asla negatif olmamalı
+    const dt = Math.max(0, Math.min(0.05, (now - lastTime) / 1000));
     lastTime = now;
     if (!paused) instances.forEach(inst => { if (inst.visible) inst.tick(dt); });
     rafId = instances.size ? requestAnimationFrame(loop) : 0;

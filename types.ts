@@ -124,6 +124,7 @@ export type ProfileFrameId =
     | 'none' | 'tachometer' | 'tire' | 'led-halo' | 'chain' | 'brake-disc' | 'exhaust' | 'checkered'
     // Ultra premium (canvas tabanlı) çerçeveler
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
+    | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 
