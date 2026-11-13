@@ -125,6 +125,8 @@ export type ProfileFrameId =
     // Ultra premium (canvas tabanlı) çerçeveler
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
+    // Rütbe çerçeveleri: rütbe kariyer yolundaki 7 kademe, en sadeden en gösterişliye
+    | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 

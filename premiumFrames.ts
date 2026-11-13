@@ -5,11 +5,13 @@
 
 export type PremiumFrameId =
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
-    | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry';
+    | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
+    | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend';
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
     'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
     'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
+    'rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend',
 ];
 
 export type RGB = [number, number, number];
@@ -1420,6 +1422,481 @@ const telemetry: FrameDef<{ q: number; lapT: number; sector: number; flash: numb
     },
 };
 
+// ============================================================================
+// RÜTBE ÇERÇEVELERİ — rütbe kariyer yolundaki 7 kademe için aynı ailenin giderek zenginleşen üyeleri.
+// Malzeme: demir → bronz → gümüş → altın → platin + mine → obsidyen + altın + elmas → beyaz altın + alev.
+// Her kademe bir öncekinin üzerine katman ekler: işleme, pusula uçları, mine, taşlar, kanat, taç, alev.
+// ============================================================================
+
+const METALS = {
+    iron: ['#2b2e33', '#70757d', '#9da3ab', '#4b4f56', '#25282c'],
+    bronze: ['#5a3413', '#c98a4b', '#f3c690', '#a5672c', '#6b3f18'],
+    silver: ['#6f7780', '#e6ebf0', '#ffffff', '#aab3bd', '#78818b'],
+    gold: GOLD_STOPS,
+    platinum: ['#8a919a', '#f2f5f8', '#ffffff', '#c6ced7', '#959da6'],
+    whiteGold: ['#c9a24a', '#fff1c4', '#ffffff', '#f3d98a', '#d6b25a'],
+};
+
+// Kademeye göre halkanın dış yarıçapı: rütbe yükseldikçe çerçeve kalınlaşır
+const RANK_OUTER = [0, 82, 86, 89, 92, 95, 97, 98];
+
+const metal = (ctx: CanvasRenderingContext2D, stops: string[], angle: number, repeat: number): CanvasGradient => {
+    const n = stops.length;
+    if (!ctx.createConicGradient) {
+        const lin = ctx.createLinearGradient(-100, -100, 100, 100);
+        stops.forEach((c, i) => lin.addColorStop(i / (n - 1), c));
+        return lin;
+    }
+    const g = ctx.createConicGradient(angle, 0, 0);
+    for (let r = 0; r < repeat; r++) {
+        for (let i = 0; i < n; i++) g.addColorStop((r + i / n) / repeat, stops[i]);
+    }
+    g.addColorStop(1, stops[0]);
+    return g;
+};
+
+const metalBand = (ctx: CanvasRenderingContext2D, r0: number, r1: number, stops: string[], angle: number, repeat: number, shade?: string) => {
+    annulus(ctx, r0, r1); ctx.fillStyle = metal(ctx, stops, angle, repeat); ctx.fill();
+    if (shade) { ctx.fillStyle = shade; ctx.fill(); }
+};
+
+const hairline = (ctx: CanvasRenderingContext2D, r: number, color: string, w = 0.6) => {
+    ctx.strokeStyle = color; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
+};
+
+const sheen = (ctx: CanvasRenderingContext2D, r0: number, r1: number, angle: number, alpha: number, double = false) => {
+    if (!ctx.createConicGradient) return;
+    const g = ctx.createConicGradient(angle, 0, 0);
+    for (const c of double ? [0.25, 0.75] : [0.5]) {
+        g.addColorStop(c - 0.05, 'rgba(255,255,255,0)');
+        g.addColorStop(c, `rgba(255,255,255,${alpha})`);
+        g.addColorStop(c + 0.05, 'rgba(255,255,255,0)');
+    }
+    annulus(ctx, r0, r1); ctx.fillStyle = g; ctx.fill();
+};
+
+// Fasetli pusula ucu: bir yarısı aydınlık, diğeri gölgede
+const spike = (ctx: CanvasRenderingContext2D, ang: number, r0: number, r1: number, half: number, light: string, dark: string) => {
+    const tip = [r1 * Math.cos(ang), r1 * Math.sin(ang)], mid = [(r0 - 2) * Math.cos(ang), (r0 - 2) * Math.sin(ang)];
+    for (const [side, fill] of [[-1, light], [1, dark]] as [number, string][]) {
+        const b = ang + side * half;
+        ctx.fillStyle = fill;
+        ctx.beginPath(); ctx.moveTo(tip[0], tip[1]); ctx.lineTo(r0 * Math.cos(b), r0 * Math.sin(b)); ctx.lineTo(mid[0], mid[1]); ctx.closePath(); ctx.fill();
+    }
+};
+
+const gem = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, rot: number, light: string, dark: string, setting: string) => {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot);
+    const d = (r: number) => { ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.closePath(); };
+    ctx.fillStyle = setting; d(size + 1.1); ctx.fill();
+    ctx.fillStyle = dark; d(size); ctx.fill();
+    ctx.fillStyle = light;
+    ctx.beginPath(); ctx.moveTo(-size, 0); ctx.lineTo(0, -size); ctx.lineTo(size, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    ctx.beginPath(); ctx.moveTo(-size * 0.5, -size * 0.1); ctx.lineTo(0, -size * 0.7); ctx.lineTo(size * 0.1, -size * 0.1); ctx.closePath(); ctx.fill();
+    ctx.restore();
+};
+
+// Uygulamadaki rütbe rozetinde de bulunan dört köşeli pusula yıldızı
+const compassStar = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, fill: string, stroke: string) => {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+        const r = i % 2 ? size * 0.3 : size, a = (i / 8) * TAU - Math.PI / 2;
+        ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = 0.4; ctx.stroke();
+};
+
+// Alt ortadaki altıgen rütbe plakası: 2-4. kademede 1-3 şerit, 5-7. kademede 1-3 pusula yıldızı
+const rankPlate = (ctx: CanvasRenderingContext2D, y: number, stops: string[], dark: string, chevrons: number, stars: number, starFill: string) => {
+    const w = Math.max(chevrons, stars) === 3 ? 15.5 : 13;
+    const g = ctx.createLinearGradient(0, y - 7, 0, y + 7);
+    g.addColorStop(0, stops[2]); g.addColorStop(0.5, stops[1]); g.addColorStop(1, stops[0]);
+    ctx.beginPath();
+    ctx.moveTo(-w, y); ctx.lineTo(-w + 4, y - 7); ctx.lineTo(w - 4, y - 7); ctx.lineTo(w, y); ctx.lineTo(w - 4, y + 7); ctx.lineTo(-w + 4, y + 7);
+    ctx.closePath();
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = dark; ctx.lineWidth = 0.9; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.lineCap = 'round'; ctx.lineWidth = 1.5;
+    for (let i = 0; i < chevrons; i++) {
+        const yy = y + (i - (chevrons - 1) / 2) * 3.4;
+        ctx.beginPath(); ctx.moveTo(-4.8, yy + 1.5); ctx.lineTo(0, yy - 1.5); ctx.lineTo(4.8, yy + 1.5); ctx.stroke();
+    }
+    for (let i = 0; i < stars; i++) compassStar(ctx, (i - (stars - 1) / 2) * 7.6, y, 3.6, starFill, dark);
+};
+
+// Katmanlı metal kanatlar: tüyler yukarı doğru süpürür, hafifçe nefes alır, üzerlerinden parlama dalgası geçer.
+// Tüy boyu, kanat ucu canvas kenarını (±130) aşmayacak şekilde açıya göre sınırlanır.
+const wings = (ctx: CanvasRenderingContext2D, t: number, stops: string[], tip: string, outline: string, layerCount: number) => {
+    const layers: [number, number, number, number, number][] = [[8, 78, -72, 14, 0.24], [7, 58, -66, 10, 0.1], [6, 42, -58, 6, 0]];
+    for (const side of [1, -1]) {
+        ctx.save();
+        ctx.scale(side, 1); ctx.translate(88, 32);
+        layers.slice(3 - layerCount).forEach(([n, lmax, a0, a1, shade], li) => {
+            for (let i = n - 1; i >= 0; i--) {
+                const k = i / (n - 1);
+                const ang = lerp(a0, a1, k) * DEG * (1 + 0.03 * Math.sin(t * 1.3)) + 0.02 * Math.sin(t * 1.3 + i * 0.6);
+                const len = Math.min(lmax, 40 / Math.max(0.2, Math.cos(ang))) * (1 - 0.45 * k ** 1.5), w = len * 0.17;
+                ctx.save();
+                ctx.rotate(ang);
+                const g = ctx.createLinearGradient(0, 0, len, 0);
+                g.addColorStop(0, stops[0]); g.addColorStop(0.35, stops[1]); g.addColorStop(0.7, stops[2]); g.addColorStop(1, tip);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(len * 0.3, -w, len * 0.8, -w * 0.9, len, 0);
+                ctx.bezierCurveTo(len * 0.75, w * 0.5, len * 0.3, w * 0.6, 0, 0);
+                ctx.fillStyle = g; ctx.fill();
+                if (shade) { ctx.fillStyle = `rgba(0,0,0,${shade})`; ctx.fill(); }
+                const sh = Math.max(0, Math.sin(t * 2.2 - i * 0.55 - li)) ** 8;
+                if (sh > 0.02) { ctx.fillStyle = `rgba(255,255,255,${0.5 * sh})`; ctx.fill(); }
+                ctx.strokeStyle = outline; ctx.lineWidth = 0.5; ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(len * 0.1, 0); ctx.lineTo(len * 0.9, -w * 0.12); ctx.stroke();
+                ctx.restore();
+            }
+        });
+        ctx.restore();
+    }
+};
+
+// Halkayı saran, dalgalanan alev dilleri: dış katman tema renginden turuncuya, iç katman sarıdan beyaza
+const flameCorona = (ctx: CanvasRenderingContext2D, t: number, r0: number, accent: RGB) => {
+    const N = 30;
+    const layers: [number, RGB, RGB, RGB, number][] = [[1, accent, [255, 120, 30], [255, 205, 90], 0], [0.6, [255, 150, 40], [255, 220, 120], [255, 250, 225], 1.7]];
+    for (const [scale, c0, c1, c2, ph] of layers) {
+        const g = ctx.createRadialGradient(0, 0, r0 - 2, 0, 0, r0 + 24 * scale);
+        g.addColorStop(0, rgba(c0, 1)); g.addColorStop(0.5, rgba(c1, 1)); g.addColorStop(1, rgba(c2, 0.9));
+        ctx.fillStyle = g;
+        for (let i = 0; i < N; i++) {
+            const a = (i / N) * TAU + ph * 0.1;
+            const n = 0.5 + 0.25 * Math.sin(t * 5.1 + i * 2.3 + ph) + 0.25 * Math.sin(t * 8.7 + i * 4.1 + ph * 2);
+            const vary = 0.7 + 0.3 * Math.abs(Math.sin(i * 12.9898));
+            // Alev yukarı doğru daha uzun
+            const h = (8 + 15 * n) * scale * vary * (0.75 + 0.45 * (0.5 - 0.5 * Math.sin(a)));
+            const sway = 0.06 * Math.sin(t * 4 + i * 1.3), hw = 0.09 * scale;
+            const pt = (r: number, an: number): [number, number] => [r * Math.cos(an), r * Math.sin(an)];
+            const [bx0, by0] = pt(r0 - 2, a - hw), [bx1, by1] = pt(r0 - 2, a + hw), [tx, ty] = pt(r0 + h, a + sway);
+            const [lx, ly] = pt(r0 + h * 0.45, a - hw * 1.25 + sway * 0.4), [rx, ry] = pt(r0 + h * 0.5, a + hw * 0.9 + sway * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(bx0, by0); ctx.quadraticCurveTo(lx, ly, tx, ty); ctx.quadraticCurveTo(rx, ry, bx1, by1);
+            ctx.closePath(); ctx.fill();
+        }
+    }
+};
+
+const crown = (ctx: CanvasRenderingContext2D, y: number, accent: RGB, t: number) => {
+    ctx.save();
+    ctx.translate(0, y); ctx.scale(1.22, 1.22);
+    const g = ctx.createLinearGradient(-19, -20, 19, 4);
+    g.addColorStop(0, '#fff6d0'); g.addColorStop(0.45, '#e9bd4e'); g.addColorStop(1, '#9a6c14');
+    ctx.beginPath();
+    ctx.moveTo(-17, 4); ctx.lineTo(-19, -12); ctx.lineTo(-13, -6); ctx.lineTo(-9.5, -16); ctx.lineTo(-5, -6.5); ctx.lineTo(0, -20);
+    ctx.lineTo(5, -6.5); ctx.lineTo(9.5, -16); ctx.lineTo(13, -6); ctx.lineTo(19, -12); ctx.lineTo(17, 4);
+    ctx.closePath();
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(100,66,8,.85)'; ctx.lineWidth = 0.7; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.fillStyle = 'rgba(120,80,10,.35)'; ctx.fillRect(-17, 0, 34, 4);
+    ctx.strokeStyle = 'rgba(255,250,220,.8)'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(-16.6, 0); ctx.lineTo(16.6, 0); ctx.stroke();
+    for (const [x, yy] of [[-19, -12], [-9.5, -16], [0, -20], [9.5, -16], [19, -12]]) {
+        ctx.fillStyle = '#fff3c4'; ctx.strokeStyle = 'rgba(100,66,8,.85)'; ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.arc(x, yy, 1.7, 0, TAU); ctx.fill(); ctx.stroke();
+    }
+    bloom(ctx, 0, -4.5, 9, accent, 0.45 + 0.25 * Math.sin(t * 3));
+    gem(ctx, 0, -4.5, 3.4, 0, rgba(mix(accent, WHITE, 0.35), 1), rgba(mix(accent, [0, 0, 0], 0.35), 1), '#7a5412');
+    for (const x of [-10.5, 10.5]) gem(ctx, x, -2.2, 1.9, 0, '#f2faff', '#9fc4e6', '#7a5412');
+    ctx.restore();
+};
+
+// Yörüngede dolaşan kuyruklu ışık
+const comet = (ctx: CanvasRenderingContext2D, r: number, ang: number, dir: number, col: RGB, len: number, w: number) => {
+    ctx.lineCap = 'butt';
+    const N = 26;
+    for (let i = N - 1; i >= 0; i--) {
+        const d0 = (i / N) * len, d1 = ((i + 1.15) / N) * len;
+        const k = 1 - i / N;
+        ctx.strokeStyle = rgba(mix(col, WHITE, 0.5 * k * k), k * k);
+        ctx.lineWidth = w * (0.3 + 0.7 * k);
+        ctx.beginPath();
+        if (dir > 0) ctx.arc(0, 0, r, ang - d1, ang - d0); else ctx.arc(0, 0, r, ang + d0, ang + d1);
+        ctx.stroke();
+    }
+    bloom(ctx, r * Math.cos(ang), r * Math.sin(ang), w * 3.2, col, 0.95);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(r * Math.cos(ang), r * Math.sin(ang), w * 0.55, 0, TAU); ctx.fill();
+};
+
+interface Mote { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number }
+interface RankState { glints: Glint[]; next: number; embers: Mote[]; dust: Dust[]; shock: number; acc: number }
+
+const GLINT_EVERY = [0, 0, 0, 1.8, 1, 0.6, 0.38, 0.2];
+const EMBER_RATE = [0, 0, 0, 0, 0, 3, 7, 16];
+
+const drawRank = (tier: number, s: RankState, { ctx, t, accent }: Env) => {
+    const outer = RANK_OUTER[tier];
+    const deep = mix(accent, [0, 0, 0], 0.62), hi = mix(accent, WHITE, 0.45);
+    const GOLD_C: RGB = [255, 205, 90];
+
+    // --- ARKA KATMANLAR ---
+    if (tier === 7) {
+        // Dönen ışık huzmeleri
+        const rays: [number, number, RGB][] = [[129, 0.085, GOLD_C], [117, 0.06, accent]];
+        const grads = rays.map(([R, , c]) => {
+            const g = ctx.createRadialGradient(0, 0, 92, 0, 0, R);
+            g.addColorStop(0, rgba(c, 0.8)); g.addColorStop(1, rgba(c, 0));
+            return g;
+        });
+        ctx.save();
+        ctx.rotate(t * 0.1);
+        for (let i = 0; i < 18; i++) {
+            const a = (i / 18) * TAU, [R, hw] = rays[i % 2];
+            ctx.fillStyle = grads[i % 2];
+            ctx.beginPath();
+            ctx.moveTo(90 * Math.cos(a - hw * 0.5), 90 * Math.sin(a - hw * 0.5));
+            ctx.lineTo(R * Math.cos(a - hw), R * Math.sin(a - hw));
+            ctx.lineTo(R * Math.cos(a + hw), R * Math.sin(a + hw));
+            ctx.lineTo(90 * Math.cos(a + hw * 0.5), 90 * Math.sin(a + hw * 0.5));
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+    }
+    if (tier >= 6) {
+        // Nefes alan hale ve kanatlar
+        const pulse = 0.75 + 0.25 * Math.sin(t * 1.8);
+        const g = ctx.createRadialGradient(0, 0, outer - 4, 0, 0, outer + (tier === 7 ? 22 : 16));
+        g.addColorStop(0, rgba(accent, 0.55 * pulse)); g.addColorStop(1, rgba(accent, 0));
+        annulus(ctx, outer - 4, outer + 22); ctx.fillStyle = g; ctx.fill();
+        if (tier === 7) wings(ctx, t, METALS.whiteGold, rgba(accent, 1), 'rgba(110,70,10,.55)', 3);
+        else wings(ctx, t, METALS.gold, '#f3d572', 'rgba(70,45,5,.6)', 2);
+    }
+    if (tier === 7) flameCorona(ctx, t, outer, accent);
+
+    // --- HALKA GÖVDESİ ---
+    if (tier === 1) {
+        // Mat demir: işleme yok, sadece dört perçin
+        metalBand(ctx, 71.5, 82, METALS.iron, 0.6, 2, 'rgba(18,20,24,.38)');
+        hairline(ctx, 72.2, 'rgba(255,255,255,.2)'); hairline(ctx, 81.7, 'rgba(0,0,0,.55)', 0.8);
+        for (let i = 0; i < 4; i++) {
+            const a = (45 + i * 90) * DEG, x = 76.8 * Math.cos(a), y = 76.8 * Math.sin(a);
+            ctx.fillStyle = '#3a3d43'; ctx.beginPath(); ctx.arc(x, y, 1.7, 0, TAU); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.beginPath(); ctx.arc(x - 0.5, y - 0.5, 0.6, 0, TAU); ctx.fill();
+        }
+        sheen(ctx, 71.5, 82, t * 0.35, 0.22);
+    } else if (tier === 2) {
+        // Bronz: pahlı gövde ve kazınmış çentikler
+        metalBand(ctx, 82.5, 86, METALS.bronze, t * 0.25, 3);
+        metalBand(ctx, 75, 82.5, METALS.bronze, -t * 0.15 + 1, 2, 'rgba(50,25,5,.28)');
+        metalBand(ctx, 71.5, 75, METALS.bronze, t * 0.25 + 1.1, 3);
+        hairline(ctx, 75, 'rgba(60,30,8,.65)'); hairline(ctx, 82.5, 'rgba(60,30,8,.65)');
+        for (const [off, col] of [[0, 'rgba(60,30,8,.8)'], [0.012, 'rgba(255,225,180,.55)']] as [number, string][]) {
+            ctx.strokeStyle = col; ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const a = (i / 12) * TAU + off;
+                ctx.moveTo(77 * Math.cos(a), 77 * Math.sin(a)); ctx.lineTo(80.5 * Math.cos(a), 80.5 * Math.sin(a));
+            }
+            ctx.stroke();
+        }
+        sheen(ctx, 71.5, 86, t * 0.6, 0.35);
+    } else if (tier === 3) {
+        // Gümüş: dönen pusula çizgileri ve dört ana yön ucu
+        for (let i = 0; i < 4; i++) spike(ctx, i * Math.PI / 2 - Math.PI / 2, 88, 98, 3.4 * DEG, '#ffffff', '#8b949e');
+        metalBand(ctx, 85.5, 89, METALS.silver, t * 0.3, 3);
+        metalBand(ctx, 75, 85.5, METALS.silver, -t * 0.2 + 1, 2, 'rgba(40,48,58,.22)');
+        metalBand(ctx, 71.5, 75, METALS.silver, t * 0.3 + 1.1, 3);
+        hairline(ctx, 75, 'rgba(50,58,68,.6)'); hairline(ctx, 85.5, 'rgba(50,58,68,.6)');
+        ctx.save();
+        ctx.rotate(t * 0.12);
+        ctx.strokeStyle = '#39414a';
+        for (const major of [false, true]) {
+            ctx.lineWidth = major ? 1.1 : 0.7;
+            ctx.beginPath();
+            for (let i = 0; i < 60; i++) {
+                if ((i % 5 === 0) !== major) continue;
+                const a = (i / 60) * TAU, r0 = major ? 77 : 78.2, r1 = major ? 83 : 81;
+                ctx.moveTo(r0 * Math.cos(a), r0 * Math.sin(a)); ctx.lineTo(r1 * Math.cos(a), r1 * Math.sin(a));
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+        sheen(ctx, 71.5, 89, t * 0.8, 0.5);
+    } else if (tier === 4) {
+        // Altın: akan rota çizgisi, yol noktası ve sekiz pusula ucu
+        for (let i = 0; i < 8; i++) {
+            const major = i % 2 === 0;
+            spike(ctx, (i * Math.PI) / 4 - Math.PI / 2, 91, major ? 102 : 97, (major ? 3.6 : 2.6) * DEG, '#fff7d1', '#a87a1c');
+        }
+        metalBand(ctx, 88, 92, METALS.gold, t * 0.45, 3);
+        metalBand(ctx, 76, 88, METALS.gold, -t * 0.3 + 1, 2, 'rgba(70,40,0,.2)');
+        metalBand(ctx, 71.5, 76, METALS.gold, t * 0.45 + 1.1, 3);
+        hairline(ctx, 76, 'rgba(70,45,5,.6)'); hairline(ctx, 88, 'rgba(70,45,5,.6)');
+        hairline(ctx, 78.6, 'rgba(84,54,4,.5)', 0.5); hairline(ctx, 85.4, 'rgba(84,54,4,.5)', 0.5);
+        ctx.setLineDash([4, 3]); ctx.lineDashOffset = -t * 9; ctx.lineCap = 'butt';
+        hairline(ctx, 82, '#5b3d08', 1.7);
+        ctx.setLineDash([]); ctx.lineDashOffset = 0;
+        const wa = t * 0.9, wx = 82 * Math.cos(wa), wy = 82 * Math.sin(wa);
+        bloom(ctx, wx, wy, 7, [255, 244, 200], 0.95);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(wx, wy, 1.3, 0, TAU); ctx.fill();
+        sheen(ctx, 71.5, 92, t, 0.55, true);
+    } else {
+        // 5-7: değerli metal pahlar arasında mine ya da obsidyen kanal
+        const bevel = tier === 5 ? METALS.platinum : tier === 6 ? METALS.gold : METALS.whiteGold;
+        const in1 = tier === 6 ? 74.5 : tier === 7 ? 76.5 : 76, out0 = tier === 6 ? 94 : tier === 7 ? 90 : 89;
+        if (tier === 5) {
+            for (let i = 0; i < 8; i++) {
+                const major = i % 2 === 0;
+                spike(ctx, (i * Math.PI) / 4 - Math.PI / 2, 94, major ? 103.5 : 98.5, (major ? 3.6 : 2.6) * DEG, '#ffffff', '#8d96a0');
+            }
+        }
+        metalBand(ctx, out0, outer, bevel, t * 0.5, 3);
+        metalBand(ctx, 71.5, in1, bevel, t * 0.5 + 1.1, 3);
+
+        const ch = ctx.createRadialGradient(0, 0, in1, 0, 0, out0);
+        if (tier === 6) {
+            ch.addColorStop(0, '#191a1f'); ch.addColorStop(0.5, '#050506'); ch.addColorStop(1, '#1d1e23');
+        } else {
+            ch.addColorStop(0, rgba(deep, 1)); ch.addColorStop(0.3, rgba(accent, 1)); ch.addColorStop(0.5, rgba(mix(accent, WHITE, 0.2), 1));
+            ch.addColorStop(0.72, rgba(accent, 1)); ch.addColorStop(1, rgba(deep, 1));
+        }
+        annulus(ctx, in1, out0); ctx.fillStyle = ch; ctx.fill();
+        const mid = (in1 + out0) / 2;
+
+        if (tier >= 6) {
+            // Birbirinin içinden geçen rozet dalgaları: obsidyende altın giyoş, minede akan plazma
+            const amp = tier === 6 ? 5.6 : 4.4, lobes = tier === 6 ? 16 : 14, sp = tier === 6 ? 0.8 : 1.7;
+            const cols = tier === 6 ? ['rgba(160,115,25,.85)', 'rgba(243,213,114,.8)'] : ['rgba(255,214,140,.85)', 'rgba(255,255,255,.55)'];
+            ctx.lineWidth = tier === 6 ? 0.7 : 0.9;
+            [1, -1].forEach((dir, di) => {
+                for (const off of [0, Math.PI]) {
+                    ctx.strokeStyle = cols[di];
+                    ctx.beginPath();
+                    for (let i = 0; i <= 360; i++) {
+                        const a = (i / 360) * TAU, r = mid + amp * Math.sin(lobes * a + dir * t * sp + off);
+                        i ? ctx.lineTo(r * Math.cos(a), r * Math.sin(a)) : ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+                    }
+                    ctx.stroke();
+                }
+            });
+        }
+        if (tier === 6) { hairline(ctx, 77, 'rgba(217,167,51,.8)'); hairline(ctx, 91.5, 'rgba(217,167,51,.8)'); }
+        if (tier !== 6) {
+            // Mine parlaklığı ve içinde dolaşan enerji
+            ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.arc(0, 0, in1 + 3, 205 * DEG, 325 * DEG); ctx.stroke();
+            if (tier === 5) comet(ctx, mid, t * 1.4, 1, hi, 1.5, 2.6);
+        }
+        hairline(ctx, in1, 'rgba(40,30,20,.7)'); hairline(ctx, out0, 'rgba(40,30,20,.7)');
+
+        if (tier === 5) {
+            // Altıgen cıvatalar: ışık sırayla üzerlerinden geçer
+            const lit = Math.floor(t * 3) % 6;
+            for (let i = 0; i < 6; i++) {
+                const a = (i / 6) * TAU + Math.PI / 6, x = 92 * Math.cos(a), y = 92 * Math.sin(a);
+                if (i === lit) bloom(ctx, x, y, 6, accent, 0.7);
+                ctx.fillStyle = i === lit ? '#ffffff' : '#aeb6bf'; ctx.strokeStyle = '#4a525b'; ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                for (let j = 0; j < 6; j++) ctx.lineTo(x + 2.3 * Math.cos(a + (j / 6) * TAU), y + 2.3 * Math.sin(a + (j / 6) * TAU));
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#4a525b'; ctx.beginPath(); ctx.arc(x, y, 0.8, 0, TAU); ctx.fill();
+            }
+            bloom(ctx, 0, -95.5, 10, accent, 0.5 + 0.3 * Math.sin(t * 3));
+            gem(ctx, 0, -95.5, 4.4, 0, rgba(hi, 1), rgba(mix(accent, [0, 0, 0], 0.3), 1), '#5d656e');
+        } else {
+            // Taşlar: 6. kademede sekiz elmas, 7. kademede elmas ve yakut dönüşümlü on iki taş
+            const n = tier === 6 ? 8 : 12, gr = tier === 6 ? 95.5 : 94;
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * TAU - Math.PI / 2;
+                const ruby = tier === 7 && i % 2 === 1;
+                gem(ctx, gr * Math.cos(a), gr * Math.sin(a), tier === 6 ? 2.6 : 3, a + Math.PI / 2,
+                    ruby ? rgba(hi, 1) : '#f2faff', ruby ? rgba(mix(accent, [0, 0, 0], 0.3), 1) : '#9fc4e6', tier === 6 ? '#5b3d08' : '#8a6417');
+                const hit = Math.max(0, Math.cos(a - t * 1.2)) ** 30;
+                if (hit > 0.05) star(ctx, gr * Math.cos(a), gr * Math.sin(a), 4 + 8 * hit, t * 0.5, clamp(hit * 1.4));
+            }
+        }
+        if (tier === 7 && ctx.createConicGradient) {
+            // Beyaz altın üzerinde dönen gökkuşağı yansıması
+            const pr = ctx.createConicGradient(-t * 0.4, 0, 0);
+            ['255,80,80', '255,200,60', '90,230,140', '70,170,255', '190,110,255', '255,80,80'].forEach((c, i) => pr.addColorStop(i / 5, `rgba(${c},.22)`));
+            for (const [a0, a1] of [[out0, outer], [71.5, in1]]) { annulus(ctx, a0, a1); ctx.fillStyle = pr; ctx.fill(); }
+        }
+        sheen(ctx, 71.5, outer, t * (tier === 7 ? 1.5 : 1.15), tier === 6 ? 0.45 : 0.6, true);
+    }
+    hairline(ctx, 71.8, 'rgba(0,0,0,.35)', 0.5);
+
+    // --- RÜTBE PLAKASI, TAÇ, YÖRÜNGE IŞIKLARI ---
+    if (tier >= 2) {
+        const stops = [METALS.iron, METALS.iron, METALS.bronze, METALS.silver, METALS.gold, METALS.platinum, METALS.gold, METALS.whiteGold][tier];
+        const dark = ['', '', '#4a2a0e', '#39414a', '#5b3d08', '#3d444c', '#3d2a05', '#6b4708'][tier];
+        rankPlate(ctx, outer - 1, stops, dark, tier <= 4 ? tier - 1 : 0, tier >= 5 ? tier - 4 : 0, rgba(tier === 6 ? [20, 20, 24] : accent, 1));
+    }
+    if (tier === 7) crown(ctx, -outer - 3.5 + 1.1 * Math.sin(t * 1.6), accent, t);
+    if (tier === 6) comet(ctx, outer + 4, t * 1.1, 1, GOLD_C, 1.3, 2.2);
+    if (tier === 7) {
+        comet(ctx, outer + 5, t * 1.3 + 1, 1, GOLD_C, 1.5, 2.6);
+        comet(ctx, outer + 9, -t * 0.95, -1, accent, 1.3, 2.2);
+        if (s.shock < 1) {
+            const q = s.shock;
+            ctx.strokeStyle = rgba(GOLD_C, (1 - q) * 0.8); ctx.lineWidth = 2.6 * (1 - q) + 0.4;
+            ctx.beginPath(); ctx.arc(0, 0, 100 + 28 * (1 - (1 - q) * (1 - q)), 0, TAU); ctx.stroke();
+        }
+    }
+
+    // --- PARILTI, KOR VE ALTIN TOZU ---
+    for (const g of s.glints) {
+        const q = Math.sin(Math.PI * (g.age / g.life));
+        star(ctx, g.r * Math.cos(g.a), g.r * Math.sin(g.a), g.size * q, g.age * 1.6, q);
+    }
+    for (const p of s.embers) {
+        const k = clamp(p.life / p.max);
+        ctx.fillStyle = rgba(mix(accent, GOLD_C, k), Math.min(1, k * 1.6));
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.5 + 0.5 * k), 0, TAU); ctx.fill();
+    }
+    for (const d of s.dust) {
+        const tw = 0.5 + 0.5 * Math.sin(t * 2.4 + d.ph);
+        ctx.fillStyle = rgba(GOLD_DUST, 0.25 + 0.7 * tw);
+        ctx.beginPath(); ctx.arc(d.r * Math.cos(d.a), d.r * Math.sin(d.a) + 2 * Math.sin(t + d.ph), d.size * (0.7 + 0.5 * tw), 0, TAU); ctx.fill();
+    }
+};
+
+const rankFrame = (tier: number): FrameDef<RankState> => ({
+    init: ({ rnd }) => ({
+        glints: [], next: 1, embers: [], shock: 9, acc: 0,
+        dust: tier < 6 ? [] : Array.from({ length: tier === 7 ? 34 : 20 }, () => ({
+            a: rnd() * TAU, r: 104 + rnd() * 22, w: (0.08 + rnd() * 0.2) * (rnd() < 0.5 ? 1 : -1), ph: rnd() * TAU, size: 0.5 + rnd() * 0.9,
+        })),
+    }),
+    step: (s, { dt, rnd }) => {
+        const outer = RANK_OUTER[tier];
+        if (GLINT_EVERY[tier] && (s.next -= dt) <= 0) {
+            s.next = GLINT_EVERY[tier] * (0.6 + rnd() * 0.8);
+            s.glints.push({ a: rnd() * TAU, r: 74 + rnd() * (outer - 76), age: 0, life: 0.55 + rnd() * 0.4, size: 4 + rnd() * (tier >= 6 ? 7 : 5) });
+        }
+        for (const g of s.glints) g.age += dt;
+        s.glints = s.glints.filter(g => g.age < g.life);
+
+        s.acc += dt * EMBER_RATE[tier];
+        while (s.acc >= 1) {
+            s.acc -= 1;
+            const a = rnd() * TAU, r = outer + rnd() * 6, max = 1.2 + rnd() * 1.2;
+            s.embers.push({ x: r * Math.cos(a), y: r * Math.sin(a), vx: (rnd() - 0.5) * 14, vy: -10 - rnd() * 22, life: max, max, size: 0.6 + rnd() * 1 });
+        }
+        for (const p of s.embers) { p.x += (p.vx + 6 * Math.sin(p.life * 5)) * dt; p.y += p.vy * dt; p.life -= dt; }
+        s.embers = s.embers.filter(p => p.life > 0 && p.y > -130);
+
+        if (tier === 7) {
+            s.shock += dt / 0.8;
+            if (s.shock > 5.5) s.shock = 0;
+        }
+        for (const d of s.dust) d.a += d.w * dt;
+    },
+    draw: (s, env) => drawRank(tier, s, env),
+});
+
+const RANK_IDS = ['rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend'] as const;
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -1433,6 +1910,7 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'kustom': kustom,
     'podium': podium,
     'telemetry': telemetry,
+    ...Object.fromEntries(RANK_IDS.map((id, i) => [id, rankFrame(i + 1)])) as Record<typeof RANK_IDS[number], FrameDef<any>>,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---

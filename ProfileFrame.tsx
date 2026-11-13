@@ -12,10 +12,31 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    badge?: 'ULTRA' | 'İMZA'; // ULTRA: canvas tabanlı, İMZA: WebGL shader tabanlı çerçeve
+    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE'; // ULTRA: canvas tabanlı, İMZA: WebGL shader tabanlı, RÜTBE: rütbeyle açılan çerçeve
+    minApex?: number; // Rütbe çerçevesinin açıldığı Apex puanı
 }
 
 export const DEFAULT_PROFILE_FRAME: ProfileFrameId = 'tachometer';
+
+// Rütbe kariyer yolu ile bire bir eşleşen çerçeveler: kademe yükseldikçe malzeme ve hareket zenginleşir
+export const RANK_FRAMES: { id: ProfileFrameId; rank: string; minApex: number; description: string }[] = [
+    { id: 'rank-rookie', rank: 'Çaylak Sürücü', minApex: 0, description: 'Mat demir halka' },
+    { id: 'rank-street', rank: 'Sokak Pilotu', minApex: 500, description: 'Bronz, çentikler ve ilk şerit' },
+    { id: 'rank-explorer', rank: 'Asfalt Kâşifi', minApex: 2000, description: 'Gümüş, dönen pusula ve dört yön ucu' },
+    { id: 'rank-commander', rank: 'Rota Komutanı', minApex: 5000, description: 'Altın, akan rota çizgisi ve sekiz yön ucu' },
+    { id: 'rank-master', rank: 'Kademe Ustası', minApex: 12000, description: 'Platin, kırmızı mine, yakut ve dolaşan enerji' },
+    { id: 'rank-elite', rank: 'Elit Sürücü', minApex: 20000, description: 'Obsidyen, altın, elmas ve kanatlar' },
+    { id: 'rank-legend', rank: 'Efsane Sürücü', minApex: 35000, description: 'Beyaz altın, taç, kanatlar, alev ve ışık huzmeleri' },
+];
+
+// Verilen Apex puanının hak ettiği en yüksek rütbe çerçevesi
+export const rankFrameForApex = (apex: number): ProfileFrameId =>
+    RANK_FRAMES.reduce((best, f) => (apex >= f.minApex ? f.id : best), RANK_FRAMES[0].id);
+
+export const isRankFrameUnlocked = (id: ProfileFrameId, apex: number) => {
+    const frame = RANK_FRAMES.find(f => f.id === id);
+    return !frame || apex >= frame.minApex;
+};
 
 export const PROFILE_FRAMES: ProfileFrameOption[] = [
     { id: 'none', name: 'Çerçevesiz', description: 'Sade profil fotoğrafı', rank: 'Scooter Çırağı' },
@@ -44,6 +65,7 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
     { id: 'nitro', name: 'Nitro', description: 'Egzoz jetlerinde mach elmasları ve geri tepme', rank: 'Scooter Çırağı', badge: 'İMZA' },
     { id: 'burnout', name: 'Burnout', description: 'Kızgın lastikten kopan girdap duman ve korlar', rank: 'Scooter Çırağı', badge: 'İMZA' },
     { id: 'hyperspeed', name: 'Hiper Hız', description: 'Dışarı fırlayan ışık çizgileri ve boost şok dalgası', rank: 'Scooter Çırağı', badge: 'İMZA' },
+    ...RANK_FRAMES.map(f => ({ id: f.id, name: f.rank, description: f.description, rank: 'Scooter Çırağı' as const, badge: 'RÜTBE' as const, minApex: f.minApex })),
 ];
 
 type CanvasFrameId = PremiumFrameId | ShaderFrameId;
