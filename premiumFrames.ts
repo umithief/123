@@ -6,12 +6,14 @@
 export type PremiumFrameId =
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
-    | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend';
+    | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
+    | 'convoy';
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
     'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
     'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
     'rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend',
+    'convoy',
 ];
 
 export type RGB = [number, number, number];
@@ -22,6 +24,7 @@ interface Env {
     dt: number;
     accent: RGB;
     rnd: () => number;
+    level: number; // canvas'ın data-level niteliği; ilerleme gösteren çerçeveler kullanır (ör. katılan arkadaş sayısı)
 }
 
 interface FrameDef<S> {
@@ -1897,6 +1900,211 @@ const rankFrame = (tier: number): FrameDef<RankState> => ({
 
 const RANK_IDS = ['rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend'] as const;
 
+// ============================================================================
+// KONVOY LİDERİ — 10 arkadaşını davet edip kayıt yaptıranlara özel.
+// Siyah krom gövde ve şampanya altını pahlar; halkada her arkadaş için bir far yuvası yanar.
+// Tema renginde lider (kullanıcı) önde, 10 sürücü zikzak düzende arkasından gelir.
+// Birkaç saniyede bir bütün farlar sırayla selektör yapar ve dışa ışık dalgası yayılır.
+// env.level (0-10): kaç arkadaşın katıldığı; 10'un altında çerçeve ilerleme önizlemesi olarak çizilir.
+// ============================================================================
+
+const CHAMPAGNE = ['#6e5530', '#d9c08f', '#fff4dc', '#b89c6a', '#7a6038'];
+const BLACK_CHROME = ['#0b0c0f', '#3a3f48', '#a7b0ba', '#22262d', '#08090b'];
+const HEADLIGHT: RGB = [255, 244, 214];
+const TAILLIGHT: RGB = [255, 40, 40];
+const CONVOY_SLOTS = 10;
+const CONVOY_LANE = 82.5;
+const SOCKET_R = 92;
+const SALUTE_EVERY = 5.5;
+
+// Yuvalar tepedeki armanın iki yanından başlar
+const socketAngle = (k: number) => -Math.PI / 2 + ((k + 0.5) / CONVOY_SLOTS) * TAU;
+const angGap = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+
+const convoy: FrameDef<{ lead: number; salute: number; dust: Dust[] }> = {
+    init: ({ rnd }) => ({
+        lead: -Math.PI / 2, salute: 1.2,
+        dust: Array.from({ length: 26 }, () => ({
+            a: rnd() * TAU, r: 104 + rnd() * 20, w: (0.06 + rnd() * 0.18) * (rnd() < 0.5 ? 1 : -1), ph: rnd() * TAU, size: 0.5 + rnd() * 0.9,
+        })),
+    }),
+    step: (s, { dt, t }) => {
+        s.lead += (0.85 + 0.15 * Math.sin(t * 0.6)) * dt;
+        s.salute = (s.salute + dt) % SALUTE_EVERY;
+        for (const d of s.dust) d.a += d.w * dt;
+    },
+    draw: (s, { ctx, t, accent, level }) => {
+        const lit = Math.max(0, Math.min(CONVOY_SLOTS, Math.round(level)));
+        const full = lit === CONVOY_SLOTS;
+        const warm = mix(accent, [255, 214, 140], 0.45);
+        const beam = mix(HEADLIGHT, accent, 0.22);
+
+        // Selektör: farlar sırayla 0.09 sn arayla yanar, ardından dışa dalga
+        const saluteOf = (k: number) => {
+            const d = s.salute - k * 0.09;
+            return d > 0 && d < 0.35 ? Math.sin((Math.PI * d) / 0.35) : 0;
+        };
+        const wave = (s.salute - 1) / 0.9;
+
+        // Yanan yuvalardan dışa vuran far huzmeleri
+        for (let k = 0; k < lit; k++) {
+            const a = socketAngle(k), hw = 0.07, f = saluteOf(k);
+            const g = ctx.createRadialGradient(0, 0, 96, 0, 0, 124 + 4 * f);
+            g.addColorStop(0, rgba(warm, 0.32 + 0.5 * f)); g.addColorStop(1, rgba(warm, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.moveTo(96 * Math.cos(a - hw * 0.4), 96 * Math.sin(a - hw * 0.4));
+            ctx.lineTo(124 * Math.cos(a - hw), 124 * Math.sin(a - hw));
+            ctx.lineTo(124 * Math.cos(a + hw), 124 * Math.sin(a + hw));
+            ctx.lineTo(96 * Math.cos(a + hw * 0.4), 96 * Math.sin(a + hw * 0.4));
+            ctx.closePath(); ctx.fill();
+        }
+        if (full) {
+            const g = ctx.createRadialGradient(0, 0, 96, 0, 0, 116);
+            g.addColorStop(0, rgba(accent, 0.22 + 0.08 * Math.sin(t * 1.7))); g.addColorStop(1, rgba(accent, 0));
+            annulus(ctx, 96, 116); ctx.fillStyle = g; ctx.fill();
+        }
+
+        // Gövde: şampanya altını iç pah, siyah krom gövde, şampanya altını dış pah, tırtıllı siyah krom dudak
+        metalBand(ctx, 96.5, 100, BLACK_CHROME, -t * 0.4, 4);
+        ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (let i = 0; i < 120; i++) {
+            const a = (i / 120) * TAU;
+            ctx.moveTo(97 * Math.cos(a), 97 * Math.sin(a)); ctx.lineTo(99.5 * Math.cos(a), 99.5 * Math.sin(a));
+        }
+        ctx.stroke();
+        metalBand(ctx, 89.5, 96.5, CHAMPAGNE, t * 0.45, 3);
+        metalBand(ctx, 75, 89.5, BLACK_CHROME, t * 0.3 + 0.8, 3);
+        metalBand(ctx, 71.5, 75, CHAMPAGNE, t * 0.45 + 1.1, 3);
+        for (const [r, c] of [[75, 'rgba(40,30,15,.75)'], [89.5, 'rgba(40,30,15,.75)'], [96.5, 'rgba(0,0,0,.6)']] as [number, string][]) hairline(ctx, r, c, 0.7);
+
+        // Konvoy şeridi: gövdeye gömülü koyu kanal ve ortasında tema renginde ince çizgi
+        annulus(ctx, 78.6, 86.4); ctx.fillStyle = 'rgba(3,4,6,.88)'; ctx.fill();
+        hairline(ctx, 78.6, 'rgba(255,255,255,.14)', 0.4); hairline(ctx, 86.4, 'rgba(255,255,255,.14)', 0.4);
+        ctx.setLineDash([2.2, 2.6]); ctx.lineDashOffset = -t * 6;
+        hairline(ctx, CONVOY_LANE, rgba(accent, full ? 0.55 : 0.3), 0.5);
+        ctx.setLineDash([]); ctx.lineDashOffset = 0;
+
+        // Yanan komşu yuvalar arasında akan enerji
+        ctx.lineCap = 'round';
+        for (let k = 0; k < lit - 1 + (full ? 1 : 0); k++) {
+            const a0 = socketAngle(k), a1 = socketAngle(k + 1);
+            ctx.strokeStyle = rgba(accent, 0.45); ctx.lineWidth = 0.7;
+            ctx.beginPath(); ctx.arc(0, 0, SOCKET_R, a0 + 0.09, a1 - 0.09); ctx.stroke();
+            const ph = (t * 0.7 + k * 0.37) % 1, pa = lerp(a0 + 0.09, a1 - 0.09, ph);
+            bloom(ctx, SOCKET_R * Math.cos(pa), SOCKET_R * Math.sin(pa), 3.2, mix(accent, WHITE, 0.4), Math.sin(Math.PI * ph));
+        }
+
+        // Konvoy: lider önde, katılan arkadaşlar zikzak düzende arkasında; her birinin stop izi
+        const rider = (ang: number, r: number, head: RGB, size: number, trail: number) => {
+            for (let i = 0; i < 10; i++) {
+                const a0 = ang - 0.02 - i * trail / 10, a1 = a0 - trail / 10;
+                ctx.strokeStyle = rgba(TAILLIGHT, (1 - i / 10) * 0.85); ctx.lineWidth = size * 0.7 * (1 - i / 14);
+                ctx.beginPath(); ctx.arc(0, 0, r, a1, a0); ctx.stroke();
+            }
+            ctx.globalCompositeOperation = 'lighter';
+            bloom(ctx, r * Math.cos(ang + 0.03), r * Math.sin(ang + 0.03), size * 3, head, 0.95);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(r * Math.cos(ang), r * Math.sin(ang), size * 0.45, 0, TAU); ctx.fill();
+        };
+        ctx.save();
+        annulus(ctx, 78.8, 86.2); ctx.clip();
+        ctx.lineCap = 'butt';
+        for (let i = lit; i >= 1; i--) {
+            const ang = s.lead - i * 0.235 + 0.02 * Math.sin(t * 2.2 + i);
+            rider(ang, CONVOY_LANE + (i % 2 ? 1.9 : -1.9), HEADLIGHT, 1.9, 0.16);
+        }
+        rider(s.lead, CONVOY_LANE, accent, 2.6, 0.3);
+        ctx.restore();
+
+        // Far yuvaları: yanan yuva cam far, sönük yuva koyu cam; lider geçerken ve selektörde parlar
+        for (let k = 0; k < CONVOY_SLOTS; k++) {
+            const a = socketAngle(k), x = SOCKET_R * Math.cos(a), y = SOCKET_R * Math.sin(a);
+            const on = k < lit;
+            const pass = on ? Math.exp(-((angGap(a, s.lead) / 0.16) ** 2)) : 0;
+            const f = on ? saluteOf(k) : 0;
+            ctx.fillStyle = '#16181c';
+            ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill();
+            const rim = ctx.createLinearGradient(x - 5, y - 5, x + 5, y + 5);
+            rim.addColorStop(0, '#fff4dc'); rim.addColorStop(0.5, '#b89c6a'); rim.addColorStop(1, '#6e5530');
+            ctx.strokeStyle = rim; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.arc(x, y, 4.6, 0, TAU); ctx.stroke();
+            if (on) {
+                ctx.globalCompositeOperation = 'lighter';
+                bloom(ctx, x, y, 9 + 6 * pass + 10 * f, beam, 0.55 + 0.35 * pass + 0.45 * f);
+                ctx.globalCompositeOperation = 'source-over';
+                const lens = ctx.createRadialGradient(x - 1, y - 1, 0.3, x, y, 3.9);
+                lens.addColorStop(0, '#ffffff'); lens.addColorStop(0.55, rgba(HEADLIGHT, 1)); lens.addColorStop(1, '#f2d9a6');
+                ctx.fillStyle = lens;
+            } else {
+                const lens = ctx.createRadialGradient(x - 1.2, y - 1.2, 0.2, x, y, 3.9);
+                lens.addColorStop(0, 'rgba(255,255,255,.35)'); lens.addColorStop(0.35, '#2a2e35'); lens.addColorStop(1, '#0c0d10');
+                ctx.fillStyle = lens;
+            }
+            ctx.beginPath(); ctx.arc(x, y, 3.9, 0, TAU); ctx.fill();
+            ctx.strokeStyle = on ? rgba(accent, 1) : 'rgba(255,255,255,.12)'; ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.arc(x, y, 3.9, 0, TAU); ctx.stroke();
+            if (f > 0.6) star(ctx, x, y, 7 + 9 * f, t, f);
+        }
+
+        // Selektör dalgası
+        if (full && wave > 0 && wave < 1) {
+            ctx.strokeStyle = rgba(warm, (1 - wave) * 0.85); ctx.lineWidth = 2.4 * (1 - wave) + 0.4;
+            ctx.beginPath(); ctx.arc(0, 0, 100 + 27 * (1 - (1 - wave) * (1 - wave)), 0, TAU); ctx.stroke();
+        }
+
+        // Arma: şampanya altını kalkan, siyah krom iç yüzey, katılan arkadaş sayısı ve tema renginde taş
+        ctx.save();
+        ctx.translate(0, -101.5 + 0.8 * Math.sin(t * 1.5));
+        const shield = (w: number, h: number) => {
+            ctx.beginPath();
+            ctx.moveTo(-w, -h * 0.55);
+            ctx.quadraticCurveTo(0, -h * 0.8, w, -h * 0.55);
+            ctx.lineTo(w, h * 0.05);
+            ctx.quadraticCurveTo(w * 0.85, h * 0.65, 0, h);
+            ctx.quadraticCurveTo(-w * 0.85, h * 0.65, -w, h * 0.05);
+            ctx.closePath();
+        };
+        const gold = ctx.createLinearGradient(-11, -12, 11, 12);
+        gold.addColorStop(0, '#fff4dc'); gold.addColorStop(0.45, '#d9c08f'); gold.addColorStop(1, '#6e5530');
+        if (full) { ctx.globalCompositeOperation = 'lighter'; bloom(ctx, 0, 0, 20, accent, 0.45 + 0.2 * Math.sin(t * 2)); ctx.globalCompositeOperation = 'source-over'; }
+        shield(11, 13); ctx.fillStyle = gold; ctx.fill();
+        ctx.strokeStyle = 'rgba(60,45,20,.9)'; ctx.lineWidth = 0.6; ctx.stroke();
+        const inner = ctx.createLinearGradient(-8, -9, 8, 10);
+        inner.addColorStop(0, '#3a3f48'); inner.addColorStop(0.5, '#0b0c0f'); inner.addColorStop(1, '#22262d');
+        shield(8.4, 10.2); ctx.fillStyle = inner; ctx.fill();
+        ctx.font = `italic 900 ${lit === CONVOY_SLOTS ? 9.5 : 10}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = full ? gold : 'rgba(217,192,143,.75)';
+        ctx.fillText(String(lit), 0, -1.6);
+        gem(ctx, 0, 6.6, 1.9, 0, rgba(mix(accent, WHITE, 0.35), 1), rgba(mix(accent, [0, 0, 0], 0.35), 1), '#6e5530');
+        for (const side of [-1, 1]) {
+            ctx.strokeStyle = gold; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(side * (12.5 + i * 2.6), -5 + i * 2.2);
+                ctx.lineTo(side * (16.5 + i * 3), -3.2 + i * 2.6);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+        sheen(ctx, 71.5, 100, t * 1.05, 0.38, true);
+
+        // Altın tozu (tam açıldığında)
+        if (full) {
+            for (const d of s.dust) {
+                const tw = 0.5 + 0.5 * Math.sin(t * 2.4 + d.ph);
+                ctx.fillStyle = rgba(mix(accent, [214, 192, 143], 0.5), 0.25 + 0.7 * tw);
+                ctx.beginPath(); ctx.arc(d.r * Math.cos(d.a), d.r * Math.sin(d.a) + 2 * Math.sin(t + d.ph), d.size * (0.7 + 0.5 * tw), 0, TAU); ctx.fill();
+            }
+        }
+        hairline(ctx, 71.8, 'rgba(0,0,0,.35)', 0.5);
+    },
+};
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -1911,6 +2119,7 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'podium': podium,
     'telemetry': telemetry,
     ...Object.fromEntries(RANK_IDS.map((id, i) => [id, rankFrame(i + 1)])) as Record<typeof RANK_IDS[number], FrameDef<any>>,
+    'convoy': convoy,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---
@@ -1971,7 +2180,8 @@ export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId)
     const ctx = canvas.getContext('2d');
     if (!ctx) return () => {};
     const def = FRAMES[id];
-    const env: Env = { ctx, t: 0, dt: 0, accent: [242, 166, 25], rnd: mulberry32(id.length * 7919 + 13) };
+    const readLevel = () => { const v = Number(canvas.dataset.level); return Number.isFinite(v) && canvas.dataset.level !== '' ? v : 10; };
+    const env: Env = { ctx, t: 0, dt: 0, accent: [242, 166, 25], rnd: mulberry32(id.length * 7919 + 13), level: readLevel() };
     const state = def.init(env);
     let frames = 0;
 
@@ -1994,7 +2204,7 @@ export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId)
     env.accent = readAccent(canvas, ctx);
     return driveFrame(canvas, {
         tick: dt => {
-            if (frames++ % 45 === 0) env.accent = readAccent(canvas, ctx);
+            if (frames++ % 45 === 0) { env.accent = readAccent(canvas, ctx); env.level = readLevel(); }
             advance(dt);
             render();
         },
@@ -2002,6 +2212,7 @@ export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId)
             // Sahneyi biraz ilerletip anlamlı bir an göster
             if (env.t === 0) for (let i = 0; i < 150; i++) advance(1 / 30);
             env.accent = readAccent(canvas, ctx);
+            env.level = readLevel();
             render();
         },
     });

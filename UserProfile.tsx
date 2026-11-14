@@ -647,7 +647,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                                             type="button"
                                             disabled={!unlocked}
                                             onClick={() => setEditForm({...editForm, profileFrame: option.id})}
-                                            title={unlocked ? option.description : `${option.rank} rütbesinde açılır`}
+                                            title={unlocked ? option.description : option.unlockHint ?? `${option.rank} rütbesinde açılır`}
                                             className={`relative flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
                                                 selected ? 'border-moto-accent bg-white shadow-sm' : 'border-transparent hover:bg-white hover:border-gray-200'
                                             } ${unlocked ? '' : 'opacity-50 grayscale cursor-not-allowed'}`}

@@ -127,6 +127,8 @@ export type ProfileFrameId =
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
     // Rütbe çerçeveleri: rütbe kariyer yolundaki 7 kademe, en sadeden en gösterişliye
     | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
+    // Davet çerçevesi: 10 arkadaşını davet edip kayıt yaptıranlara özel
+    | 'convoy'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 
@@ -146,6 +148,7 @@ export interface User {
   followers?: number;
   following?: number;
   profileFrame?: ProfileFrameId;
+  invitedCount?: number; // Davetiyle kayıt olan arkadaş sayısı
 }
 
 export interface OrderItem {

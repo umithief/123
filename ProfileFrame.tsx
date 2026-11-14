@@ -12,7 +12,8 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE'; // ULTRA: canvas tabanlı, İMZA: WebGL shader tabanlı, RÜTBE: rütbeyle açılan çerçeve
+    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
+    unlockHint?: string; // Kilitliyken seçicide gösterilen açıklama
     minApex?: number; // Rütbe çerçevesinin açıldığı Apex puanı
 }
 
@@ -28,6 +29,11 @@ export const RANK_FRAMES: { id: ProfileFrameId; rank: string; minApex: number; d
     { id: 'rank-elite', rank: 'Elit Sürücü', minApex: 20000, description: 'Obsidyen, altın, elmas ve kanatlar' },
     { id: 'rank-legend', rank: 'Efsane Sürücü', minApex: 35000, description: 'Beyaz altın, taç, kanatlar, alev ve ışık huzmeleri' },
 ];
+
+// Davet çerçevesi: davetiyle kayıt olan arkadaş sayısı bu eşiğe ulaşınca açılır
+export const REFERRAL_FRAME = { id: 'convoy' as ProfileFrameId, invitesRequired: 10 };
+
+export const isReferralFrameUnlocked = (invitedCount: number) => invitedCount >= REFERRAL_FRAME.invitesRequired;
 
 // Verilen Apex puanının hak ettiği en yüksek rütbe çerçevesi
 export const rankFrameForApex = (apex: number): ProfileFrameId =>
@@ -66,6 +72,10 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
     { id: 'burnout', name: 'Burnout', description: 'Kızgın lastikten kopan girdap duman ve korlar', rank: 'Scooter Çırağı', badge: 'İMZA' },
     { id: 'hyperspeed', name: 'Hiper Hız', description: 'Dışarı fırlayan ışık çizgileri ve boost şok dalgası', rank: 'Scooter Çırağı', badge: 'İMZA' },
     ...RANK_FRAMES.map(f => ({ id: f.id, name: f.rank, description: f.description, rank: 'Scooter Çırağı' as const, badge: 'RÜTBE' as const, minApex: f.minApex })),
+    {
+        id: 'convoy', name: 'Konvoy Lideri', description: 'Davet ettiğin 10 arkadaşınla konvoyun başındasın', rank: 'Scooter Çırağı',
+        badge: 'DAVET', unlockHint: '10 arkadaşını davet edip kayıt yaptırınca açılır',
+    },
 ];
 
 type CanvasFrameId = PremiumFrameId | ShaderFrameId;
@@ -78,8 +88,10 @@ const isCanvasFrame = (frame: ProfileFrameId): frame is CanvasFrameId =>
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
-export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin'>) =>
-    !!user.isAdmin || Math.max(0, RANK_ORDER.indexOf(user.rank)) >= RANK_ORDER.indexOf(option.rank);
+export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount'>) =>
+    !!user.isAdmin || (option.id === REFERRAL_FRAME.id
+        ? isReferralFrameUnlocked(user.invitedCount ?? 0)
+        : Math.max(0, RANK_ORDER.indexOf(user.rank)) >= RANK_ORDER.indexOf(option.rank));
 
 // --- GEOMETRY HELPERS ---
 
@@ -426,13 +438,13 @@ const Checkered: React.FC<{ id: string }> = () => (
     </>
 );
 
-const FrameCanvas: React.FC<{ frame: CanvasFrameId }> = ({ frame }) => {
+const FrameCanvas: React.FC<{ frame: CanvasFrameId; level?: number }> = ({ frame, level }) => {
     const ref = useRef<HTMLCanvasElement>(null);
     useEffect(() => {
         if (!ref.current) return undefined;
         return isShaderFrame(frame) ? mountShaderFrame(ref.current, frame) : mountPremiumFrame(ref.current, frame);
     }, [frame]);
-    return <canvas ref={ref} className="mvf-canvas" aria-hidden="true" />;
+    return <canvas ref={ref} className="mvf-canvas" data-level={level} aria-hidden="true" />;
 };
 
 const FRAME_RENDERERS: Record<Exclude<ProfileFrameId, 'none' | CanvasFrameId>, React.FC<{ id: string }>> = {
@@ -557,6 +569,7 @@ const useFrameStyles = () => {
 interface ProfileFrameProps {
     frame?: ProfileFrameId;
     progress?: number; // 0-100, takometre ibresinin rölanti konumu
+    invites?: number; // Konvoy Lideri: kaç far yuvası yanacak (0-10); verilmezse çerçeve tam açılmış çizilir
     size?: number;
     className?: string;
     children: React.ReactNode;
@@ -565,6 +578,7 @@ interface ProfileFrameProps {
 export const ProfileFrame: React.FC<ProfileFrameProps> = ({
     frame = DEFAULT_PROFILE_FRAME,
     progress = 60,
+    invites,
     size,
     className = '',
     children
@@ -585,7 +599,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
             <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
-            {canvasFrame && <FrameCanvas frame={frame} />}
+            {canvasFrame && <FrameCanvas frame={frame} level={invites} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />
