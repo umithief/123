@@ -129,6 +129,8 @@ export type ProfileFrameId =
     | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
     // Davet çerçevesi: 10 arkadaşını davet edip kayıt yaptıranlara özel
     | 'convoy'
+    // Paylaşım çerçevesi: 10 paylaşım yapanlara özel
+    | 'storyteller'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 
@@ -149,6 +151,7 @@ export interface User {
   following?: number;
   profileFrame?: ProfileFrameId;
   invitedCount?: number; // Davetiyle kayıt olan arkadaş sayısı
+  postCount?: number; // Yaptığı paylaşım sayısı
 }
 
 export interface OrderItem {

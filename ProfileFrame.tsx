@@ -12,7 +12,7 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
+    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET' | 'PAYLAŞIM'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
     unlockHint?: string; // Kilitliyken seçicide gösterilen açıklama
     minApex?: number; // Rütbe çerçevesinin açıldığı Apex puanı
 }
@@ -34,6 +34,11 @@ export const RANK_FRAMES: { id: ProfileFrameId; rank: string; minApex: number; d
 export const REFERRAL_FRAME = { id: 'convoy' as ProfileFrameId, invitesRequired: 10 };
 
 export const isReferralFrameUnlocked = (invitedCount: number) => invitedCount >= REFERRAL_FRAME.invitesRequired;
+
+// Paylaşım çerçevesi: kullanıcının paylaşım sayısı bu eşiğe ulaşınca açılır
+export const SHARING_FRAME = { id: 'storyteller' as ProfileFrameId, postsRequired: 10 };
+
+export const isSharingFrameUnlocked = (postCount: number) => postCount >= SHARING_FRAME.postsRequired;
 
 // Verilen Apex puanının hak ettiği en yüksek rütbe çerçevesi
 export const rankFrameForApex = (apex: number): ProfileFrameId =>
@@ -76,6 +81,10 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
         id: 'convoy', name: 'Konvoy Lideri', description: 'Davet ettiğin 10 arkadaşınla konvoyun başındasın', rank: 'Scooter Çırağı',
         badge: 'DAVET', unlockHint: '10 arkadaşını davet edip kayıt yaptırınca açılır',
     },
+    {
+        id: 'storyteller', name: 'Yol Hikâyecisi', description: 'Her paylaşımın film şeridinde bir kare oldu', rank: 'Scooter Çırağı',
+        badge: 'PAYLAŞIM', unlockHint: '10 paylaşım yapınca açılır',
+    },
 ];
 
 type CanvasFrameId = PremiumFrameId | ShaderFrameId;
@@ -88,10 +97,12 @@ const isCanvasFrame = (frame: ProfileFrameId): frame is CanvasFrameId =>
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
-export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount'>) =>
+export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount' | 'postCount'>) =>
     !!user.isAdmin || (option.id === REFERRAL_FRAME.id
         ? isReferralFrameUnlocked(user.invitedCount ?? 0)
-        : Math.max(0, RANK_ORDER.indexOf(user.rank)) >= RANK_ORDER.indexOf(option.rank));
+        : option.id === SHARING_FRAME.id
+            ? isSharingFrameUnlocked(user.postCount ?? 0)
+            : Math.max(0, RANK_ORDER.indexOf(user.rank)) >= RANK_ORDER.indexOf(option.rank));
 
 // --- GEOMETRY HELPERS ---
 
@@ -570,6 +581,7 @@ interface ProfileFrameProps {
     frame?: ProfileFrameId;
     progress?: number; // 0-100, takometre ibresinin rölanti konumu
     invites?: number; // Konvoy Lideri: kaç far yuvası yanacak (0-10); verilmezse çerçeve tam açılmış çizilir
+    posts?: number; // Yol Hikâyecisi: kaç film karesi dolacak (0-10); verilmezse çerçeve tam açılmış çizilir
     size?: number;
     className?: string;
     children: React.ReactNode;
@@ -579,6 +591,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
     frame = DEFAULT_PROFILE_FRAME,
     progress = 60,
     invites,
+    posts,
     size,
     className = '',
     children
@@ -599,7 +612,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
             <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
-            {canvasFrame && <FrameCanvas frame={frame} level={invites} />}
+            {canvasFrame && <FrameCanvas frame={frame} level={invites ?? posts} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />

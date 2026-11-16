@@ -7,13 +7,13 @@ export type PremiumFrameId =
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
     | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
-    | 'convoy';
+    | 'convoy' | 'storyteller';
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
     'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
     'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
     'rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend',
-    'convoy',
+    'convoy', 'storyteller',
 ];
 
 export type RGB = [number, number, number];
@@ -2105,6 +2105,204 @@ const convoy: FrameDef<{ lead: number; salute: number; dust: Dust[] }> = {
     },
 };
 
+// ============================================================================
+// YOL HİKÂYECİSİ — 10 paylaşım yapanlara özel.
+// Profil fotoğrafının çevresinde dönen 35 mm film şeridi: her paylaşım bir kareyi yol sahnesiyle doldurur.
+// Tepede objektif rozeti; birkaç saniyede bir flaş patlar ve dolu karelerden beğeni kalpleri yükselir.
+// env.level (0-10): paylaşım sayısı; 10'un altında boş kareler negatif film olarak kalır.
+// ============================================================================
+
+const STORY_CELLS = 10;
+const STORY_FLASH_EVERY = 5.5;
+
+// Kare sahneleri: gökyüzü üst, gökyüzü ufuk, dağ, yol rengi, güneş/ay
+const STORY_SCENES: [string, string, string, string, string][] = [
+    ['#ff7a59', '#ffd18a', '#5b2a4a', '#2b2230', '#fff1c4'], // gün batımı
+    ['#3d8bfd', '#bfe3ff', '#4f6b5a', '#3a3d42', '#fffbe8'], // öğle
+    ['#0b1640', '#3a3f8f', '#141a3a', '#16171c', '#e8ecff'], // gece
+    ['#6b4aa8', '#ffb37a', '#3b2f5c', '#2a2633', '#ffe3a8'], // şafak
+    ['#e0a04a', '#ffe2a6', '#a8642c', '#5a4632', '#fff6dc'], // çöl
+];
+
+interface Heart { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number; rot: number }
+
+const heartPath = (ctx: CanvasRenderingContext2D, x: number, y: number, s: number, rot: number) => {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.beginPath();
+    ctx.moveTo(0, 1);
+    ctx.bezierCurveTo(-1.6, -0.1, -1.1, -1.6, 0, -0.75);
+    ctx.bezierCurveTo(1.1, -1.6, 1.6, -0.1, 0, 1);
+    ctx.closePath();
+    ctx.restore();
+};
+
+const storyScene = (ctx: CanvasRenderingContext2D, k: number, t: number) => {
+    const [skyTop, skyLow, hill, road, orb] = STORY_SCENES[k % STORY_SCENES.length];
+    const sky = ctx.createLinearGradient(0, -8, 0, 2);
+    sky.addColorStop(0, skyTop); sky.addColorStop(1, skyLow);
+    ctx.fillStyle = sky; ctx.fillRect(-21, -8, 42, 16);
+    const night = k % STORY_SCENES.length === 2;
+    if (night) {
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        for (let i = 0; i < 9; i++) ctx.fillRect(-19 + ((i * 37) % 38), -7 + ((i * 13) % 6), 0.5, 0.5);
+    }
+    ctx.fillStyle = orb;
+    ctx.beginPath(); ctx.arc(8 - (k % 3) * 7, -3.5 + (k % 2), night ? 1.6 : 2.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = hill;
+    ctx.beginPath(); ctx.moveTo(-21, 1);
+    for (let x = -21; x <= 21; x += 3) ctx.lineTo(x, -0.5 - 2.6 * Math.abs(Math.sin(x * 0.18 + k * 1.7)));
+    ctx.lineTo(21, 8); ctx.lineTo(-21, 8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = road;
+    ctx.beginPath(); ctx.moveTo(-1, 0.6); ctx.lineTo(1, 0.6); ctx.lineTo(9, 8); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill();
+    // Akan şerit çizgileri: sahne canlı bir yol görüntüsü gibi akar
+    ctx.fillStyle = 'rgba(255,240,190,.9)';
+    for (let i = 0; i < 3; i++) {
+        const q = (i / 3 + t * 0.6) % 1, y = 1 + 7 * q * q, w = 0.25 + 0.6 * q;
+        ctx.fillRect(-w / 2, y, w, 0.5 + 1.6 * q);
+    }
+};
+
+const storyteller: FrameDef<{ flash: number; hearts: Heart[]; fired: boolean }> = {
+    init: () => ({ flash: 1.4, hearts: [], fired: false }),
+    step: (s, { dt, rnd, level, t }) => {
+        const prev = s.flash;
+        s.flash = (s.flash + dt) % STORY_FLASH_EVERY;
+        const lit = Math.max(0, Math.min(STORY_CELLS, Math.round(level)));
+        if (s.flash < prev && lit > 0) {
+            // Flaş: dolu karelerden kalpler yükselir
+            const film = t * 0.12;
+            for (let i = 0; i < 4 + lit; i++) {
+                const k = Math.floor(rnd() * lit), a = film + ((k + 0.5) / STORY_CELLS) * TAU - Math.PI / 2;
+                const r = 96 + rnd() * 3, max = 1.3 + rnd() * 0.8;
+                s.hearts.push({ x: r * Math.cos(a), y: r * Math.sin(a), vx: Math.cos(a) * 18 + (rnd() - 0.5) * 12, vy: Math.sin(a) * 18 - 22 - rnd() * 14, life: max, max, size: 2.2 + rnd() * 1.8, rot: (rnd() - 0.5) * 0.6 });
+            }
+        }
+        for (const h of s.hearts) {
+            h.x += (h.vx + 6 * Math.sin(h.life * 4)) * dt; h.y += h.vy * dt;
+            h.vx *= 1 - 1.2 * dt; h.vy = h.vy * (1 - 1.2 * dt) - 8 * dt;
+            h.life -= dt;
+        }
+        s.hearts = s.hearts.filter(h => h.life > 0);
+    },
+    draw: (s, { ctx, t, accent, level }) => {
+        const lit = Math.max(0, Math.min(STORY_CELLS, Math.round(level)));
+        const full = lit === STORY_CELLS;
+        const film = t * 0.12;
+        const flashK = s.flash < 0.35 ? 1 - s.flash / 0.35 : 0;
+
+        if (full) {
+            const g = ctx.createRadialGradient(0, 0, 96, 0, 0, 114);
+            g.addColorStop(0, rgba(accent, 0.22 + 0.06 * Math.sin(t * 1.6))); g.addColorStop(1, rgba(accent, 0));
+            annulus(ctx, 96, 114); ctx.fillStyle = g; ctx.fill();
+        }
+
+        // Film şeridi: siyah taban, iki kenarda dönen tırnak delikleri
+        annulus(ctx, 71.5, 100); ctx.fillStyle = '#111215'; ctx.fill();
+        ctx.save();
+        ctx.rotate(film);
+        ctx.fillStyle = 'rgba(245,240,228,.85)';
+        for (const [r, n] of [[74.6, 40], [96.6, 52]] as [number, number][]) {
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * TAU;
+                ctx.save(); ctx.rotate(a); ctx.translate(r, 0);
+                ctx.beginPath(); ctx.roundRect(-1.1, -1.5, 2.2, 3, 0.6); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Kareler: dolu kare yol sahnesi, boş kare turuncu negatif film
+        for (let k = 0; k < STORY_CELLS; k++) {
+            const a = ((k + 0.5) / STORY_CELLS) * TAU - Math.PI / 2;
+            ctx.save();
+            ctx.rotate(a); ctx.translate(86, 0); ctx.rotate(Math.PI / 2);
+            ctx.beginPath(); ctx.roundRect(-21, -8, 42, 16, 1.6);
+            ctx.save(); ctx.clip();
+            if (k < lit) {
+                storyScene(ctx, k, t + k * 0.13);
+                const vg = ctx.createRadialGradient(0, 0, 6, 0, 0, 24);
+                vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.45)');
+                ctx.fillStyle = vg; ctx.fillRect(-21, -8, 42, 16);
+                if (flashK > 0) { ctx.fillStyle = `rgba(255,255,255,${0.75 * flashK})`; ctx.fillRect(-21, -8, 42, 16); }
+            } else {
+                ctx.fillStyle = '#3a2412'; ctx.fillRect(-21, -8, 42, 16);
+                ctx.strokeStyle = 'rgba(255,170,90,.25)'; ctx.lineWidth = 0.6;
+                ctx.beginPath(); ctx.moveTo(-21, 3); ctx.lineTo(21, -1); ctx.stroke();
+                ctx.fillStyle = 'rgba(255,190,120,.35)';
+                ctx.font = '700 4px ui-monospace, SFMono-Regular, Menlo, monospace';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(String(k + 1).padStart(2, '0'), 0, 0.4);
+            }
+            ctx.restore();
+            ctx.strokeStyle = k < lit ? rgba(mix(accent, WHITE, 0.25), 0.9) : 'rgba(255,255,255,.12)';
+            ctx.lineWidth = 0.6;
+            ctx.beginPath(); ctx.roundRect(-21, -8, 42, 16, 1.6); ctx.stroke();
+            ctx.restore();
+        }
+        ctx.restore();
+
+        // Kenar çizgileri ve parlama
+        hairline(ctx, 72, 'rgba(255,255,255,.25)', 0.5);
+        hairline(ctx, 99.6, 'rgba(255,255,255,.25)', 0.5);
+        sheen(ctx, 71.5, 100, t * 0.9, 0.22, true);
+
+        // Flaş: tüm halka beyaz parlar
+        if (flashK > 0) {
+            ctx.globalCompositeOperation = 'lighter';
+            bloom(ctx, 0, -101, 36 * flashK + 8, WHITE, 0.9 * flashK);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        // Objektif rozeti: gümüş gövde, dönen diyafram kanatları, tema renginde lens yansıması, paylaşım sayısı
+        ctx.save();
+        ctx.translate(0, -101);
+        const body = ctx.createLinearGradient(-11, -11, 11, 11);
+        body.addColorStop(0, '#f4f6f8'); body.addColorStop(0.5, '#8d96a0'); body.addColorStop(1, '#e2e6ea');
+        ctx.fillStyle = body; ctx.beginPath(); ctx.arc(0, 0, 11, 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(30,34,40,.8)'; ctx.lineWidth = 0.6; ctx.stroke();
+        ctx.fillStyle = '#0d0e11'; ctx.beginPath(); ctx.arc(0, 0, 8.6, 0, TAU); ctx.fill();
+        // Diyafram: flaşta kapanıp açılır
+        const open = 5.2 - 3.4 * flashK;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(0, 0, 8.4, 0, TAU); ctx.clip();
+        ctx.rotate(t * 0.3);
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * TAU;
+            ctx.fillStyle = i % 2 ? '#2b2f36' : '#353a42';
+            ctx.beginPath();
+            ctx.moveTo(open * Math.cos(a), open * Math.sin(a));
+            ctx.lineTo(10 * Math.cos(a - 0.5), 10 * Math.sin(a - 0.5));
+            ctx.lineTo(10 * Math.cos(a + 0.9), 10 * Math.sin(a + 0.9));
+            ctx.lineTo(open * Math.cos(a + TAU / 6), open * Math.sin(a + TAU / 6));
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+        const glass = ctx.createRadialGradient(-1.5, -1.5, 0.3, 0, 0, open);
+        glass.addColorStop(0, rgba(mix(accent, WHITE, 0.6), 1)); glass.addColorStop(0.5, rgba(accent, 0.9)); glass.addColorStop(1, '#0b0c10');
+        ctx.fillStyle = glass; ctx.beginPath(); ctx.arc(0, 0, open, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = `900 ${lit === STORY_CELLS ? 5.6 : 6}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(lit), 0, 0.4);
+        ctx.fillStyle = 'rgba(255,255,255,.7)';
+        ctx.beginPath(); ctx.ellipse(-4.2, -5.2, 2.2, 1, -0.6, 0, TAU); ctx.fill();
+        // Flaş lambası
+        ctx.fillStyle = flashK > 0 ? '#ffffff' : '#c9d0d8';
+        ctx.beginPath(); ctx.roundRect(7, -13, 6, 3.4, 1); ctx.fill();
+        ctx.restore();
+
+        // Beğeni kalpleri
+        for (const h of s.hearts) {
+            const k = clamp(h.life / h.max), grow = clamp((h.max - h.life) / 0.25);
+            heartPath(ctx, h.x, h.y, h.size * (0.6 + 0.4 * grow), h.rot);
+            ctx.fillStyle = rgba(accent, Math.min(1, k * 1.5));
+            ctx.fill();
+            ctx.strokeStyle = `rgba(255,255,255,${0.7 * k})`; ctx.lineWidth = 0.3; ctx.stroke();
+        }
+        hairline(ctx, 71.8, 'rgba(0,0,0,.35)', 0.5);
+    },
+};
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -2120,6 +2318,7 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'telemetry': telemetry,
     ...Object.fromEntries(RANK_IDS.map((id, i) => [id, rankFrame(i + 1)])) as Record<typeof RANK_IDS[number], FrameDef<any>>,
     'convoy': convoy,
+    'storyteller': storyteller,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---
