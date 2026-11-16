@@ -7,13 +7,13 @@ export type PremiumFrameId =
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
     | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
-    | 'convoy' | 'storyteller' | 'kilometre';
+    | 'convoy' | 'storyteller' | 'kilometre' | 'founder';
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
     'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
     'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
     'rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend',
-    'convoy', 'storyteller', 'kilometre',
+    'convoy', 'storyteller', 'kilometre', 'founder',
 ];
 
 export type RGB = [number, number, number];
@@ -2553,6 +2553,227 @@ const kilometre: FrameDef<{ cyc: number; ride: number; burst: KmSpark[]; dust: D
     },
 };
 
+// ============================================================================
+// KURUCU — Motonom'a ilk kaydolan 10 kişiye özel, sıra numaralı çerçeve.
+// Pırlanta kesimli prizmatik kristal halka ve platin pahlar: dönen ışık 320 faseti tek tek yakar,
+// parlayan fasetler gökkuşağı ışıltısı saçar. Arkada kutup ışığı perdeleri dalgalanır.
+// Halkadaki 10 kristal koltuk 10 kurucuyu temsil eder; ışık birkaç saniyede bir 1'den başlayıp
+// sırayla ilerler ve kullanıcının numarasında durur: yıldız patlaması, yatay ışık çizgisi, şok dalgası.
+// env.level (1-10): kullanıcının kurucu sıra numarası.
+// ============================================================================
+
+const FOUNDER_SEATS = 10;
+const FOUNDER_CYCLE = 6.5;
+const FOUNDER_STEP = 0.17;
+const SEAT_R = 97.2;
+const AURORA: RGB[] = [[80, 220, 255], [170, 110, 255]];
+
+const hsl = (h: number, s: number, l: number): RGB => {
+    const a = s * Math.min(l, 1 - l);
+    const f = (n: number) => {
+        const k = (n + h * 12) % 12;
+        return 255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+    };
+    return [f(0), f(8), f(4)];
+};
+
+interface Facet { a: [number, number]; b: [number, number]; c: [number, number]; o: number; h: number }
+
+// Her hücre merkezden dört üçgene bölünür: pırlanta tacı gibi bir kesim
+const FOUNDER_FACETS: Facet[] = (() => {
+    const rnd = mulberry32(2026);
+    const facets: Facet[] = [];
+    const N = 40, rows = [74, 84.5, 95.2];
+    const p = (r: number, a: number): [number, number] => [r * Math.cos(a), r * Math.sin(a)];
+    for (let i = 0; i < N; i++) {
+        const a0 = (i / N) * TAU, a1 = ((i + 1) / N) * TAU, am = (a0 + a1) / 2;
+        for (let row = 0; row < 2; row++) {
+            const ri = rows[row], ro = rows[row + 1], c = p((ri + ro) / 2, am);
+            const corners = [p(ri, a0), p(ri, a1), p(ro, a1), p(ro, a0)];
+            for (let k = 0; k < 4; k++) {
+                facets.push({ a: corners[k], b: corners[(k + 1) % 4], c, o: am + (rnd() - 0.5) * 1.7 + k * 0.4, h: rnd() });
+            }
+        }
+    }
+    return facets;
+})();
+
+const seatAngle = (k: number) => -Math.PI / 2 + ((k + 0.5) / FOUNDER_SEATS) * TAU;
+
+// Dört uzun, dört kısa kollu yıldız parlaması
+const flare = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, rot: number, col: RGB, alpha: number) => {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot);
+    for (let i = 0; i < 8; i++) {
+        const long = i % 2 === 0, len = long ? size : size * 0.5, w = len * (long ? 0.09 : 0.11);
+        ctx.save();
+        ctx.rotate((i * Math.PI) / 4);
+        const g = ctx.createLinearGradient(0, 0, len, 0);
+        g.addColorStop(0, rgba(mix(col, WHITE, 0.7), alpha)); g.addColorStop(1, rgba(col, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.moveTo(0, -w); ctx.lineTo(len, 0); ctx.lineTo(0, w); ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+    ctx.restore();
+};
+
+interface Glitter { a: number; r: number; w: number; ph: number; h: number; size: number }
+
+const founder: FrameDef<{ cyc: number; glitter: Glitter[] }> = {
+    init: ({ rnd }) => ({
+        cyc: 0,
+        glitter: Array.from({ length: 44 }, () => ({
+            a: rnd() * TAU, r: 101 + rnd() * 26, w: (0.05 + rnd() * 0.2) * (rnd() < 0.5 ? 1 : -1), ph: rnd() * TAU, h: rnd(), size: 0.6 + rnd() * 1.1,
+        })),
+    }),
+    step: (s, { dt }) => {
+        s.cyc = (s.cyc + dt) % FOUNDER_CYCLE;
+        for (const g of s.glitter) g.a += g.w * dt;
+    },
+    draw: (s, { ctx, t, accent, level }) => {
+        const n = Math.max(1, Math.min(FOUNDER_SEATS, Math.round(level)));
+        const chase = (s.cyc - 0.4) / FOUNDER_STEP;
+        const since = s.cyc - 0.4 - (n - 1) * FOUNDER_STEP;
+        const burst = since >= 0 && since < 1.3 ? 1 - since / 1.3 : 0;
+
+        // Kutup ışığı perdeleri: dalgalanan üç bant, çerçevenin dışına taşar
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        [accent, ...AURORA].forEach((col, li) => {
+            const g = ctx.createRadialGradient(0, 0, 94, 0, 0, 128);
+            g.addColorStop(0, rgba(col, 0.55)); g.addColorStop(0.45, rgba(col, 0.22)); g.addColorStop(1, rgba(col, 0));
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            const M = 120;
+            for (let i = 0; i <= M; i++) {
+                const a = (i / M) * TAU;
+                const w = 0.5 + 0.5 * Math.sin(3 * a + t * (0.6 + li * 0.17) + li * 2.1) * Math.sin(5 * a - t * 0.35 + li);
+                const r = 104 + 22 * w * w + 3 * Math.sin(9 * a + t * 1.3 + li);
+                i ? ctx.lineTo(r * Math.cos(a), r * Math.sin(a)) : ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+            }
+            for (let i = M; i >= 0; i--) {
+                const a = (i / M) * TAU;
+                ctx.lineTo(95 * Math.cos(a), 95 * Math.sin(a));
+            }
+            ctx.closePath(); ctx.fill();
+        });
+        ctx.restore();
+
+        // Kristal fasetler
+        const L = t * 0.75;
+        const base = mix([10, 14, 26], accent, 0.1);
+        for (const f of FOUNDER_FACETS) {
+            const b = 0.5 + 0.5 * Math.cos(f.o - L);
+            const sp = b ** 10;
+            // Koyu gövde, keskin beyaz parıltı; gökkuşağı ateşi yalnızca en parlak fasetlerde
+            let c = mix(base, [150, 180, 225], b ** 3.2);
+            if (sp > 0.18) c = mix(c, hsl((f.h + t * 0.08) % 1, 1, 0.58), clamp((sp - 0.18) * 2.2));
+            c = mix(c, WHITE, sp * sp * 0.85);
+            ctx.fillStyle = rgba(c, 1);
+            ctx.beginPath(); ctx.moveTo(f.a[0], f.a[1]); ctx.lineTo(f.b[0], f.b[1]); ctx.lineTo(f.c[0], f.c[1]); ctx.closePath(); ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.lineWidth = 0.25;
+        ctx.beginPath();
+        for (const f of FOUNDER_FACETS) { ctx.moveTo(f.a[0], f.a[1]); ctx.lineTo(f.b[0], f.b[1]); ctx.lineTo(f.c[0], f.c[1]); ctx.closePath(); }
+        ctx.stroke();
+        if (ctx.createConicGradient) {
+            const pr = ctx.createConicGradient(-t * 0.35, 0, 0);
+            ['255,80,120', '255,200,80', '90,240,170', '80,170,255', '190,110,255', '255,80,120'].forEach((c, i) => pr.addColorStop(i / 5, `rgba(${c},.1)`));
+            annulus(ctx, 74, 95.2); ctx.fillStyle = pr; ctx.fill();
+        }
+
+        // Platin pahlar
+        metalBand(ctx, 95.2, 99.4, METALS.platinum, t * 0.5, 3);
+        metalBand(ctx, 71.5, 74, METALS.platinum, t * 0.5 + 1.1, 3);
+        hairline(ctx, 74, 'rgba(40,50,64,.7)', 0.5); hairline(ctx, 95.2, 'rgba(40,50,64,.7)', 0.5);
+        sheen(ctx, 71.5, 99.4, t * 1.2, 0.5, true);
+
+        // #01'e özel dönen prizmatik hale
+        if (n === 1 && ctx.createConicGradient) {
+            const pr = ctx.createConicGradient(t * 0.9, 0, 0);
+            ['255,80,120', '255,200,80', '90,240,170', '80,170,255', '190,110,255', '255,80,120'].forEach((c, i) => pr.addColorStop(i / 5, `rgba(${c},.9)`));
+            annulus(ctx, 100.6, 102.2); ctx.fillStyle = pr; ctx.fill();
+        }
+
+        // Kurucu koltukları: ışık 1'den başlayıp sırayla ilerler, kullanıcının koltuğunda durur
+        for (let k = 0; k < FOUNDER_SEATS; k++) {
+            const a = seatAngle(k), x = SEAT_R * Math.cos(a), y = SEAT_R * Math.sin(a);
+            const own = k === n - 1;
+            const passed = k < n && chase >= k ? Math.exp(-(chase - k) * 1.2) : 0;
+            if (own) {
+                ctx.globalCompositeOperation = 'lighter';
+                bloom(ctx, x, y, 15 + 4 * Math.sin(t * 3) + 18 * burst, accent, 0.9);
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = rgba(mix(accent, WHITE, 0.5), 0.9); ctx.lineWidth = 0.7;
+                ctx.beginPath(); ctx.arc(x, y, 7.4 + 0.6 * Math.sin(t * 3), 0, TAU); ctx.stroke();
+                gem(ctx, x, y, 5, a + Math.PI / 2, rgba(mix(accent, WHITE, 0.45), 1), rgba(mix(accent, [0, 0, 0], 0.25), 1), '#eef2f6');
+            } else {
+                if (passed > 0.05) { ctx.globalCompositeOperation = 'lighter'; bloom(ctx, x, y, 8, [200, 230, 255], passed); ctx.globalCompositeOperation = 'source-over'; }
+                gem(ctx, x, y, 2.3, a + Math.PI / 2, passed > 0.3 ? '#ffffff' : '#e6f3ff', '#7b93b5', '#aab4c0');
+            }
+        }
+
+        // Kullanıcının koltuğunda: yıldız parlaması, yatay ışık çizgisi, şok dalgası
+        const oa = seatAngle(n - 1), ox = SEAT_R * Math.cos(oa), oy = SEAT_R * Math.sin(oa);
+        ctx.globalCompositeOperation = 'lighter';
+        flare(ctx, ox, oy, 9 + 3 * Math.sin(t * 2.4) + 20 * burst, t * 0.4, mix(accent, WHITE, 0.3), 0.8);
+        if (burst > 0) {
+            const g = ctx.createLinearGradient(ox - 70, oy, ox + 70, oy);
+            g.addColorStop(0, rgba(accent, 0)); g.addColorStop(0.5, rgba(mix(accent, WHITE, 0.6), burst)); g.addColorStop(1, rgba(accent, 0));
+            ctx.fillStyle = g;
+            ctx.fillRect(ox - 70, oy - 0.7 * burst - 0.2, 140, 1.4 * burst + 0.4);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+        if (burst > 0) {
+            const q = 1 - burst;
+            ctx.strokeStyle = rgba(mix(accent, WHITE, 0.4), burst * 0.85); ctx.lineWidth = 2.6 * burst + 0.4;
+            ctx.beginPath(); ctx.arc(0, 0, 100 + 28 * (1 - (1 - q) * (1 - q)), 0, TAU); ctx.stroke();
+        }
+
+        // Elmas biçimli kristal rozet ve sıra numarası
+        ctx.save();
+        ctx.translate(0, -103 + 0.8 * Math.sin(t * 1.5));
+        const R = [[0, -14], [15, 0], [0, 14], [-15, 0]];
+        const cx = 0, cy = -1;
+        for (let k = 0; k < 4; k++) {
+            const p0 = R[k], p1 = R[(k + 1) % 4];
+            const b = 0.5 + 0.5 * Math.cos(k * 1.6 + 0.7 - L * 1.3);
+            ctx.fillStyle = rgba(mix([14, 20, 34], [120, 150, 200], b ** 2), 1);
+            ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+        }
+        ctx.beginPath(); R.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath();
+        ctx.strokeStyle = metal(ctx, METALS.platinum, t, 2); ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.stroke();
+        if (ctx.createConicGradient) {
+            const pr = ctx.createConicGradient(t * 1.2, 0, 0);
+            ['255,80,120', '255,200,80', '90,240,170', '80,170,255', '190,110,255', '255,80,120'].forEach((c, i) => pr.addColorStop(i / 5, `rgba(${c},.7)`));
+            ctx.strokeStyle = pr; ctx.lineWidth = 0.6; ctx.stroke();
+        }
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'italic 900 9px system-ui, -apple-system, "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(String(n).padStart(2, '0'), 0, 0.8);
+        if (showText(ctx)) {
+            ctx.font = '800 2.6px ui-monospace, SFMono-Regular, Menlo, monospace';
+            ctx.fillStyle = rgba(mix(accent, WHITE, 0.55), 1);
+            ctx.fillText('KURUCU', 0, -6.4);
+        }
+        flare(ctx, 10, -8, 5 + 2 * Math.sin(t * 3.1), t * 0.6, WHITE, 0.85);
+        ctx.restore();
+
+        // Gökkuşağı ışıltıları
+        for (const g of s.glitter) {
+            const tw = Math.max(0, Math.sin(t * 2.2 + g.ph)) ** 3;
+            if (tw < 0.05) continue;
+            const x = g.r * Math.cos(g.a), y = g.r * Math.sin(g.a);
+            const c = hsl((g.h + t * 0.05) % 1, 1, 0.7);
+            star(ctx, x, y, g.size * 4 * tw, t * 0.5 + g.ph, tw * 0.9);
+            ctx.fillStyle = rgba(c, tw);
+            ctx.beginPath(); ctx.arc(x, y, g.size * 0.8, 0, TAU); ctx.fill();
+        }
+        hairline(ctx, 71.8, 'rgba(0,0,0,.35)', 0.5);
+    },
+};
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -2570,6 +2791,7 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'convoy': convoy,
     'storyteller': storyteller,
     'kilometre': kilometre,
+    'founder': founder,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---

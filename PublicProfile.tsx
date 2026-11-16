@@ -73,7 +73,7 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({ user, onBack, curr
                             {/* Avatar */}
                             <div className="relative">
                                 <div className="p-1.5 bg-white dark:bg-[#111] rounded-full shadow-2xl">
-                                    <ProfileFrame frame={user.profileFrame} progress={rankProgress} size={160}>
+                                    <ProfileFrame frame={user.profileFrame} progress={rankProgress} founderNo={user.founderNo} size={160}>
                                         <UserAvatar name={user.name} size={128} />
                                     </ProfileFrame>
                                 </div>

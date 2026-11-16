@@ -196,7 +196,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                     
                     <div className="relative flex-shrink-0 mx-auto md:mx-0">
                         <div className="relative w-40 h-40 md:w-48 md:h-48">
-                            <ProfileFrame frame={user.profileFrame} progress={progressPercent} className="w-full h-full drop-shadow-md">
+                            <ProfileFrame frame={user.profileFrame} progress={progressPercent} founderNo={user.founderNo} className="w-full h-full drop-shadow-md">
                                 <UserAvatar name={user.name} size={150} />
                             </ProfileFrame>
 
@@ -652,7 +652,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onLogout, onUpda
                                                 selected ? 'border-moto-accent bg-white shadow-sm' : 'border-transparent hover:bg-white hover:border-gray-200'
                                             } ${unlocked ? '' : 'opacity-50 grayscale cursor-not-allowed'}`}
                                         >
-                                            <ProfileFrame frame={option.id} progress={progressPercent} size={60}>
+                                            <ProfileFrame frame={option.id} progress={progressPercent} founderNo={user.founderNo} size={60}>
                                                 <UserAvatar name={editForm.name || user.name} size={60} />
                                             </ProfileFrame>
                                             <span className="text-[10px] font-bold text-gray-700 text-center leading-tight">{option.name}</span>

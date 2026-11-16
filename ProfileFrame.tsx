@@ -12,7 +12,7 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET' | 'PAYLAŞIM' | 'YOL'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
+    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET' | 'PAYLAŞIM' | 'YOL' | 'KURUCU'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
     unlockHint?: string; // Kilitliyken seçicide gösterilen açıklama
     minApex?: number; // Rütbe çerçevesinin açıldığı Apex puanı
 }
@@ -44,6 +44,11 @@ export const isSharingFrameUnlocked = (postCount: number) => postCount >= SHARIN
 export const DISTANCE_FRAME = { id: 'kilometre' as ProfileFrameId, kmRequired: 1000 };
 
 export const isDistanceFrameUnlocked = (totalKm: number) => totalKm >= DISTANCE_FRAME.kmRequired;
+
+// Kurucu çerçevesi: yalnızca ilk 10 kayıt (founderNo 1-10); yöneticiler de açamaz, numara kişiye özeldir
+export const FOUNDER_FRAME = { id: 'founder' as ProfileFrameId, seats: 10 };
+
+export const isFounderFrameUnlocked = (founderNo?: number) => !!founderNo && founderNo >= 1 && founderNo <= FOUNDER_FRAME.seats;
 
 // Verilen Apex puanının hak ettiği en yüksek rütbe çerçevesi
 export const rankFrameForApex = (apex: number): ProfileFrameId =>
@@ -94,6 +99,10 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
         id: 'kilometre', name: 'Bin Kilometre', description: '1000 km yolu geride bıraktın', rank: 'Scooter Çırağı',
         badge: 'YOL', unlockHint: '1000 km yol katedince açılır',
     },
+    {
+        id: 'founder', name: 'Kurucu', description: 'Motonom\'a ilk kaydolan 10 kişiden birisin', rank: 'Scooter Çırağı',
+        badge: 'KURUCU', unlockHint: 'Motonom\'a ilk kaydolan 10 kişiye özel',
+    },
 ];
 
 type CanvasFrameId = PremiumFrameId | ShaderFrameId;
@@ -106,8 +115,8 @@ const isCanvasFrame = (frame: ProfileFrameId): frame is CanvasFrameId =>
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
-export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount' | 'postCount' | 'totalKm'>) =>
-    !!user.isAdmin || (option.id === REFERRAL_FRAME.id
+export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount' | 'postCount' | 'totalKm' | 'founderNo'>) =>
+    option.id === FOUNDER_FRAME.id ? isFounderFrameUnlocked(user.founderNo) : !!user.isAdmin || (option.id === REFERRAL_FRAME.id
         ? isReferralFrameUnlocked(user.invitedCount ?? 0)
         : option.id === SHARING_FRAME.id
             ? isSharingFrameUnlocked(user.postCount ?? 0)
@@ -594,6 +603,7 @@ interface ProfileFrameProps {
     invites?: number; // Konvoy Lideri: kaç far yuvası yanacak (0-10); verilmezse çerçeve tam açılmış çizilir
     posts?: number; // Yol Hikâyecisi: kaç film karesi dolacak (0-10); verilmezse çerçeve tam açılmış çizilir
     km?: number; // Bin Kilometre: katedilen yol; her 100 km bir kilometre taşını yakar, verilmezse çerçeve tam açılmış çizilir
+    founderNo?: number; // Kurucu: kayıt sırası (1-10); verilmezse 1 gösterilir
     size?: number;
     className?: string;
     children: React.ReactNode;
@@ -605,6 +615,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
     invites,
     posts,
     km,
+    founderNo,
     size,
     className = '',
     children
@@ -625,7 +636,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
             <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
-            {canvasFrame && <FrameCanvas frame={frame} level={invites ?? posts ?? (km === undefined ? undefined : Math.floor(Math.max(0, km) / 100))} />}
+            {canvasFrame && <FrameCanvas frame={frame} level={frame === 'founder' ? founderNo ?? 1 : invites ?? posts ?? (km === undefined ? undefined : Math.floor(Math.max(0, km) / 100))} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />

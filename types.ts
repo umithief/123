@@ -133,6 +133,8 @@ export type ProfileFrameId =
     | 'storyteller'
     // Yol çerçevesi: 1000 km yol katedenlere özel
     | 'kilometre'
+    // Kurucu çerçevesi: Motonom'a ilk kaydolan 10 kişiye özel, sıra numaralı
+    | 'founder'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 
@@ -155,6 +157,7 @@ export interface User {
   invitedCount?: number; // Davetiyle kayıt olan arkadaş sayısı
   postCount?: number; // Yaptığı paylaşım sayısı
   totalKm?: number; // Katettiği toplam yol (km)
+  founderNo?: number; // İlk 10 kayıttan biriyse kayıt sırası (1-10)
 }
 
 export interface OrderItem {
