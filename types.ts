@@ -131,6 +131,8 @@ export type ProfileFrameId =
     | 'convoy'
     // Paylaşım çerçevesi: 10 paylaşım yapanlara özel
     | 'storyteller'
+    // Yol çerçevesi: 1000 km yol katedenlere özel
+    | 'kilometre'
     // İmza serisi (WebGL shader tabanlı) çerçeveler
     | 'liquid-chrome' | 'iridium' | 'carbon' | 'nitro' | 'burnout' | 'hyperspeed';
 
@@ -152,6 +154,7 @@ export interface User {
   profileFrame?: ProfileFrameId;
   invitedCount?: number; // Davetiyle kayıt olan arkadaş sayısı
   postCount?: number; // Yaptığı paylaşım sayısı
+  totalKm?: number; // Katettiği toplam yol (km)
 }
 
 export interface OrderItem {

@@ -12,7 +12,7 @@ export interface ProfileFrameOption {
     name: string;
     description: string;
     rank: User['rank']; // Çerçevenin kilidinin açıldığı rütbe
-    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET' | 'PAYLAŞIM'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
+    badge?: 'ULTRA' | 'İMZA' | 'RÜTBE' | 'DAVET' | 'PAYLAŞIM' | 'YOL'; // ULTRA: canvas, İMZA: WebGL shader, RÜTBE: rütbeyle, DAVET: davetle açılan çerçeve
     unlockHint?: string; // Kilitliyken seçicide gösterilen açıklama
     minApex?: number; // Rütbe çerçevesinin açıldığı Apex puanı
 }
@@ -39,6 +39,11 @@ export const isReferralFrameUnlocked = (invitedCount: number) => invitedCount >=
 export const SHARING_FRAME = { id: 'storyteller' as ProfileFrameId, postsRequired: 10 };
 
 export const isSharingFrameUnlocked = (postCount: number) => postCount >= SHARING_FRAME.postsRequired;
+
+// Yol çerçevesi: kullanıcının katettiği toplam yol bu eşiğe ulaşınca açılır
+export const DISTANCE_FRAME = { id: 'kilometre' as ProfileFrameId, kmRequired: 1000 };
+
+export const isDistanceFrameUnlocked = (totalKm: number) => totalKm >= DISTANCE_FRAME.kmRequired;
 
 // Verilen Apex puanının hak ettiği en yüksek rütbe çerçevesi
 export const rankFrameForApex = (apex: number): ProfileFrameId =>
@@ -85,6 +90,10 @@ export const PROFILE_FRAMES: ProfileFrameOption[] = [
         id: 'storyteller', name: 'Yol Hikâyecisi', description: 'Her paylaşımın film şeridinde bir kare oldu', rank: 'Scooter Çırağı',
         badge: 'PAYLAŞIM', unlockHint: '10 paylaşım yapınca açılır',
     },
+    {
+        id: 'kilometre', name: 'Bin Kilometre', description: '1000 km yolu geride bıraktın', rank: 'Scooter Çırağı',
+        badge: 'YOL', unlockHint: '1000 km yol katedince açılır',
+    },
 ];
 
 type CanvasFrameId = PremiumFrameId | ShaderFrameId;
@@ -97,11 +106,13 @@ const isCanvasFrame = (frame: ProfileFrameId): frame is CanvasFrameId =>
 
 const RANK_ORDER: User['rank'][] = ['Scooter Çırağı', 'Viraj Ustası', 'Yol Kaptanı'];
 
-export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount' | 'postCount'>) =>
+export const isProfileFrameUnlocked = (option: ProfileFrameOption, user: Pick<User, 'rank' | 'isAdmin' | 'invitedCount' | 'postCount' | 'totalKm'>) =>
     !!user.isAdmin || (option.id === REFERRAL_FRAME.id
         ? isReferralFrameUnlocked(user.invitedCount ?? 0)
         : option.id === SHARING_FRAME.id
             ? isSharingFrameUnlocked(user.postCount ?? 0)
+            : option.id === DISTANCE_FRAME.id
+                ? isDistanceFrameUnlocked(user.totalKm ?? 0)
             : Math.max(0, RANK_ORDER.indexOf(user.rank)) >= RANK_ORDER.indexOf(option.rank));
 
 // --- GEOMETRY HELPERS ---
@@ -582,6 +593,7 @@ interface ProfileFrameProps {
     progress?: number; // 0-100, takometre ibresinin rölanti konumu
     invites?: number; // Konvoy Lideri: kaç far yuvası yanacak (0-10); verilmezse çerçeve tam açılmış çizilir
     posts?: number; // Yol Hikâyecisi: kaç film karesi dolacak (0-10); verilmezse çerçeve tam açılmış çizilir
+    km?: number; // Bin Kilometre: katedilen yol; her 100 km bir kilometre taşını yakar, verilmezse çerçeve tam açılmış çizilir
     size?: number;
     className?: string;
     children: React.ReactNode;
@@ -592,6 +604,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
     progress = 60,
     invites,
     posts,
+    km,
     size,
     className = '',
     children
@@ -612,7 +625,7 @@ export const ProfileFrame: React.FC<ProfileFrameProps> = ({
             <div className={`mvf-avatar ${framed ? '' : 'mvf-plain'}`} style={{ inset: framed ? '14.5%' : 0 }}>
                 {children}
             </div>
-            {canvasFrame && <FrameCanvas frame={frame} level={invites ?? posts} />}
+            {canvasFrame && <FrameCanvas frame={frame} level={invites ?? posts ?? (km === undefined ? undefined : Math.floor(Math.max(0, km) / 100))} />}
             {Frame && (
                 <svg className="mvf-svg" viewBox="0 0 200 200" aria-hidden="true">
                     <Frame id={id} />

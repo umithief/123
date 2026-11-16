@@ -7,13 +7,13 @@ export type PremiumFrameId =
     | 'apex' | 'redline' | 'wind-tunnel' | 'night-road' | 'volt' | 'gold'
     | 'sparks' | 'hud' | 'pulse' | 'kustom' | 'podium' | 'telemetry'
     | 'rank-rookie' | 'rank-street' | 'rank-explorer' | 'rank-commander' | 'rank-master' | 'rank-elite' | 'rank-legend'
-    | 'convoy' | 'storyteller';
+    | 'convoy' | 'storyteller' | 'kilometre';
 
 export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
     'apex', 'redline', 'wind-tunnel', 'night-road', 'volt', 'gold',
     'sparks', 'hud', 'pulse', 'kustom', 'podium', 'telemetry',
     'rank-rookie', 'rank-street', 'rank-explorer', 'rank-commander', 'rank-master', 'rank-elite', 'rank-legend',
-    'convoy', 'storyteller',
+    'convoy', 'storyteller', 'kilometre',
 ];
 
 export type RGB = [number, number, number];
@@ -2303,6 +2303,256 @@ const storyteller: FrameDef<{ flash: number; hearts: Heart[]; fired: boolean }> 
     },
 };
 
+// ============================================================================
+// BİN KİLOMETRE — 1000 km yol katedenlere özel.
+// Gece mavisi mine ve altın pahlar; minede harita kontur çizgileri akar. Halkada kıvrılan altın rotada
+// her 100 km'de bir kilometre taşı durur; tema renginde sürücü rotada ilerler, geçtiği taş parlar.
+// Altta mekanik kilometre sayacı birkaç saniyede bir 0999'dan 1000'e döner: altın patlama ve şok dalgası.
+// env.level (0-10): katedilen yol / 100 km; 10'un altında taşlar ve rota o kadarıyla yanar.
+// ============================================================================
+
+const KM_STONES = 10;
+const KM_CYCLE = 7;
+const KM_ROLL_AT = 3.2;
+const ROUTE_R = 85;
+const KM_GOLD: RGB = [255, 210, 110];
+
+const routeR = (a: number) => ROUTE_R + 3.1 * Math.sin(5 * a + 0.6) + 1.4 * Math.sin(11 * a + 1.3);
+// Rota tepeden başlar, saat yönünde ilerler; taşlar armanın iki yanından başlar
+const routeAngle = (q: number) => -Math.PI / 2 + q * TAU;
+const routePt = (q: number): [number, number] => { const a = routeAngle(q), r = routeR(a); return [r * Math.cos(a), r * Math.sin(a)]; };
+
+interface KmSpark { x: number; y: number; vx: number; vy: number; life: number; max: number; size: number }
+
+const kilometre: FrameDef<{ cyc: number; ride: number; burst: KmSpark[]; dust: Dust[] }> = {
+    init: ({ rnd }) => ({
+        cyc: 0.4, ride: 0, burst: [],
+        dust: Array.from({ length: 30 }, () => ({
+            a: rnd() * TAU, r: 104 + rnd() * 22, w: (0.06 + rnd() * 0.18) * (rnd() < 0.5 ? 1 : -1), ph: rnd() * TAU, size: 0.5 + rnd() * 1,
+        })),
+    }),
+    step: (s, { dt, rnd, level }) => {
+        const prev = s.cyc;
+        s.cyc = (s.cyc + dt) % KM_CYCLE;
+        const progress = clamp(level / KM_STONES);
+        s.ride = (s.ride + dt * 0.11) % 1;
+        if (progress < 1) s.ride = Math.min(s.ride, progress);
+        if (progress >= 1 && prev < KM_ROLL_AT + 0.45 && s.cyc >= KM_ROLL_AT + 0.45) {
+            for (let i = 0; i < 70; i++) {
+                const a = (-0.5 + (rnd() - 0.5) * 1.6) * Math.PI, v = 40 + rnd() * 110, max = 0.8 + rnd() * 0.9;
+                s.burst.push({ x: (rnd() - 0.5) * 16, y: 96, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: max, max, size: 0.6 + rnd() * 1.2 });
+            }
+        }
+        for (const p of s.burst) { p.vy += 90 * dt; p.vx *= 1 - 1.4 * dt; p.vy *= 1 - 1.4 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; }
+        s.burst = s.burst.filter(p => p.life > 0);
+        for (const d of s.dust) d.a += d.w * dt;
+    },
+    draw: (s, { ctx, t, accent, level }) => {
+        const lit = Math.max(0, Math.min(KM_STONES, Math.round(level)));
+        const progress = lit / KM_STONES;
+        const full = lit === KM_STONES;
+        const sinceRoll = s.cyc - (KM_ROLL_AT + 0.45);
+        const flash = full && sinceRoll >= 0 && sinceRoll < 0.9 ? 1 - sinceRoll / 0.9 : 0;
+
+        // Dönen altın ışık huzmeleri ve hale (tam açıldığında)
+        if (full) {
+            const g = ctx.createRadialGradient(0, 0, 96, 0, 0, 128);
+            g.addColorStop(0, rgba(KM_GOLD, 0.55 + 0.3 * flash)); g.addColorStop(1, rgba(KM_GOLD, 0));
+            ctx.save();
+            ctx.rotate(t * 0.08);
+            ctx.fillStyle = g;
+            for (let i = 0; i < 24; i++) {
+                const a = (i / 24) * TAU, hw = i % 2 ? 0.03 : 0.055, R = i % 2 ? 116 : 128;
+                ctx.beginPath();
+                ctx.moveTo(95 * Math.cos(a - hw * 0.5), 95 * Math.sin(a - hw * 0.5));
+                ctx.lineTo(R * Math.cos(a - hw), R * Math.sin(a - hw));
+                ctx.lineTo(R * Math.cos(a + hw), R * Math.sin(a + hw));
+                ctx.lineTo(95 * Math.cos(a + hw * 0.5), 95 * Math.sin(a + hw * 0.5));
+                ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+            const h = ctx.createRadialGradient(0, 0, 94, 0, 0, 116);
+            h.addColorStop(0, rgba(accent, 0.3 + 0.08 * Math.sin(t * 1.6))); h.addColorStop(1, rgba(accent, 0));
+            annulus(ctx, 94, 116); ctx.fillStyle = h; ctx.fill();
+        }
+
+        // Gövde: gece mavisi mine, altın pahlar
+        const enamel = ctx.createRadialGradient(0, 0, 74, 0, 0, 95.5);
+        enamel.addColorStop(0, '#0a1430'); enamel.addColorStop(0.45, '#1d3a7a'); enamel.addColorStop(1, '#081028');
+        annulus(ctx, 74, 95.5); ctx.fillStyle = enamel; ctx.fill();
+
+        // Harita kontur çizgileri yavaşça kayar
+        ctx.save();
+        annulus(ctx, 74.5, 95); ctx.clip();
+        ctx.lineWidth = 0.45;
+        for (let c = 0; c < 6; c++) {
+            const base = 76.5 + c * 3.4;
+            ctx.strokeStyle = `rgba(214,182,110,${0.16 + (c % 2) * 0.08})`;
+            ctx.beginPath();
+            for (let i = 0; i <= 240; i++) {
+                const a = (i / 240) * TAU;
+                const r = base + 1.4 * Math.sin(3 * a + c * 1.7 + t * 0.15) + 0.9 * Math.sin(7 * a - c + t * 0.1);
+                i ? ctx.lineTo(r * Math.cos(a), r * Math.sin(a)) : ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        metalBand(ctx, 95.5, 99, GOLD_STOPS, t * 0.45, 3);
+        metalBand(ctx, 71.5, 74, GOLD_STOPS, t * 0.45 + 1.1, 3);
+        hairline(ctx, 74, 'rgba(60,40,5,.7)', 0.6); hairline(ctx, 95.5, 'rgba(60,40,5,.7)', 0.6);
+        ctx.strokeStyle = 'rgba(255,240,190,.55)'; ctx.lineWidth = 0.4;
+        ctx.beginPath();
+        for (let i = 0; i < 96; i++) {
+            const a = (i / 96) * TAU;
+            ctx.moveTo(96.2 * Math.cos(a), 96.2 * Math.sin(a)); ctx.lineTo(98.3 * Math.cos(a), 98.3 * Math.sin(a));
+        }
+        ctx.stroke();
+
+        // Rota: katedilmemiş kısım kesik çizgi, katedilen kısım parlak altın
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        const routePath = (q0: number, q1: number) => {
+            ctx.beginPath();
+            const n = Math.max(2, Math.ceil((q1 - q0) * 360));
+            for (let i = 0; i <= n; i++) {
+                const [x, y] = routePt(lerp(q0, q1, i / n));
+                i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+            }
+        };
+        if (progress < 1) {
+            ctx.setLineDash([1.6, 2.4]);
+            routePath(progress, 1); ctx.strokeStyle = 'rgba(214,182,110,.4)'; ctx.lineWidth = 0.9; ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        if (progress > 0) {
+            routePath(0, progress);
+            ctx.strokeStyle = 'rgba(40,24,0,.6)'; ctx.lineWidth = 3.2; ctx.stroke();
+            ctx.strokeStyle = '#e9bd4e'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.setLineDash([3, 5]); ctx.lineDashOffset = -t * 14;
+            ctx.strokeStyle = 'rgba(255,250,225,.9)'; ctx.lineWidth = 0.8; ctx.stroke();
+            ctx.setLineDash([]); ctx.lineDashOffset = 0;
+        }
+
+        // Kilometre taşları: beyaz gövde, tema renginde başlık; geçilen taşlar parlar
+        for (let k = 0; k < KM_STONES; k++) {
+            const q = (k + 0.5) / KM_STONES, on = k < lit;
+            const a = routeAngle(q), [x, y] = routePt(q);
+            const near = on ? Math.exp(-((((s.ride - q + 1.5) % 1 - 0.5) / 0.035) ** 2)) : 0;
+            if (on) { ctx.globalCompositeOperation = 'lighter'; bloom(ctx, x, y, 7 + 7 * near + 6 * flash, KM_GOLD, 0.45 + 0.5 * near + 0.4 * flash); ctx.globalCompositeOperation = 'source-over'; }
+            ctx.save();
+            ctx.translate(x, y); ctx.rotate(a + Math.PI / 2);
+            ctx.fillStyle = 'rgba(0,0,0,.35)';
+            ctx.beginPath(); ctx.roundRect(-2.4, -3, 5, 6.8, [2.4, 2.4, 0.6, 0.6]); ctx.fill();
+            ctx.fillStyle = on ? '#fbfaf6' : '#4a5168';
+            ctx.beginPath(); ctx.roundRect(-2.2, -3.4, 4.4, 6.6, [2.2, 2.2, 0.5, 0.5]); ctx.fill();
+            ctx.fillStyle = on ? rgba(accent, 1) : '#2a3048';
+            ctx.beginPath(); ctx.roundRect(-2.2, -3.4, 4.4, 2.6, [2.2, 2.2, 0, 0]); ctx.fill();
+            ctx.fillStyle = on ? 'rgba(30,30,40,.8)' : 'rgba(255,255,255,.2)';
+            ctx.fillRect(-1.2, 0.2, 2.4, 0.5); ctx.fillRect(-1.2, 1.3, 2.4, 0.5);
+            ctx.restore();
+        }
+
+        // Sürücü: rotada ilerleyen tema renginde ışık ve altın kıvılcım izi
+        if (progress > 0) {
+            for (let j = 14; j > 0; j--) {
+                const q = s.ride - j * 0.004;
+                if (q < 0) continue;
+                const [x, y] = routePt(q);
+                ctx.fillStyle = rgba(mix(KM_GOLD, WHITE, 0.3), (1 - j / 14) * 0.8);
+                ctx.beginPath(); ctx.arc(x, y, 1.6 * (1 - j / 18), 0, TAU); ctx.fill();
+            }
+            const [rx, ry] = routePt(s.ride);
+            ctx.globalCompositeOperation = 'lighter';
+            bloom(ctx, rx, ry, 9, accent, 1);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(rx, ry, 1.5, 0, TAU); ctx.fill();
+        }
+
+        sheen(ctx, 71.5, 99, t * 1.1, 0.4, true);
+        hairline(ctx, 71.8, 'rgba(0,0,0,.35)', 0.5);
+
+        // Mekanik kilometre sayacı: tamburlar 0999'dan 1000'e kademeli döner
+        const shown = full ? 1000 : lit * 100;
+        const roll = full ? clamp((s.cyc - KM_ROLL_AT) / 0.45) : 1;
+        const from = full ? 999 : shown, to = shown;
+        ctx.save();
+        ctx.translate(0, 96);
+        const plate = ctx.createLinearGradient(0, -8, 0, 8);
+        plate.addColorStop(0, '#fff3c4'); plate.addColorStop(0.5, '#d9a733'); plate.addColorStop(1, '#7a5412');
+        ctx.fillStyle = plate;
+        ctx.beginPath(); ctx.roundRect(-20, -7.5, 40, 15, 4); ctx.fill();
+        ctx.strokeStyle = 'rgba(60,40,5,.85)'; ctx.lineWidth = 0.7; ctx.stroke();
+        ctx.fillStyle = '#07090f';
+        ctx.beginPath(); ctx.roundRect(-17.5, -5.5, 26.5, 11, 2); ctx.fill();
+        ctx.font = '800 7.4px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const fd = String(from).padStart(4, '0'), td = String(to).padStart(4, '0');
+        for (let i = 0; i < 4; i++) {
+            const cx = -14.3 + i * 6.4;
+            ctx.save();
+            ctx.beginPath(); ctx.rect(cx - 2.9, -5, 5.8, 10); ctx.clip();
+            const g = ctx.createLinearGradient(0, -5, 0, 5);
+            g.addColorStop(0, '#000'); g.addColorStop(0.5, '#1b1f2a'); g.addColorStop(1, '#000');
+            ctx.fillStyle = g; ctx.fillRect(cx - 2.9, -5, 5.8, 10);
+            // Sağdaki tambur önce döner, soldakiler kademeli olarak takip eder
+            const k = fd[i] === td[i] ? 1 : clamp(roll * 1.6 - (3 - i) * 0.2);
+            const e = 1 - (1 - k) ** 3;
+            ctx.fillStyle = i === 0 && full ? rgba(mix(accent, WHITE, 0.25), 1) : '#f4f1e8';
+            if (e < 1) ctx.fillText(fd[i], cx, 0.4 - 10 * e);
+            ctx.fillText(td[i], cx, 0.4 + 10 * (1 - e));
+            ctx.restore();
+        }
+        ctx.fillStyle = '#5b3d08';
+        ctx.font = '900 4.6px system-ui, -apple-system, "Segoe UI", sans-serif';
+        ctx.fillText('KM', 14.2, 0.4);
+        if (flash > 0) { ctx.globalCompositeOperation = 'lighter'; bloom(ctx, 0, 0, 22, KM_GOLD, flash); ctx.globalCompositeOperation = 'source-over'; }
+        ctx.restore();
+
+        // Madalyon: altın disk, kabartma 1000, tema renginde taş
+        ctx.save();
+        ctx.translate(0, -101 + 0.8 * Math.sin(t * 1.4));
+        if (full) { ctx.globalCompositeOperation = 'lighter'; bloom(ctx, 0, 0, 22, KM_GOLD, 0.5 + 0.2 * Math.sin(t * 2)); ctx.globalCompositeOperation = 'source-over'; }
+        ctx.fillStyle = metal(ctx, GOLD_STOPS, t * 0.6, 2);
+        ctx.beginPath();
+        for (let i = 0; i < 32; i++) {
+            const r = i % 2 ? 11.2 : 12.6, a = (i / 32) * TAU;
+            ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(70,45,5,.8)'; ctx.lineWidth = 0.5; ctx.stroke();
+        const disc = ctx.createRadialGradient(-3, -3, 1, 0, 0, 10);
+        disc.addColorStop(0, '#1d3a7a'); disc.addColorStop(1, '#081028');
+        ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(0, 0, 9.2, 0, TAU); ctx.fill();
+        ctx.strokeStyle = '#e9bd4e'; ctx.lineWidth = 0.8; ctx.stroke();
+        ctx.fillStyle = full ? '#f3d572' : 'rgba(243,213,114,.7)';
+        ctx.font = `italic 900 ${full ? 6.6 : 7.2}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(shown), 0, -0.8);
+        ctx.font = '800 3.2px system-ui, -apple-system, "Segoe UI", sans-serif';
+        ctx.fillText('KM', 0, 4.6);
+        ctx.restore();
+
+        // Sayaç dönünce şok dalgası ve altın kıvılcımlar
+        if (flash > 0) {
+            const q = 1 - flash;
+            ctx.strokeStyle = rgba(KM_GOLD, (1 - q) * 0.85); ctx.lineWidth = 2.6 * (1 - q) + 0.4;
+            ctx.beginPath(); ctx.arc(0, 0, 100 + 28 * (1 - (1 - q) * (1 - q)), 0, TAU); ctx.stroke();
+        }
+        for (const p of s.burst) {
+            const k = clamp(p.life / p.max);
+            ctx.fillStyle = rgba(mix(KM_GOLD, WHITE, 0.4 * k), k);
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.5 + 0.5 * k), 0, TAU); ctx.fill();
+        }
+        if (full) {
+            for (const d of s.dust) {
+                const tw = 0.5 + 0.5 * Math.sin(t * 2.4 + d.ph);
+                ctx.fillStyle = rgba(GOLD_DUST, 0.25 + 0.7 * tw);
+                ctx.beginPath(); ctx.arc(d.r * Math.cos(d.a), d.r * Math.sin(d.a) + 2 * Math.sin(t + d.ph), d.size * (0.7 + 0.5 * tw), 0, TAU); ctx.fill();
+            }
+        }
+    },
+};
+
 const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     'apex': apex,
     'redline': redline,
@@ -2319,6 +2569,7 @@ const FRAMES: Record<PremiumFrameId, FrameDef<any>> = {
     ...Object.fromEntries(RANK_IDS.map((id, i) => [id, rankFrame(i + 1)])) as Record<typeof RANK_IDS[number], FrameDef<any>>,
     'convoy': convoy,
     'storyteller': storyteller,
+    'kilometre': kilometre,
 };
 
 // --- RUNTIME: tek bir requestAnimationFrame döngüsü tüm çerçeveleri sürer ---
