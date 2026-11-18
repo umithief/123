@@ -18,16 +18,17 @@ export const PREMIUM_FRAME_IDS: PremiumFrameId[] = [
 
 export type RGB = [number, number, number];
 
-interface Env {
+export interface Env {
     ctx: CanvasRenderingContext2D;
     t: number;
     dt: number;
     accent: RGB;
     rnd: () => number;
     level: number; // canvas'ın data-level niteliği; ilerleme gösteren çerçeveler kullanır (ör. katılan arkadaş sayısı)
+    data: DOMStringMap; // canvas'ın data-* nitelikleri, canlı okunur (ör. rozet motifi, ilerleme, kutlama anahtarı)
 }
 
-interface FrameDef<S> {
+export interface FrameDef<S> {
     init: (env: Env) => S;
     step: (s: S, env: Env) => void;
     draw: (s: S, env: Env) => void;
@@ -35,17 +36,17 @@ interface FrameDef<S> {
 
 // --- HELPERS ---
 
-const TAU = Math.PI * 2;
-const DEG = Math.PI / 180;
-const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v));
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-const rgba = (c: RGB, a: number) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(a)})`;
-const mix = (a: RGB, b: RGB, k: number): RGB => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+export const TAU = Math.PI * 2;
+export const DEG = Math.PI / 180;
+export const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+export const rgba = (c: RGB, a: number) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(a)})`;
+export const mix = (a: RGB, b: RGB, k: number): RGB => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
 
-const WHITE: RGB = [255, 255, 255];
+export const WHITE: RGB = [255, 255, 255];
 const RED: RGB = [255, 59, 48];
 
-const mulberry32 = (seed: number) => () => {
+export const mulberry32 = (seed: number) => () => {
     seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
     let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
     x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
@@ -74,7 +75,7 @@ const substrate = (ctx: CanvasRenderingContext2D, inner: string, mid: string, ou
     ctx.beginPath(); ctx.arc(0, 0, 100.4, 0, TAU); ctx.stroke();
 };
 
-const bloom = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number, c: RGB, a: number) => {
+export const bloom = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number, c: RGB, a: number) => {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, rgba(mix(c, WHITE, 0.7), a));
     g.addColorStop(0.35, rgba(c, a * 0.55));
@@ -523,7 +524,7 @@ const goldGradient = (ctx: CanvasRenderingContext2D, angle: number, repeat: numb
 interface Glint { a: number; r: number; age: number; life: number; size: number }
 interface Dust { a: number; r: number; w: number; ph: number; size: number }
 
-const star = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, rot: number, alpha: number) => {
+export const star = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, rot: number, alpha: number) => {
     ctx.save();
     ctx.translate(x, y); ctx.rotate(rot);
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
@@ -2848,12 +2849,15 @@ export const driveFrame = (canvas: HTMLCanvasElement, hooks: { tick: (dt: number
     };
 };
 
-export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId): (() => void) => {
+export const mountPremiumFrame = (canvas: HTMLCanvasElement, id: PremiumFrameId): (() => void) =>
+    mountScene(canvas, FRAMES[id], id.length * 7919 + 13);
+
+// Herhangi bir sahneyi (çerçeve ya da rozet) canvas'a bağlar; dönen fonksiyon temizler
+export const mountScene = <S,>(canvas: HTMLCanvasElement, def: FrameDef<S>, seed: number): (() => void) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return () => {};
-    const def = FRAMES[id];
     const readLevel = () => { const v = Number(canvas.dataset.level); return Number.isFinite(v) && canvas.dataset.level !== '' ? v : 10; };
-    const env: Env = { ctx, t: 0, dt: 0, accent: [242, 166, 25], rnd: mulberry32(id.length * 7919 + 13), level: readLevel() };
+    const env: Env = { ctx, t: 0, dt: 0, accent: [242, 166, 25], rnd: mulberry32(seed), level: readLevel(), data: canvas.dataset };
     const state = def.init(env);
     let frames = 0;
 
