@@ -156,7 +156,13 @@ class _AchievementBadgeState extends State<AchievementBadge> with TickerProvider
                   // Kazanma anında ikon büyüyerek belirir
                   final age = _scene.burstAge;
                   final pop = age < 0.7 ? 0.4 + 0.6 * _easeOutBack(age / 0.7) : 1.0;
-                  return Transform.scale(scale: pop, child: child);
+                  // Kilitli rozette kilit birkaç saniyede bir hafifçe sallanır
+                  var tilt = 0.0;
+                  if (widget.tier == BadgeTier.locked) {
+                    final c = (_scene.t % 6) / 6;
+                    if (c > 0.86) tilt = 0.16 * math.sin((c - 0.86) / 0.14 * math.pi * 3) * (1 - (c - 0.86) / 0.14);
+                  }
+                  return Transform.rotate(angle: tilt, child: Transform.scale(scale: pop, child: child));
                 },
                 child: SizedBox(
                   width: 0.32 * s,
@@ -541,6 +547,10 @@ class _BadgePainter extends CustomPainter {
       for (final b in s.brush) {
         canvas.drawRect(Rect.fromLTWH(-80, b[0], 160, b[1] * 0.5), Paint()..color = b[2] == 1 ? _white.a(0.16) : const _Rgb(0, 0, 0).a(0.07));
       }
+      // Kazanılınca oynayacak motifin gümüşe kazınmış gibi koyu, renksiz önizlemesi
+      canvas.saveLayer(Rect.fromCircle(center: Offset.zero, radius: 90), Paint()..color = const Color.fromARGB(190, 0, 0, 0));
+      _drawMotif(canvas, const _Rgb(52, 60, 72), timeScale: 0.6);
+      canvas.restore();
     }
     canvas.restore();
     if (earned) {
@@ -604,6 +614,9 @@ class _BadgePainter extends CustomPainter {
         final arc = _hexArc(79.5, 0, p);
         canvas.drawPath(arc, _stroke(col.a(1), 3.4));
         canvas.drawPath(arc, _stroke(_white.a(0.35), 0.8));
+        // İlerleme çizgisinin içinde akan ışık
+        final flowPts = List.generate(math.max(2, (p * 60).ceil()) + 1, (i) => _hexPoint(79.5, p * i / math.max(2, (p * 60).ceil())));
+        _dashedPolyline(canvas, flowPts, 2.5, 9, -t * 16, _stroke(_white.a(0.85), 1.6));
         final head = _hexPoint(79.5, p);
         _bloom(canvas, head, 8 + 2 * math.sin(t * 3), col, 0.8);
         canvas.drawCircle(head, 1.4, Paint()..color = Colors.white);
@@ -650,8 +663,8 @@ class _BadgePainter extends CustomPainter {
   }
 
   // --- MOTİFLER: rozet yüzünde, ikonun arkasında ---
-  void _drawMotif(Canvas canvas, _Rgb c) {
-    final t = scene.t;
+  void _drawMotif(Canvas canvas, _Rgb c, {double timeScale = 1}) {
+    final t = scene.t * timeScale;
     final pts = scene.pts;
     switch (motif) {
       case BadgeMotif.night: {

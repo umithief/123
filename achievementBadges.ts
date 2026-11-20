@@ -359,6 +359,8 @@ const badgeScene = (tier: BadgeTier): FrameDef<BadgeState> => ({
                 ctx.fillStyle = light ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.07)';
                 ctx.fillRect(-80, y, 160, w * 0.5);
             }
+            // Kazanılınca oynayacak motifin gümüşe kazınmış gibi koyu, renksiz önizlemesi
+            drawMotif(ctx, motif, s.pts, t * 0.6, [52, 60, 72], 0.75);
         }
         ctx.restore();
 
@@ -403,6 +405,11 @@ const badgeScene = (tier: BadgeTier): FrameDef<BadgeState> => ({
                 ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 hexArc(ctx, 79.5, 0, p); ctx.strokeStyle = rgba(col, 1); ctx.lineWidth = 3.4; ctx.stroke();
                 hexArc(ctx, 79.5, 0, p); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 0.8; ctx.stroke();
+                // İlerleme çizgisinin içinde akan ışık
+                hexArc(ctx, 79.5, 0, p);
+                ctx.setLineDash([2.5, 9]); ctx.lineDashOffset = -t * 16;
+                ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.6; ctx.stroke();
+                ctx.setLineDash([]); ctx.lineDashOffset = 0;
                 const [x, y] = hexPoint(79.5, p);
                 bloom(ctx, x, y, 8 + 2 * Math.sin(t * 3), col, 0.8);
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, 1.4, 0, TAU); ctx.fill();
